@@ -1,0 +1,5 @@
+int8 ID
+string state
+bool collision
+---
+bool success

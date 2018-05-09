@@ -1,0 +1,4 @@
+geometry_msgs/Pose[] goal_path_poses_list
+bool blocking
+---
+bool success

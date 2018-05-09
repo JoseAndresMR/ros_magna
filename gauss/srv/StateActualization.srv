@@ -1,4 +1,4 @@
-int8 ID
+int8 id
 string state
 bool collision
 ---

@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <arg name="multi" default="false"/>
     <arg name="ns_prefix" default="uav_"/>
     <arg name="mode" default="sitl"/>
+    <arg name="gui" default="true"/>
 
     <!-- Load frame transforms for map and UAVs -->
     <rosparam file="$(find px4_bringup)/config/simulation_params.yaml" command="load" />
@@ -20,9 +21,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <group if="$(eval mode=='sitl')">
         <!-- Launch Gazebo simulation TODO: world location? -->
         <node pkg="px4_bringup" type="launch_gzworld_JA.py" name="gazebo_world" output="screen"
-        args="-physics=ode -world=$(find px4_bringup)/config/empty_light_JA.world"/>
+        args="-physics=ode -world=$(find px4_bringup)/config/empty_light_JA.world -gui=$(arg gui)"/>
     </group>
 
-    <node pkg="gauss" type="Master.py" name="Master"/>
+    <node pkg="gauss" type="Master.py" name="master"/>
 
 </launch>

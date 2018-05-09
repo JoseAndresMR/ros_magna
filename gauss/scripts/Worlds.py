@@ -27,19 +27,17 @@ from Brain import *
 class Worlds(object):
     def __init__(self,ID):
         self.ID = int(ID)
-        self.world_definition = rospy.get_param('world_definition')
-        self.project = self.world_definition['project']
-        self.world_type = self.world_definition['type']
+        self.GettingWorldDefinition()
         print "creating world",ID
         if self.project == "gauss":
             self.N_uav = self.world_definition['N_uav']
             self.N_obs = self.world_definition['N_obs']
             self.path_length = self.world_definition['path_length']
         
-        self.ObstacleGenerator()
+        self.obstacleGenerator()
 
 
-    def ObstacleGenerator(self):
+    def obstacleGenerator(self):
         product_xml_dict = {"cube":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube"),"r").read(),\
                             "cylinder":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder"),"r").read(),\
                             "sphere":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere"),"r").read(),\
@@ -57,7 +55,7 @@ class Worlds(object):
         if self.project == "dcdaa":
             self.dbo=[5,1.5,1.5]
             self.obstacle_density = 0.7
-            self.obstacles_raw_matrix = np.random.rand(5,3,3)
+            self.obstacles_raw_matrix = np.random.rand(2,3,3)
             self.obstacles_positions = self.obstacles_raw_matrix<=self.obstacle_density
             self.empty_positions = self.obstacles_raw_matrix>self.obstacle_density
             self.poses_matrix = self.obstacles_raw_matrix.tolist()
@@ -76,14 +74,16 @@ class Worlds(object):
                                                               1+k*self.dbo[2]),\
                                                         obs_orientation)
                         if self.obstacles_positions[i,j,k] == True:
-                            shape = self.RandomizeShape()
+                            shape = self.randomizeShape()
                             self.obs_shape_list.append(shape)
                             self.obs_list.append(Obstacle(self.n_obs,\
                                                                 product_xml_dict[shape],\
                                                                 self.poses_matrix[i][j][k],\
                                                                 self.obs_transforms_list))              
-                            self.obs_pose_list_simple.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])          
+                            # self.obs_pose_list_simple.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
+                            self.obs_pose_list_simple.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
                             self.n_obs=self.n_obs+1
+            self.world_definition["N_obs"] = self.n_obs
 
         elif self.project == "gauss":
             if self.world_type == 1:
@@ -177,11 +177,16 @@ class Worlds(object):
 
         return self.path_poses_list
 
-    def EraseAllObstacles(self):
+    def GettingWorldDefinition(self):
+        self.world_definition = rospy.get_param('world_definition')
+        self.project = self.world_definition['project']
+        self.world_type = self.world_definition['type']
+
+    def eraseAllObstacles(self):
         for obs in self.obs_list:
             obs.Erase()
     
-    def RandomizeShape(self):
+    def randomizeShape(self):
         if self.world_type == 1:
             shape ="brick"
 
@@ -225,13 +230,6 @@ class Obstacle(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
-    def Publisher(self):
-        pub = rospy.Publisher('world/obstacle_'.format(self.ID), Pose, queue_size=10)
-        rate = rospy.Rate(10) # 10hz
-        while not rospy.is_shutdown():
-            msg = self.pose
-            pub.publish(msg)
-
     def Tf2TransformUnifier(self):
         static_transformStamped = geometry_msgs.msg.TransformStamped()
 
@@ -247,12 +245,10 @@ class Obstacle(object):
         static_transformStamped.transform.rotation.z = quat[2]
         static_transformStamped.transform.rotation.w = quat[3]
 
-        print "static", static_transformStamped
 
         self.obstacle_transform_list.append(static_transformStamped)
         
     def Tf2UnifiedBroadcaster(self):
-        print self.obstacle_transform_list
         broadcaster = tf2_ros.StaticTransformBroadcaster()
         broadcaster.sendTransform(self.obstacle_transform_list)
 
@@ -262,7 +258,6 @@ class Obstacle(object):
             delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
             item_name = 'obstacle_{0}'.format(self.ID)
             response = self.delete_model(item_name)
-            print response
             time.sleep(0.01)
             return
         except rospy.ServiceException, e:

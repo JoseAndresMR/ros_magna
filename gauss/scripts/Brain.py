@@ -23,17 +23,7 @@ from sensor_msgs.msg import *
 class Brain(object):
     def __init__(self,ID):
         self.ID = ID
-        print "brain",ID,"alive"
-
-        self.world_definition = rospy.get_param('world_definition')
-        self.project = self.world_definition['project']
-        self.world_type = self.world_definition['type']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
+        self.GettingWorldDefinition()
 
     def Guidance(self,actual_uav_pose_list,actual_uav_vel_list, goal_WP_pose):
         self.actual_uav_pose_list = actual_uav_pose_list
@@ -54,7 +44,7 @@ class Brain(object):
 
     def ORCA(self):
 
-        start = time.time()
+        # start = time.time()
         sim = rvo2.PyRVOSimulator(0.11, # float timeStep,
                                   2,   # float neighborDist
                                   2,    # size_t maxNeighbors
@@ -93,11 +83,11 @@ class Brain(object):
 
         sim.doStep()
         selected_velocity = sim.getAgentVelocity(self.ID-1)
-        new_velocity_twist = Twist(Vector3(0,0,0),Vector3(0,0,0))
+        new_velocity_twist = Twist(Vector3(0,0,prefered_velocity.linear.z),Vector3(0,0,0))
         new_velocity_twist.linear.x = selected_velocity[0]
         new_velocity_twist.linear.y = selected_velocity[1]
 
-        finish = time.time()
+        # finish = time.time()
         # print finish - start
 
         return new_velocity_twist
@@ -122,8 +112,8 @@ class Brain(object):
                                    0,\
                                    relative_WP_pose_degrees.orientation.z-yaw))
 
-        new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,2)
-        new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,2)
+        new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,1.5)
+        new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,1.5)
         new_velocity_twist.angular.z = self.UpperLowerThresholds(new_velocity_twist.angular.z,0.5)
 
         return new_velocity_twist
@@ -139,3 +129,14 @@ class Brain(object):
         elif value < -threshold:
             value = -threshold
         return value
+    
+    def GettingWorldDefinition(self):
+        self.world_definition = rospy.get_param('world_definition')
+        self.project = self.world_definition['project']
+        self.world_type = self.world_definition['type']
+        self.n_simulation = self.world_definition['n_simulation']
+        self.N_uav = self.world_definition['N_uav']
+        self.N_obs = self.world_definition['N_obs']
+        self.n_dataset = self.world_definition['n_dataset']
+        self.solver_algorithm = self.world_definition['solver_algorithm']
+        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']

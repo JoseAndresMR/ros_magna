@@ -11,6 +11,7 @@ import Brain
 import pandas as pd
 import argparse
 import tf, tf2_ros
+import signal
 from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
@@ -26,17 +27,7 @@ class Ground_Station(object):
         self.brain = Brain(self.ID)
         self.global_data_frame = pd.DataFrame()
         self.distance_to_goal = 10000
-        self.world_definition = rospy.get_param('world_definition')
-        self.project = self.world_definition['project']
-        self.world_type = self.world_definition['type']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.uav_models = self.world_definition['uav_models']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
-
+        self.GettingWorldDefinition()
 
         self.start=time.time()
 
@@ -67,8 +58,10 @@ class Ground_Station(object):
             rospy.Subscriber('/uav_{}/ual/pose'.format(n_uav+1), PoseStamped, self.uav_pose_callback,n_uav+1)
             rospy.Subscriber('/uav_{}/ual/velocity'.format(n_uav+1), TwistStamped, self.uav_vel_callback,n_uav+1)
 
-        # rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
-        rospy.Service('/gauss/ANSP_UAV_{}/WP_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
+        if self.project == 'dcdaa':
+            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+            
+        rospy.Service('/gauss/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
         rospy.Service('/gauss/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
         rospy.Service('/gauss/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
@@ -134,6 +127,8 @@ class Ground_Station(object):
             data_saved = True
             if self.new_path_incoming and self.state == "landed":
                 ### Take Off
+                time.sleep(10)
+                time.sleep(self.ID * 5)
                 self.TakeOffCommand(5,True)
                 self.state = "inizializating"
                 self.ANSPStateActualization()
@@ -182,18 +177,18 @@ class Ground_Station(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
-    def GoToWPCommand(self,blocking):
-        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-        try:
-            ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
-            h = std_msgs.msg.Header()
-            ual_go_to_waypoint(PoseStamped(h,self.goal_WP_pose),blocking)
-            while self.DistanceToGoal() > 0.2:
-                time.sleep(0.1)
-            time.sleep(1)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+    # def GoToWPCommand(self,blocking):
+    #     rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
+    #     try:
+    #         ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
+    #         h = std_msgs.msg.Header()
+    #         ual_go_to_waypoint(PoseStamped(h,self.goal_WP_pose),blocking)
+    #         while self.DistanceToGoal() > 0.2:
+    #             time.sleep(0.1)
+    #         time.sleep(1)
+    #         return
+    #     except rospy.ServiceException, e:
+    #         print "Service call failed: %s"%e
 
     def SetVelocityCommand(self,hover):
         rospy.wait_for_service('/uav_{}/ual/set_velocity'.format(self.ID))
@@ -212,7 +207,7 @@ class Ground_Station(object):
 
             self.finish = time.time()
             # print self.finish - self.start
-            self.start = time.time()
+            # self.start = time.time()
 
             ual_set_velocity(TwistStamped(h,self.new_velocity_twist))
 
@@ -230,9 +225,17 @@ class Ground_Station(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
+    def SetHomeCommand(self):
+        rospy.wait_for_service('/uav_{}/ual/set_home'.format(self.ID))
+        try:
+            ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_home'.format(self.ID), TakeOff)
+            ual_set_velocity()
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
     def DistanceToGoal(self):
         self.distance_to_goal = math.sqrt((self.actual_uav_pose_list[self.ID-1].position.x-self.goal_WP_pose.position.x)**2+(self.actual_uav_pose_list[self.ID-1].position.y-self.goal_WP_pose.position.y)**2+(self.actual_uav_pose_list[self.ID-1].position.z-self.goal_WP_pose.position.z)**2)
-        print self.ID, self.distance_to_goal
         return self.distance_to_goal
 
     def DistanceBetweenPoses(self,pose_1,pose_2):
@@ -251,14 +254,14 @@ class Ground_Station(object):
             self.ANSPStateActualization()
             while self.DistanceToGoal() > 0.5:
                 self.SetVelocityCommand(False)
-                time.sleep(0.1)
+                time.sleep(0.3)
+                self.Evaluator()
                 if self.new_path_incoming == True:
                     break
             self.goal_WP_pose = self.goal_path_poses_list[i]
             self.state = "in WP {}".format(i+1)
             self.ANSPStateActualization()
             self.SetVelocityCommand(True)
-            self.Evaluator()
 
             if self.die_command == True:
                 rospy.signal_shutdown("end of experiment")
@@ -268,15 +271,32 @@ class Ground_Station(object):
 
             if self.project == "gauss":
                 while self.ANSP_instruction != "GoOn":
+                    self.SetVelocityCommand(False)
                     if self.die_command == True:
                         rospy.signal_shutdown("end of experiment")
-                    time.sleep(0.1)
+                    time.sleep(0.3)
+                    self.Evaluator()
+
+    def GettingWorldDefinition(self):
+        self.world_definition = rospy.get_param('world_definition')
+        self.project = self.world_definition['project']
+        self.world_type = self.world_definition['type']
+        self.n_simulation = self.world_definition['n_simulation']
+        self.N_uav = self.world_definition['N_uav']
+        self.N_obs = self.world_definition['N_obs']
+        self.obs_tube = self.world_definition['obs_tube']
+        self.uav_models = self.world_definition['uav_models']
+        self.n_dataset = self.world_definition['n_dataset']
+        self.solver_algorithm = self.world_definition['solver_algorithm']
+        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
 
     def Evaluator(self):
-        min_distance_uav = 2
-        min_distance_obs = 2
+        min_distance_uav = 1
+        min_distance_obs = 1
         uav_distances_list = []
         obs_distances_list = []
+        collision_uav = False
+        collision_obs = False
         for n_uav in np.arange(self.N_uav):
             if n_uav+1 != self.ID:
                 uav_distances_list.append(self.DistanceBetweenPoses(self.actual_uav_pose_list[self.ID-1],self.actual_uav_pose_list[n_uav]))
@@ -284,8 +304,9 @@ class Ground_Station(object):
         for n_obs in np.arange(self.N_obs):
             obs_distances_list.append(self.DistanceToObs(self.actual_uav_pose_list[self.ID-1],self.obs_pose_list_simple[n_obs]))
 
-        collision_uav = (x for x in uav_distances_list if x <= min_distance_uav)
-        collision_obs = (x for x in obs_distances_list if x <= min_distance_obs)
+        collision_uav = [x for x in uav_distances_list if x <= min_distance_uav]
+        if self.N_obs>0:
+            collision_obs = [x for x in obs_distances_list if x <= min_distance_obs]
 
         if collision_uav or collision_obs:
             self.collision = True
@@ -297,6 +318,9 @@ class Ground_Station(object):
         for n_uav in np.arange(self.N_uav):
             single_frame["actual_UAV_{}_pose".format(n_uav+1)] = self.actual_uav_pose_list[n_uav]
             single_frame["actual_UAV_{}_vel".format(n_uav+1)] = self.actual_uav_vel_list[n_uav]
+        
+        if self.project == 'dcdaa':
+            single_frame["image_depth"] = self.image_depth
 
         if self.global_data_frame.empty:
             self.global_data_frame = pd.DataFrame(single_frame)
@@ -305,17 +329,20 @@ class Ground_Station(object):
 
     def CreatingCSV(self):
         print "saving uav",self.ID,"mission data"
-        folder_path = "/home/joseandres/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,self.N_obs,self.n_dataset,self.n_simulation)
-
+        if self.project == 'dcdaa':
+            N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
+        elif self.project == 'gauss':
+            N_obs_mixed = self.N_obs
+        folder_path = "/home/joseandres/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
 
         file_path = folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(file_path, sep=',') #,low_memory=False,
 
     def ANSPStateActualization(self):
-        rospy.wait_for_service('/gauss/ANSP/State_Actualization')
+        rospy.wait_for_service('/gauss/ANSP/state_actualization')
         try:
             # print "path for uav {} command".format(ID)
-            ANSP_state_actualization = rospy.ServiceProxy('/gauss/ANSP/State_Actualization', StateActualization)
+            ANSP_state_actualization = rospy.ServiceProxy('/gauss/ANSP/state_actualization', StateActualization)
             ANSP_state_actualization(self.ID,self.state,self.collision)
             return
         except rospy.ServiceException, e:
@@ -326,6 +353,7 @@ def main():                #### No estoy seguro de toda esta estructura
     parser.add_argument('-ID', type=str, default="1", help='')
     args, unknown = parser.parse_known_args()
     Ground_Station(args.ID)
+
     return
 
 if __name__ == '__main__':

@@ -128,7 +128,7 @@ class Ground_Station(object):
             if self.new_path_incoming and self.state == "landed":
                 ### Take Off
                 time.sleep(10)
-                time.sleep(self.ID * 5)
+                time.sleep((self.ID-1) * 1)
                 self.TakeOffCommand(5,True)
                 self.state = "inizializating"
                 self.ANSPStateActualization()
@@ -176,6 +176,7 @@ class Ground_Station(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in go_to_waypoint"
 
     # def GoToWPCommand(self,blocking):
     #     rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
@@ -197,7 +198,8 @@ class Ground_Station(object):
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
             if hover== False:
                 self.new_velocity_twist = self.brain.Guidance(self.actual_uav_pose_list,self.actual_uav_vel_list,self.goal_WP_pose)
-                self.SaveData()
+                if self.state.split(" ")[0] == "to" and self.state.split(" ")[2] != "1":
+                    self.SaveData()
 
             elif hover == True:
                 self.new_velocity_twist = self.brain.Hover()
@@ -215,6 +217,7 @@ class Ground_Station(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in set_velocity"
 
     def TakeOffCommand(self,heigth, blocking):
         rospy.wait_for_service('/uav_{}/ual/take_off'.format(self.ID))
@@ -224,6 +227,7 @@ class Ground_Station(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in take_off"
 
     def SetHomeCommand(self):
         rospy.wait_for_service('/uav_{}/ual/set_home'.format(self.ID))
@@ -233,6 +237,7 @@ class Ground_Station(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in set_home"
 
     def DistanceToGoal(self):
         self.distance_to_goal = math.sqrt((self.actual_uav_pose_list[self.ID-1].position.x-self.goal_WP_pose.position.x)**2+(self.actual_uav_pose_list[self.ID-1].position.y-self.goal_WP_pose.position.y)**2+(self.actual_uav_pose_list[self.ID-1].position.z-self.goal_WP_pose.position.z)**2)
@@ -246,15 +251,19 @@ class Ground_Station(object):
         Distance = math.sqrt((pose_1.position.x-vector[0])**2+(pose_1.position.y-vector[1])**2+(pose_1.position.z-vector[2])**2)
         return Distance
 
+    def VelocityModule(self,twist):
+        Module = np.sqrt(twist.linear.x**2+twist.linear.y**2+twist.linear.z**2)
+        return Module
+
     def PathFollower(self):
         for i in np.arange(len(self.goal_path_poses_list)):
             self.goal_WP_pose = self.goal_path_poses_list[i]
             self.GoalStaticBroadcaster()
             self.state = "to WP {}".format(i+1)
             self.ANSPStateActualization()
-            while self.DistanceToGoal() > 0.5:
+            while self.DistanceToGoal() > 1:
                 self.SetVelocityCommand(False)
-                time.sleep(0.3)
+                time.sleep(0.1)
                 self.Evaluator()
                 if self.new_path_incoming == True:
                     break
@@ -312,6 +321,8 @@ class Ground_Station(object):
             self.collision = True
             print self.ID,"COLLISION!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
+        # if 
+
 
     def SaveData(self):
         single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.goal_WP_pose], "UAV_{}_new_velocity_twist".format(self.ID) : [self.new_velocity_twist]}   #  , "UAV_{}_image_depth".format(self.ID): [self.image_depth]
@@ -333,7 +344,7 @@ class Ground_Station(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        folder_path = "/home/joseandres/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
+        folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
 
         file_path = folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(file_path, sep=',') #,low_memory=False,
@@ -347,6 +358,7 @@ class Ground_Station(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in state_actualization"
 
 def main():                #### No estoy seguro de toda esta estructura
     parser = argparse.ArgumentParser(description='Spawn robot in Gazebo for SITL')

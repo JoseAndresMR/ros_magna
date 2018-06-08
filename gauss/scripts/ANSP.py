@@ -127,6 +127,7 @@ class ANSP(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in wp_list_command"
 
     def InstructionCommand(self,ID,Instruction):
         rospy.wait_for_service('/gauss/ANSP_UAV_{}/instruction_command'.format(ID))
@@ -136,6 +137,7 @@ class ANSP(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in instruction_command"
 
     def SimulationTerminationCommand(self):
         rospy.wait_for_service('/gauss/ANSP/simulation_termination')
@@ -145,6 +147,7 @@ class ANSP(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in simulation_termination"
 
     def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
         uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))
@@ -159,7 +162,7 @@ class ANSP(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/joseandres/catkin_ws/src/jamrepo/gauss/launch/{}_spawner_JA.launch".format(self.world_definition['px4_use'])])
+            "/home/josmilrom/catkin_ws/src/jamrepo/gauss/launch/{}_spawner_JA.launch".format(self.world_definition['px4_use'])])
         self.uav_spawner_launch.start()
 
         # time.sleep(0.2)
@@ -188,7 +191,7 @@ class ANSP(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        first_folder_path = "/home/joseandres/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed)
+        first_folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed)
 
         if not os.path.exists(first_folder_path):
             os.makedirs(first_folder_path)
@@ -201,7 +204,7 @@ class ANSP(object):
         if not os.path.exists(self.third_folder_path):
             os.makedirs(self.third_folder_path)
 
-        bag_folder_path = "/home/joseandres/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
+        bag_folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
     def SavingWorldDefinition(self):
@@ -221,7 +224,7 @@ class ANSP(object):
         self.world.eraseAllObstacles()
         self.GazeboModelsKiller()
         self.SimulationTerminationCommand()
-        # rospy.signal_shutdown("end of experiment")
+        rospy.signal_shutdown("end of experiment")
 
     def HandleException(self):
         # self.uav_spawner_launch.shutdown()
@@ -240,6 +243,7 @@ class ANSP(object):
                 time.sleep(0.1)
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
+                print "error in die_command"
         return
 
     def GazeboModelsKiller(self):
@@ -252,6 +256,7 @@ class ANSP(object):
                 time.sleep(0.1)
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e  
+                print "error in delete_model uav"
         return
 
     #### listener functions ####
@@ -285,14 +290,14 @@ class ANSP(object):
             print "The bag file does not exist"
         
 def main():
-    try:
-        ANSP()
-    except KeyboardInterrupt:
-        rospy.signal_shutdown("end of experiment")
-        # ANSP.HandleException()
-    except rospy.is_shutdown:
-        rospy.signal_shutdown("end of experiment")
-        # ANSP.HandleException()
+    # try:
+    ANSP()
+    # except KeyboardInterrupt:
+    #     rospy.signal_shutdown("end of experiment")
+    #     # ANSP.HandleException()
+    # except rospy.is_shutdown:
+    #     rospy.signal_shutdown("end of experiment")
+    #     # ANSP.HandleException()
 
 if __name__ == '__main__':
     main()

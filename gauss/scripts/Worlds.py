@@ -38,12 +38,11 @@ class Worlds(object):
 
 
     def obstacleGenerator(self):
-        product_xml_dict = {"cube":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube"),"r").read(),\
-                            "cylinder":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder"),"r").read(),\
-                            "sphere":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere"),"r").read(),\
-                            "brick":open("/home/joseandres/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("brick"),"r").read(),\
+        product_xml_dict = {"cube":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube"),"r").read(),\
+                            "cylinder":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder"),"r").read(),\
+                            "sphere":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere"),"r").read(),\
+                            "brick":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("brick"),"r").read(),\
                             }
-        rospy.wait_for_service('gazebo/spawn_sdf_model')
 
         self.n_obs = 0
         self.obs_list = []
@@ -87,9 +86,9 @@ class Worlds(object):
 
         elif self.project == "gauss":
             if self.world_type == 1:
-                self.obs_zone_rad = 4 #4
+                self.obs_zone_rad = 2 #4
                 self.neutral_zone_width = 1 #2
-                self.uavs_zone_width = 3
+                self.uavs_zone_width = 1
                 self.goal_uncertainty = np.pi/4
 
                 if self.world_type == 1:
@@ -218,7 +217,6 @@ class Obstacle(object):
             self.Tf2UnifiedBroadcaster()
 
     def Spawner(self):
-        # rospy.wait_for_service('gazebo/spawn_sdf_model')
         try: 
             rospy.wait_for_service('gazebo/spawn_sdf_model')
             item_name = 'obstacle_{0}'.format(self.ID)
@@ -229,6 +227,7 @@ class Obstacle(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in spawn_sdf_model"
 
     def Tf2TransformUnifier(self):
         static_transformStamped = geometry_msgs.msg.TransformStamped()
@@ -262,6 +261,7 @@ class Obstacle(object):
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            print "error in delete_model obstacle"
 
 
 def DistanceBetweenPoses(Pose1,Pose2):

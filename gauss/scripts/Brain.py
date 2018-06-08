@@ -45,18 +45,18 @@ class Brain(object):
     def ORCA(self):
 
         # start = time.time()
-        sim = rvo2.PyRVOSimulator(0.11, # float timeStep,
-                                  2,   # float neighborDist
-                                  2,    # size_t maxNeighbors
-                                  100,    # float timeHorizon
-                                  5,    # float timeHorizonObst
-                                  0.5,     # float radius
-                                  2)     # float maxSpeed
+        sim = rvo2.PyRVOSimulator(1/60.,   # 1/60.  float   timeStep           The time step of the simulation. Must be positive. 
+                                  3.0,     # 1.5    float   neighborDist       The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+                                  4,       # 5      size_t  maxNeighbors       The maximal number of other agents the agent takes into account in the navigation
+                                  1.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
+                                  2.5,     # 2      float   timeHorizonObst    The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to obstacles.
+                                  0.5,     # 0.4    float   radius             The radius of the agent. Must be non-negative
+                                  2.0)     # 2      float   maxSpeed           The maximum speed of the agent. Must be non-negative. 
 
         agent_list = []
         for n_uas in np.arange(self.N_uav):
             agent_list.append(sim.addAgent((self.actual_uav_pose_list[n_uas].position.x, self.actual_uav_pose_list[n_uas].position.y)))
-            
+            5
             # tuple pos, neighborDist=None,
             # maxNeighbors=None, timeHorizon=None,
             # timeHorizonObst=None, radius=None, maxSpeed=None,
@@ -93,9 +93,21 @@ class Brain(object):
         return new_velocity_twist
 
     def SimpleGuidance(self):
-        relative_WP_linear=Vector3(self.goal_WP_pose.position.x-self.actual_uav_pose_list[self.ID-1].position.x,\
+        desired_velocity_module = 2
+        desired_velocity_module_at_goal = 0
+        aprox_distance = 3
+
+        relative_distance = np.asarray([self.goal_WP_pose.position.x-self.actual_uav_pose_list[self.ID-1].position.x,\
                                 self.goal_WP_pose.position.y-self.actual_uav_pose_list[self.ID-1].position.y,\
-                                self.goal_WP_pose.position.z-self.actual_uav_pose_list[self.ID-1].position.z)
+                                self.goal_WP_pose.position.z-self.actual_uav_pose_list[self.ID-1].position.z])
+                                
+        distance_norm = np.linalg.norm(relative_distance)
+        if distance_norm < aprox_distance:
+            desired_velocity_module = desired_velocity_module_at_goal - (desired_velocity_module - desired_velocity_module_at_goal)\
+                                    + ((desired_velocity_module - desired_velocity_module_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
+        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*desired_velocity_module,\
+                                relative_distance[1]/distance_norm*desired_velocity_module,\
+                                relative_distance[2]/distance_norm*desired_velocity_module)
         relative_WP_pose_degrees=Pose(relative_WP_linear,\
                                 Vector3(np.arctan2(relative_WP_linear.z,relative_WP_linear.y),\
                                 np.arctan2(relative_WP_linear.x,relative_WP_linear.z),\
@@ -110,11 +122,12 @@ class Brain(object):
         new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
                                    Vector3(0,\
                                    0,\
-                                   relative_WP_pose_degrees.orientation.z-yaw))
+                                #    relative_WP_pose_degrees.orientation.z-yaw))
+                                   0))
 
-        new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,1.5)
-        new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,1.5)
-        new_velocity_twist.angular.z = self.UpperLowerThresholds(new_velocity_twist.angular.z,0.5)
+        # new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,1.5)
+        # new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,1.5)
+        # new_velocity_twist.angular.z = self.UpperLowerThresholds(new_velocity_twist.angular.z,0.5)
 
         return new_velocity_twist
 

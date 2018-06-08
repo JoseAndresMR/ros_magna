@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="gauss" type="Master.py" name="master" output="screen"/>
+</launch>

@@ -15,10 +15,10 @@ import signal
 from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
-from sensor_msgs.msg import *
 
 from Brain import *
 from gauss.srv import *
+from UAV import *
 
 class Ground_Station(object):
 
@@ -37,9 +37,17 @@ class Ground_Station(object):
         for n_uav in np.arange(self.N_uav):
             self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
 
-        self.actual_uav_pose_list = list(np.arange(self.N_uav))
-        self.actual_uav_vel_list = list(np.arange(self.N_uav))
+        ICAO_IDs = {1: "40621D", 2:"40621D", 3: "40621D"}
+
         rospy.init_node('ground_station_{}'.format(self.ID), anonymous=True)
+
+        a = UAV(0,False,"dfg")
+        time.sleep(5)
+        self.uavs_list = []
+        for n_uav in range(1,self.N_uav+1):
+            self.uavs_list.append(UAV(n_uav,self.ID,ICAO_IDs[n_uav]))
+
+
         self.state = "landed"
         self.collision = False
         self.new_path_incoming = False
@@ -54,36 +62,16 @@ class Ground_Station(object):
 
     #### Listener functions ####
     def GroundStationListener(self):
-        for n_uav in np.arange(self.N_uav):
-            rospy.Subscriber('/uav_{}/ual/pose'.format(n_uav+1), PoseStamped, self.uav_pose_callback,n_uav+1)
-            rospy.Subscriber('/uav_{}/ual/velocity'.format(n_uav+1), TwistStamped, self.uav_vel_callback,n_uav+1)
+        # for n_uav in np.arange(self.N_uav):
+        #     rospy.Subscriber('/uav_{}/ual/pose'.format(n_uav+1), PoseStamped, self.uav_pose_callback,n_uav+1)
+        #     rospy.Subscriber('/uav_{}/ual/velocity'.format(n_uav+1), TwistStamped, self.uav_vel_callback,n_uav+1)
 
-        if self.project == 'dcdaa':
-            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+        # if self.project == 'dcdaa':
+        #     rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
             
         rospy.Service('/gauss/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
         rospy.Service('/gauss/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
         rospy.Service('/gauss/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
-
-
-    def uav_pose_callback(self,data,ID):
-        self.actual_uav_pose_list[ID-1] = data.pose
-
-        time.sleep(0.1)
-
-    def uav_vel_callback(self,data,ID):
-        self.actual_uav_vel_list[ID-1] = data.twist
-
-        time.sleep(0.1)
-
-    def image_raw_callback(self,data):
-        #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.pose.position)
-        #print "Image info recieved", data.height, data.width, data.encoding, data.is_bigendian, data.step
-        # bridge = CvBridge()
-        # self.image_depth = bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding)[:,:,1]
-        self.image_depth = data
-        time.sleep(0.1)
-        return
 
     def handle_WP_list_command(self,req):
         self.goal_path_poses_list = req.goal_path_poses_list
@@ -197,7 +185,7 @@ class Ground_Station(object):
             #print "velocity command"
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
             if hover== False:
-                self.new_velocity_twist = self.brain.Guidance(self.actual_uav_pose_list,self.actual_uav_vel_list,self.goal_WP_pose)
+                self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal_WP_pose)
                 if self.state.split(" ")[0] == "to" and self.state.split(" ")[2] != "1":
                     self.SaveData()
 
@@ -240,7 +228,7 @@ class Ground_Station(object):
             print "error in set_home"
 
     def DistanceToGoal(self):
-        self.distance_to_goal = math.sqrt((self.actual_uav_pose_list[self.ID-1].position.x-self.goal_WP_pose.position.x)**2+(self.actual_uav_pose_list[self.ID-1].position.y-self.goal_WP_pose.position.y)**2+(self.actual_uav_pose_list[self.ID-1].position.z-self.goal_WP_pose.position.z)**2)
+        self.distance_to_goal = math.sqrt((self.uavs_list[self.ID-1].position.pose.position.x-self.goal_WP_pose.position.x)**2+(self.uavs_list[self.ID-1].position.pose.position.y-self.goal_WP_pose.position.y)**2+(self.uavs_list[self.ID-1].position.pose.position.z-self.goal_WP_pose.position.z)**2)
         return self.distance_to_goal
 
     def DistanceBetweenPoses(self,pose_1,pose_2):
@@ -263,7 +251,7 @@ class Ground_Station(object):
             self.ANSPStateActualization()
             while self.DistanceToGoal() > 1:
                 self.SetVelocityCommand(False)
-                time.sleep(0.1)
+                time.sleep(0.2)
                 self.Evaluator()
                 if self.new_path_incoming == True:
                     break
@@ -308,10 +296,10 @@ class Ground_Station(object):
         collision_obs = False
         for n_uav in np.arange(self.N_uav):
             if n_uav+1 != self.ID:
-                uav_distances_list.append(self.DistanceBetweenPoses(self.actual_uav_pose_list[self.ID-1],self.actual_uav_pose_list[n_uav]))
+                uav_distances_list.append(self.DistanceBetweenPoses(self.uavs_list[self.ID-1].position.pose,self.uavs_list[n_uav].position.pose))
 
         for n_obs in np.arange(self.N_obs):
-            obs_distances_list.append(self.DistanceToObs(self.actual_uav_pose_list[self.ID-1],self.obs_pose_list_simple[n_obs]))
+            obs_distances_list.append(self.DistanceToObs(self.uavs_list[self.ID-1].position.pose,self.obs_pose_list_simple[n_obs]))
 
         collision_uav = [x for x in uav_distances_list if x <= min_distance_uav]
         if self.N_obs>0:
@@ -327,8 +315,8 @@ class Ground_Station(object):
     def SaveData(self):
         single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.goal_WP_pose], "UAV_{}_new_velocity_twist".format(self.ID) : [self.new_velocity_twist]}   #  , "UAV_{}_image_depth".format(self.ID): [self.image_depth]
         for n_uav in np.arange(self.N_uav):
-            single_frame["actual_UAV_{}_pose".format(n_uav+1)] = self.actual_uav_pose_list[n_uav]
-            single_frame["actual_UAV_{}_vel".format(n_uav+1)] = self.actual_uav_vel_list[n_uav]
+            single_frame["actual_UAV_{}_pose".format(n_uav+1)] = self.uavs_list[n_uav].position.pose   #### Cambiar cuando termine Rebeca para guardar todos los UAV objects
+            single_frame["actual_UAV_{}_vel".format(n_uav+1)] = self.uavs_list[n_uav].velocity.twist
         
         if self.project == 'dcdaa':
             single_frame["image_depth"] = self.image_depth

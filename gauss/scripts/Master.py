@@ -43,6 +43,7 @@ class Master(object):
                             'solver_algorithm'   :             "orca"                   ,\
                             'N_iter'             :               0                    ,\
                             'px4_use'            :             "complete"               ,\
+                            'communications'     :             "ADSB"                   ,\
                         }
         self.gazebo_gui = True
 

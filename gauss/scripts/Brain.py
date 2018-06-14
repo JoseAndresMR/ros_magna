@@ -25,9 +25,8 @@ class Brain(object):
         self.ID = ID
         self.GettingWorldDefinition()
 
-    def Guidance(self,actual_uav_pose_list,actual_uav_vel_list, goal_WP_pose):
-        self.actual_uav_pose_list = actual_uav_pose_list
-        self.actual_uav_vel_list = actual_uav_vel_list
+    def Guidance(self,uavs_list, goal_WP_pose):
+        self.uavs_list = uavs_list
         self.goal_WP_pose = goal_WP_pose
 
         if self.solver_algorithm == "simple":
@@ -55,7 +54,7 @@ class Brain(object):
 
         agent_list = []
         for n_uas in np.arange(self.N_uav):
-            agent_list.append(sim.addAgent((self.actual_uav_pose_list[n_uas].position.x, self.actual_uav_pose_list[n_uas].position.y)))
+            agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y)))
             5
             # tuple pos, neighborDist=None,
             # maxNeighbors=None, timeHorizon=None,
@@ -79,7 +78,7 @@ class Brain(object):
                 prefered_velocity = self.SimpleGuidance()
                 sim.setAgentPrefVelocity(agent_list[n_uas],(prefered_velocity.linear.x,prefered_velocity.linear.y))
             else:
-                sim.setAgentPrefVelocity(agent_list[n_uas],(self.actual_uav_vel_list[n_uas].linear.x,self.actual_uav_vel_list[n_uas].linear.y))
+                sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[n_uas].velocity.twist.linear.x,self.uavs_list[n_uas].velocity.twist.linear.y))
 
         sim.doStep()
         selected_velocity = sim.getAgentVelocity(self.ID-1)
@@ -97,9 +96,9 @@ class Brain(object):
         desired_velocity_module_at_goal = 0
         aprox_distance = 3
 
-        relative_distance = np.asarray([self.goal_WP_pose.position.x-self.actual_uav_pose_list[self.ID-1].position.x,\
-                                self.goal_WP_pose.position.y-self.actual_uav_pose_list[self.ID-1].position.y,\
-                                self.goal_WP_pose.position.z-self.actual_uav_pose_list[self.ID-1].position.z])
+        relative_distance = np.asarray([self.goal_WP_pose.position.x-self.uavs_list[self.ID-1].position.pose.position.x,\
+                                self.goal_WP_pose.position.y-self.uavs_list[self.ID-1].position.pose.position.y,\
+                                self.goal_WP_pose.position.z-self.uavs_list[self.ID-1].position.pose.position.z])
                                 
         distance_norm = np.linalg.norm(relative_distance)
         if distance_norm < aprox_distance:
@@ -113,7 +112,7 @@ class Brain(object):
                                 np.arctan2(relative_WP_linear.x,relative_WP_linear.z),\
                                 np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
 
-        orientation_list = [self.actual_uav_pose_list[self.ID-1].orientation.x, self.actual_uav_pose_list[self.ID-1].orientation.y, self.actual_uav_pose_list[self.ID-1].orientation.z, self.actual_uav_pose_list[self.ID-1].orientation.w]
+        orientation_list = [self.uavs_list[self.ID-1].position.pose.orientation.x, self.uavs_list[self.ID-1].position.pose.orientation.y, self.uavs_list[self.ID-1].position.pose.orientation.z, self.uavs_list[self.ID-1].position.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(orientation_list)
         roll = euler[0]
         pitch = euler[1]

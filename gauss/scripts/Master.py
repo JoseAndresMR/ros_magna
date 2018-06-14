@@ -35,16 +35,18 @@ class Master(object):
                             'type'               :                1                     ,\
                             'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                1                     ,\
+                            'N_uav'              :                2                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
                             'N_obs'              :                0                     ,\
-                            'obs_tube'           :             [5,3,2]                ,\
+                            'obs_tube'           :             [5,3,2]                  ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               0                    ,\
+                            'N_iter'             :               3                      ,\
                             'px4_use'            :             "complete"               ,\
+                            'communications'     :             "direct"                 ,\
                         }
-        self.gazebo_gui = True
+        
+        rospy.set_param('gazebo_gui',True)
 
         self.GazeboLauncher()
         rospy.set_param('world_definition', self.world_definition)
@@ -66,7 +68,7 @@ class Master(object):
                 # except rospy.ServiceException, e:
                 #     print "Service call failed: %s"%e
                 #     print "Restarting Gazebo & PX4"
-                #           
+                
                 rospy.set_param('world_definition/n_simulation', n_simulation+1)
                 print 'n_simulation',n_simulation
                 self.ANSPSpawner()
@@ -142,7 +144,7 @@ class Master(object):
 
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         if os.path.exists(self.second_folder_path):
-            selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". Other case, press any other.")
+            selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
             if selected == "q":
                 return "q"
 

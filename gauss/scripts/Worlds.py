@@ -86,7 +86,7 @@ class Worlds(object):
 
         elif self.project == "gauss":
             if self.world_type == 1:
-                self.obs_zone_rad = 2 #4
+                self.obs_zone_rad = 3 #4
                 self.neutral_zone_width = 1 #2
                 self.uavs_zone_width = 1
                 self.goal_uncertainty = np.pi/4
@@ -116,7 +116,6 @@ class Worlds(object):
                     self.obs_pose_list_simple.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
         
         self.world_definition["obs_shape"] = self.obs_shape_list
-        # print self.obs_pose_list_simple
         self.world_definition["obs_pose_list_simple"] = self.obs_pose_list_simple
         rospy.set_param('world_definition', self.world_definition)
 

@@ -25,6 +25,9 @@ class Brain(object):
         self.ID = ID
         self.GettingWorldDefinition()
 
+        if self.solver_algorithm == "neural_network":
+            pass
+
     def Guidance(self,uavs_list, goal_WP_pose):
         self.uavs_list = uavs_list
         self.goal_WP_pose = goal_WP_pose
@@ -39,6 +42,34 @@ class Brain(object):
             return self.ORCA()
 
     def NeuralNetwork(self):
+        main_uav_pos = self.uavs_list[self.ID-1].position.pose.position
+        main_uav_vel = self.uavs_list[self.ID-1].velocity.twist.linear
+        inputs = []
+        
+        for n_uav in range(self.N_uav):
+            if n_uav+1 != self.ID:
+                inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
+                inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
+
+        inputs.append(main_uav_vel.x)
+        inputs.append(main_uav_vel.y)
+
+        for n_uav in range(self.N_uav):
+            if n_uav+1 != self.ID:
+                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.x)
+                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
+
+        for n_obs in range(self.N_obs):
+            inputs.append(self.obs_pose_list_simple[n_obs][0]-main_uav_pos.x)
+            inputs.append(self.obs_pose_list_simple[n_obs][1]-main_uav_pos.y)
+
+        inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
+        inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
+
+        
+
+        # new_velocity_twist = red(inputs)
+
         return new_velocity_twist
 
     def ORCA(self):

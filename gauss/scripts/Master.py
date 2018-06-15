@@ -35,18 +35,18 @@ class Master(object):
                             'type'               :                1                     ,\
                             'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                2                     ,\
+                            'N_uav'              :                1                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                0                     ,\
-                            'obs_tube'           :             [5,3,2]                  ,\
+                            'N_obs'              :                2                     ,\
+                            'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               3                      ,\
+                            'N_iter'             :               0                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
         
-        rospy.set_param('gazebo_gui',True)
+        rospy.set_param('gazebo_gui',False)
 
         self.GazeboLauncher()
         rospy.set_param('world_definition', self.world_definition)
@@ -68,7 +68,7 @@ class Master(object):
                 # except rospy.ServiceException, e:
                 #     print "Service call failed: %s"%e
                 #     print "Restarting Gazebo & PX4"
-                
+                #           
                 rospy.set_param('world_definition/n_simulation', n_simulation+1)
                 print 'n_simulation',n_simulation
                 self.ANSPSpawner()
@@ -156,7 +156,7 @@ class Master(object):
                 n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
                 if self.world_definition["N_iter"] != 0:
                     shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
-                self.n_simulation_bias = n_prior_simulations
+                self.n_simulation_bias = n_prior_simulations -1
                 return "a"
 
             elif (selected != "q") and (selected != "a"):

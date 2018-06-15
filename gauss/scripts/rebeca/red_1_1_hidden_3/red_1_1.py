@@ -10,6 +10,8 @@ import datos_entrada
 import numpy as np
 from sklearn.metrics import accuracy_score
 
+model_path = '/media/rebeca/COMPARTIDA/GIERM_TFG/codigo_tensorflow/codigos_py/git_jose/jamrepo/gauss/scripts/save_model'
+
 n_csv = w_definition.uav 
 n_obs = w_definition.obs
 num_label = datos_entrada.label_len
@@ -102,13 +104,6 @@ valid_labels = labels[train_size: valid_size+train_size, :]
 test_data= dataset[valid_size+train_size : input_len, :]
 test_labels= labels[valid_size+train_size : input_len, :]
 
-
-"""
-FOR DROPOUT
-"""
-keep_prob_train = 0.8
-keep_prob_valid = 1.0
-keep_prob_test = 1.0
 """
 FOR REGULARIZATION
 """
@@ -198,12 +193,14 @@ with graph.as_default():
     valid_prediction = multilayer_perceptron(tf_valid_dataset)
     test_prediction = multilayer_perceptron(tf_test_dataset)
     
+# 'saver' op to save and restore all the variables
+    saver = tf.train.Saver()
     """
     ACCURACY FUNCTION
     """
-    def accuracy(predictions, labels):
-        percent = accuracy_score(np.argmax(labels,1), np.argmax(predictions,1))*100
-        return percent
+def accuracy(predictions, labels):
+    percent = accuracy_score(np.argmax(labels,1), np.argmax(predictions,1))*100
+    return percent
 
 
 """
@@ -223,14 +220,13 @@ with tf.Session(graph=graph) as session:
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data, tf_train_labels: batch_labels}
         _, l, l_regu, predictions = session.run([optimizer, loss, loss_regu, train_prediction], feed_dict=feed_dict)
+        saver.save(session, "world_nn", global_Step = 2000)
         if (step % 2000 == 0):
             print("Minibatch loss at step %d: %f" % (step, l))
             print ("loss regularization at step %d: %f" % (step, l_regu))
             print("Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels))
             print("Validation accuracy: %.1f%%" % accuracy(valid_prediction.eval(), valid_labels))
     print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels))
-    print ("labelprediction ")
-    #print (test_prediction.eval())
-    print ("label")
-   # print (test_labels)
+    save_path = saver.save(session, model_path)
+   
 

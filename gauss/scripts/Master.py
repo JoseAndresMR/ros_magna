@@ -40,7 +40,7 @@ class Master(object):
                             'N_obs'              :                2                     ,\
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
-                            'solver_algorithm'   :             "orca"                   ,\
+                            'solver_algorithm'   :             "neural_network"                   ,\
                             'N_iter'             :               0                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\

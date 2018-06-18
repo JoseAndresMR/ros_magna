@@ -77,15 +77,15 @@ n_uav = w_definition.uav
 n_obs = w_definition.obs
 dir_input = w_definition.dir_type
 num_sim = w_definition.num_sim
-
+valid_simulation = w_definition.valid_simulation
 """
 LLAMAMOS AL ARCHIVO DATOS.PY DONDE EXTRAIMOS LOS DATOS DE LOS ARCHIVOS .CSV
 """
 
-for sim in range (1, num_sim+1):
+for sim in range (0, num_sim):
     for UAV in range (1, n_uav+1):
         input_data = []
-        input_data = pd.read_csv(dir_input + "/simulation_%s" % sim + "/uav_%s.csv" % UAV, sep=',')
+        input_data = pd.read_csv(dir_input + "/simulation_%s" % valid_simulation[sim] + "/uav_%s.csv" % UAV, sep=',')
         datos.pos_orien_vel(input_data, n_uav,  UAV,lin_uav_x, lin_uav_y, lin_uav_z, ang_uav_x, ang_uav_y, ang_uav_z, goal_pos_x, goal_pos_y, goal_pos_z, goal_orien_x, goal_orien_y, goal_orien_z, goal_orien_w,new_lin_x, new_lin_y, new_lin_z, new_ang_x, new_ang_y, new_ang_z,pos_uav_x,pos_uav_y,pos_uav_z ,orien_uav_x,orien_uav_y,orien_uav_z,orien_uav_w, position_x, position_y, position_z, orientation_x, orientation_y, orientation_z, orientation_w, lin_x, lin_y, lin_z, ang_x, ang_y, ang_z)
         for n_obstacle in range (0, n_obs):
             obstacle_x.append([])
@@ -104,6 +104,8 @@ CREACION DE LA MATRIZ DE ENTRADA
 for j in range(0, len(pos_uav_x)):
     input_matrix.append([])
     label.append([])
+    input_matrix[j].append(float(lin_uav_x[j]))
+    input_matrix[j].append(float(lin_uav_y[j]))
     for i in range (0, n_uav):  
               
         #DIF POS
@@ -118,15 +120,16 @@ for j in range(0, len(pos_uav_x)):
             input_matrix[j].append(float(orientation_w[i][j]) - float(orien_uav_w[j])) #7*n_uav
             """
         # DIF VEL
-      
-        input_matrix[j].append(float(lin_x[i][j]))
-        input_matrix[j].append(float(lin_y[i][j]))
-        """
-        #input_matrix[j].append(float(lin_z[i][j]))
-        #input_matrix[j].append(float(ang_x[i][j]))
-        #input_matrix[j].append(float(ang_y[i][j]))
-        #input_matrix[j].append(float(ang_z[i][j])) #6*n_uav
-        """
+
+        while(float(lin_uav_x[j]) != float(lin_x[i][j])):
+            input_matrix[j].append(float(lin_x[i][j]))
+            input_matrix[j].append(float(lin_y[i][j]))
+            """
+            #input_matrix[j].append(float(lin_z[i][j]))
+            #input_matrix[j].append(float(ang_x[i][j]))
+            #input_matrix[j].append(float(ang_y[i][j]))
+            #input_matrix[j].append(float(ang_z[i][j])) #6*n_uav
+            """
     #obstaculos
     if (n_obs > 0):
         for num_obstacle in range (0,n_obs): 

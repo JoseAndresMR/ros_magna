@@ -70,6 +70,7 @@ class Brain(object):
 
         with tf.Session() as sess:
             #importa el archivo .meta donde está el grafo completo
+            # new_saver = tf.train.import_meta_graph('/save_model/world_%s_%s_nn.meta' % (self.N_uav, self.N_obs))
             new_saver = tf.train.import_meta_graph('/save_model/world_1_1_nn.meta')
             #restauro los ultimos valores
             new_saver.restore(sess, tf.train.latest_checkpoint('./'))

@@ -220,13 +220,12 @@ with tf.Session(graph=graph) as session:
         # and the value is the numpy array to feed to it.
         feed_dict = {tf_train_dataset: batch_data, tf_train_labels: batch_labels}
         _, l, l_regu, predictions = session.run([optimizer, loss, loss_regu, train_prediction], feed_dict=feed_dict)
-        saver.save(session, "world_nn", global_Step = 2000)
         if (step % 2000 == 0):
             print("Minibatch loss at step %d: %f" % (step, l))
             print ("loss regularization at step %d: %f" % (step, l_regu))
             print("Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels))
             print("Validation accuracy: %.1f%%" % accuracy(valid_prediction.eval(), valid_labels))
     print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels))
-    save_path = saver.save(session, model_path)
+    save_path = saver.save(session, model_path + "world_%s_%s_nn" % (n_csv,n_obs))
    
 

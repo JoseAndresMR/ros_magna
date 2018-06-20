@@ -146,6 +146,7 @@ class UAV(object):
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
         self.communications = self.world_definition['communications']
+        self.home_path = self.world_definition['home_path']
 
 # if __name__ == '__main__':
     # uav = UAV("485020",True,[0,0])

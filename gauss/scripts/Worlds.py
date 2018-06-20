@@ -38,10 +38,10 @@ class Worlds(object):
 
 
     def obstacleGenerator(self):
-        product_xml_dict = {"cube":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube"),"r").read(),\
-                            "cylinder":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder"),"r").read(),\
-                            "sphere":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere"),"r").read(),\
-                            "brick":open("/home/josmilrom/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("brick"),"r").read(),\
+        product_xml_dict = {"cube":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube",self.home_path),"r").read(),\
+                            "cylinder":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder",self.home_path),"r").read(),\
+                            "sphere":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere",self.home_path),"r").read(),\
+                            "brick":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("brick",self.home_path),"r").read(),\
                             }
 
         self.n_obs = 0
@@ -179,6 +179,8 @@ class Worlds(object):
         self.world_definition = rospy.get_param('world_definition')
         self.project = self.world_definition['project']
         self.world_type = self.world_definition['type']
+        self.home_path = self.world_definition['home_path']
+        self.solver_algorithm = self.world_definition['solver_algorithm']
 
     def eraseAllObstacles(self):
         for obs in self.obs_list:

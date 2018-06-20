@@ -183,3 +183,4 @@ class Brain(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
+        self.home_path = self.world_definition['home_path']

@@ -166,18 +166,18 @@ class Ground_Station(object):
             print "Service call failed: %s"%e
             print "error in go_to_waypoint"
 
-    # def GoToWPCommand(self,blocking):
-    #     rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-    #     try:
-    #         ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
-    #         h = std_msgs.msg.Header()
-    #         ual_go_to_waypoint(PoseStamped(h,self.goal_WP_pose),blocking)
-    #         while self.DistanceToGoal() > 0.2:
-    #             time.sleep(0.1)
-    #         time.sleep(1)
-    #         return
-    #     except rospy.ServiceException, e:
-    #         print "Service call failed: %s"%e
+    def GoToWPCommand(self,blocking):
+        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
+        try:
+            ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
+            h = std_msgs.msg.Header()
+            ual_go_to_waypoint(PoseStamped(h,self.goal_WP_pose),blocking)
+            while self.DistanceToGoal() > 0.2:
+                time.sleep(0.1)
+            time.sleep(1)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
     def SetVelocityCommand(self,hover):
         rospy.wait_for_service('/uav_{}/ual/set_velocity'.format(self.ID))
@@ -286,6 +286,7 @@ class Ground_Station(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
+        self.home_path = self.world_definition['home_path']
 
     def Evaluator(self):
         min_distance_uav = 1
@@ -332,7 +333,7 @@ class Ground_Station(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
+        folder_path = "/home/{6}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
 
         file_path = folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(file_path, sep=',') #,low_memory=False,

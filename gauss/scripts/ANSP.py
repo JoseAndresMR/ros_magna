@@ -162,7 +162,7 @@ class ANSP(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/josmilrom/catkin_ws/src/jamrepo/gauss/launch/{}_spawner_JA.launch".format(self.world_definition['px4_use'])])
+            "/home/{1}/catkin_ws/src/jamrepo/gauss/launch/{0}_spawner_JA.launch".format(self.world_definition['px4_use'],self.home_path)])
         self.uav_spawner_launch.start()
 
         # time.sleep(0.2)
@@ -185,13 +185,15 @@ class ANSP(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.uav_models = self.world_definition['uav_models']
         self.path_length = self.world_definition['path_length']
+        self.home_path = self.world_definition['home_path']
+        self.solver_algorithm = self.world_definition['solver_algorithm']
 
     def CreatingSimulationDataStorage(self):
         if self.project == 'dcdaa':
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        first_folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed)
+        first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.home_path)
 
         if not os.path.exists(first_folder_path):
             os.makedirs(first_folder_path)
@@ -204,7 +206,7 @@ class ANSP(object):
         if not os.path.exists(self.third_folder_path):
             os.makedirs(self.third_folder_path)
 
-        bag_folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation)
+        bag_folder_path = "/home/{6}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
     def SavingWorldDefinition(self):

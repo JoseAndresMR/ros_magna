@@ -41,12 +41,21 @@ class Master(object):
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               0                      ,\
+                            'N_iter'             :               10                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
+
+# Comando: roslaunch gauss Master_spawner_JA.launch
         
         rospy.set_param('gazebo_gui',False)
+
+        user = "JA"
+        if user == "JA":
+            home_path = "josmilrom"
+        elif user == "Rebeca":
+            home_path = "rebeca/Documentos/ROS"
+        self.world_definition["home_path"] = home_path
 
         self.GazeboLauncher()
         rospy.set_param('world_definition', self.world_definition)
@@ -60,7 +69,7 @@ class Master(object):
         self.n_simulation_bias = 0
 
         if self.DatasetExistanceChecker() != "q":
-            for n_simulation in range(self.n_simulation_bias, self.n_simulation_bias + self.world_definition["N_iter"]):
+            for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.world_definition["N_iter"] + 1):
                 # try:
                 #     print "flag 2"
                 #     rospy.wait_for_service('gazebo/spawn_sdf_model')
@@ -69,7 +78,7 @@ class Master(object):
                 #     print "Service call failed: %s"%e
                 #     print "Restarting Gazebo & PX4"
                 #           
-                rospy.set_param('world_definition/n_simulation', n_simulation+1)
+                rospy.set_param('world_definition/n_simulation', n_simulation)
                 print 'n_simulation',n_simulation
                 self.ANSPSpawner()
                 self.simulation_finished = False
@@ -93,7 +102,7 @@ class Master(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-                    "/home/josmilrom/catkin_ws/src/jamrepo/gauss/launch/server_empty_JA.launch"])
+                    "/home/{0}/catkin_ws/src/jamrepo/gauss/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
         self.Gazebo_launch.start()
         time.sleep(1)
 
@@ -122,7 +131,7 @@ class Master(object):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
         self.ANSP_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
-            "/home/josmilrom/catkin_ws/src/jamrepo/gauss/launch/ANSP_spawner_JA.launch"])
+            "/home/{0}/catkin_ws/src/jamrepo/gauss/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
         self.ANSP_launch.start()
 
         # time.sleep(0.2)
@@ -140,7 +149,7 @@ class Master(object):
             self.N_obs_mixed = int('{0}{1}{2}'.format(self.world_definition["obs_tube"][0],self.world_definition["obs_tube"][1],self.world_definition["obs_tube"][2]))
         elif self.world_definition["project"] == 'gauss':
             self.N_obs_mixed = self.world_definition['N_obs']
-        self.first_folder_path = "/home/josmilrom/catkin_ws/src/jamrepo/Simulation_data/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.N_obs_mixed)
+        self.first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
 
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         if os.path.exists(self.second_folder_path):
@@ -156,7 +165,10 @@ class Master(object):
                 n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
                 if self.world_definition["N_iter"] != 0:
                     shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
-                self.n_simulation_bias = n_prior_simulations -1
+                    self.n_simulation_bias = n_prior_simulations -2
+                else:
+                    self.n_simulation_bias = n_prior_simulations
+
                 return "a"
 
             elif (selected != "q") and (selected != "a"):
@@ -184,7 +196,8 @@ class Master(object):
                 except:
                     pass
         
-        self.world_definition['succeed_info'] = pd.DataFrame(local_dicc).sort_values(by=['simulation_n'])
+        self.performance_info = pd.DataFrame(local_dicc).sort_values(by=['simulation_n'])
+        self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',') #,low_memory=False,
         with open(self.second_folder_path + '/dataset_definition.csv', 'wb') as f:
             w = csv.DictWriter(f, self.world_definition.keys())
             w.writeheader()

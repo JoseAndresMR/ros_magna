@@ -76,7 +76,7 @@ class Brain(object):
             new_saver.restore(sess, tf.train.latest_checkpoint('./'))
             #solo nos interesa la funcion multilayer de la red, llamada asi en la red
             nn_to_restore = graph.get_tensor_by_name('multilayer_perceptron')
-            new_velocity_twist = sees.run(nn_to_restore, feed_dict{inputs})
+            # new_velocity_twist = sees.run(nn_to_restore, feed_dict{inputs})
         
         return new_velocity_twist
     

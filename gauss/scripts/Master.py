@@ -165,7 +165,7 @@ class Master(object):
                 n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
                 if self.world_definition["N_iter"] != 0:
                     shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
-                    self.n_simulation_bias = n_prior_simulations -2
+                    self.n_simulation_bias = n_prior_simulations -1
                 else:
                     self.n_simulation_bias = n_prior_simulations
 

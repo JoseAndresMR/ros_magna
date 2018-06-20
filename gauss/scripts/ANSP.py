@@ -193,7 +193,7 @@ class ANSP(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.home_path)
+        first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.home_path,self.solver_algorithm)
 
         if not os.path.exists(first_folder_path):
             os.makedirs(first_folder_path)

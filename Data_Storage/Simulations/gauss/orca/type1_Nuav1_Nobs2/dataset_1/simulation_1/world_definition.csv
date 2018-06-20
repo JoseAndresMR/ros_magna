@@ -1,0 +1,2 @@
+N_obs,N_iter,path_length,simulation_succeed,obs_tube,home_path,collisioned_list,solver_algorithm,N_uav,project,communications,obs_shape,n_dataset,n_simulation,uav_models,type,obs_pose_list_simple,px4_use
+2,1,4,True,"[5, 3, 2]",rebeca/Documentos/ROS,[False],orca,1,gauss,direct,"['sphere', 'sphere']",1,1,"['typhoon_h480', 'typhoon_h480', 'typhoon_h480']",1,"[[2.128001197637575, 0.9709071542194135, 5.0], [2.7454795364425526, 0.6071412453851436, 5.0]]",complete

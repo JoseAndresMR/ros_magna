@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import pyModeS as pms
+#import pyModeS as pms
 import numpy as np
 import rospy, time, tf, tf2_ros
 from geometry_msgs.msg import *

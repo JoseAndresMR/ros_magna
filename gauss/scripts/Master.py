@@ -37,20 +37,20 @@ class Master(object):
                             'n_simulation'       :                1                     ,\
                             'N_uav'              :                1                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                2                     ,\
+                            'N_obs'              :                1                    ,\
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
-                            'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               10                      ,\
+                            'solver_algorithm'   :             "neural_network"                   ,\
+                            'N_iter'             :               1                     ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
 
 # Comando: roslaunch gauss Master_spawner_JA.launch
         
-        rospy.set_param('gazebo_gui',False)
+        rospy.set_param('gazebo_gui',True)
 
-        user = "JA"
+        user = "Rebeca"
         if user == "JA":
             home_path = "josmilrom"
         elif user == "Rebeca":

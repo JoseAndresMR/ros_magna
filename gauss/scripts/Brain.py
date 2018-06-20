@@ -18,6 +18,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
+import tensorflow as tflow
+
 
 
 class Brain(object):
@@ -68,16 +70,16 @@ class Brain(object):
         inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
         inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
 
-        with tf.Session() as sess:
-            #importa el archivo .meta donde está el grafo completo
-            # new_saver = tf.train.import_meta_graph('/save_model/world_%s_%s_nn.meta' % (self.N_uav, self.N_obs))
-            new_saver = tf.train.import_meta_graph('/save_model/world_1_1_nn.meta')
-            #restauro los ultimos valores
-            new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-            #solo nos interesa la funcion multilayer de la red, llamada asi en la red
-            nn_to_restore = graph.get_tensor_by_name('multilayer_perceptron')
-            # new_velocity_twist = sees.run(nn_to_restore, feed_dict{inputs})
+        session = tflow.Session()
+        #importa el archivo .meta donde está el grafo completo
+        new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
+        #restauro los ultimos valores
+        new_saver.restore(session, '/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)) # tflow.train.latest_checkpoint('./'))
+        #solo nos interesa la funcion multilayer de la red, llamada asi en la red
+        model_multilayer = tflow.get_collection('multilayer_model')[0]
+        new_velocity_twist = session.run(model_multilayer, feed_dict={'x:0': inputs})
         
+    
         return new_velocity_twist
     
     def ORCA(self):

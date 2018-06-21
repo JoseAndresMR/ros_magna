@@ -41,14 +41,14 @@ class Master(object):
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "neural_network"                   ,\
-                            'N_iter'             :               1                     ,\
+                            'N_iter'             :               10                     ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
 
 # Comando: roslaunch gauss Master_spawner_JA.launch
         
-        rospy.set_param('gazebo_gui',True)
+        rospy.set_param('gazebo_gui',False)
 
         user = "Rebeca"
         if user == "JA":

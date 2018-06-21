@@ -19,6 +19,7 @@ from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 import tensorflow as tflow
+from tensorflow.python.tools import inspect_checkpoint as chkp
 
 
 
@@ -26,6 +27,13 @@ class Brain(object):
     def __init__(self,ID):
         self.ID = ID
         self.GettingWorldDefinition()
+
+        self.session = tflow.Session()
+        new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
+        new_saver.restore(self.session, tflow.train.latest_checkpoint('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)))
+        #'/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
+        #model_multilayer = tflow.get_collection('multilayer_model')[0]
+        self.model_multilayer = tflow.get_default_graph().get_operation_by_name('multilayer_model').outputs[0]
 
         if self.solver_algorithm == "neural_network":
             pass
@@ -52,16 +60,16 @@ class Brain(object):
         
         for n_uav in range(self.N_uav):
             if n_uav+1 != self.ID:
-                inputs.append(self.uavs_list[n_uas].position.pose.position.x-main_uav_pos.x)
-                inputs.append(self.uavs_list[n_uas].position.pose.position.y-main_uav_pos.y)
+                inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
+                inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
 
         inputs.append(main_uav_vel.x)
         inputs.append(main_uav_vel.y)
 
         for n_uav in range(self.N_uav):
             if n_uav+1 != self.ID:
-                inputs.append(self.uavs_list[n_uas].velocity.twist.linear.x)
-                inputs.append(self.uavs_list[n_uas].velocity.twist.linear.y)
+                inputs.append(self.uavs_list[N_uav].velocity.twist.linear.x)
+                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
 
         for n_obs in range(self.N_obs):
             inputs.append(self.obs_pose_list_simple[n_obs][0]-main_uav_pos.x)
@@ -72,14 +80,11 @@ class Brain(object):
 
         inputs_trans = np.asarray(inputs)
         inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
-        #print (inputs_trans.shape)
-        print (inputs_trans)
-        session = tflow.Session()
-        new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
-        new_saver.restore(session, '/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
-        model_multilayer = tflow.get_collection('multilayer_model')[0]
-        new_velocity_twist = session.run(model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
         
+        new_velocity_twist = self.session.run(self.model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
+
+        new_velocity_twist = Twist(Vector3(new_velocity_twist[0][0],new_velocity_twist[0][1],0),Vector3(0,0,0))
+
         return new_velocity_twist
     
     def ORCA(self):

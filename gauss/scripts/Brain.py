@@ -70,16 +70,15 @@ class Brain(object):
         inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
         inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
 
+        inputs_trans = np.asarray(inputs)
+        inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
+        #print (inputs_trans.shape)
         session = tflow.Session()
-        #importa el archivo .meta donde está el grafo completo
         new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
-        #restauro los ultimos valores
-        new_saver.restore(session, '/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)) # tflow.train.latest_checkpoint('./'))
-        #solo nos interesa la funcion multilayer de la red, llamada asi en la red
+        new_saver.restore(session, '/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
         model_multilayer = tflow.get_collection('multilayer_model')[0]
-        new_velocity_twist = session.run(model_multilayer, feed_dict={'x:0': inputs})
+        new_velocity_twist = session.run(model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
         
-    
         return new_velocity_twist
     
     def ORCA(self):

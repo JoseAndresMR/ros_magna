@@ -52,16 +52,16 @@ class Brain(object):
         
         for n_uav in range(self.N_uav):
             if n_uav+1 != self.ID:
-                inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
-                inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
+                inputs.append(self.uavs_list[n_uas].position.pose.position.x-main_uav_pos.x)
+                inputs.append(self.uavs_list[n_uas].position.pose.position.y-main_uav_pos.y)
 
         inputs.append(main_uav_vel.x)
         inputs.append(main_uav_vel.y)
 
         for n_uav in range(self.N_uav):
             if n_uav+1 != self.ID:
-                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.x)
-                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
+                inputs.append(self.uavs_list[n_uas].velocity.twist.linear.x)
+                inputs.append(self.uavs_list[n_uas].velocity.twist.linear.y)
 
         for n_obs in range(self.N_obs):
             inputs.append(self.obs_pose_list_simple[n_obs][0]-main_uav_pos.x)
@@ -73,6 +73,7 @@ class Brain(object):
         inputs_trans = np.asarray(inputs)
         inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
         #print (inputs_trans.shape)
+        print (inputs_trans)
         session = tflow.Session()
         new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
         new_saver.restore(session, '/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))

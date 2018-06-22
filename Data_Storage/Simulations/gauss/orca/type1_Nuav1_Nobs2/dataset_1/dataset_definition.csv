@@ -1,2 +1,0 @@
-N_iter,obs_tube,solver_algorithm,home_path,uav_models,N_obs,path_length,N_uav,project,communications,n_dataset,n_simulation,px4_use,type
-1,"[5, 3, 2]",orca,rebeca/Documentos/ROS,"['typhoon_h480', 'typhoon_h480', 'typhoon_h480']",2,4,1,gauss,direct,1,1,complete,1

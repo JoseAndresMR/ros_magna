@@ -35,13 +35,13 @@ class Master(object):
                             'type'               :                1                     ,\
                             'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                1                     ,\
+                            'N_uav'              :                2                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                1                    ,\
+                            'N_obs'              :                0                    ,\
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
-                            'solver_algorithm'   :             "neural_network"                   ,\
-                            'N_iter'             :               10                     ,\
+                            'solver_algorithm'   :             "orca"                   ,\
+                            'N_iter'             :               100                   ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }

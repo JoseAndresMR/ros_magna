@@ -24,6 +24,7 @@ class Brain(object):
     def __init__(self,ID):
         self.ID = ID
         self.GettingWorldDefinition()
+        self.timer_start = time.time()
 
         if self.solver_algorithm == "neural_network":
             pass
@@ -31,6 +32,9 @@ class Brain(object):
     def Guidance(self,uavs_list, goal_WP_pose):
         self.uavs_list = uavs_list
         self.goal_WP_pose = goal_WP_pose
+
+        print "loop time", time.time() - self.timer_start
+        self.timer_start = time.time()
 
         if self.solver_algorithm == "simple":
             return self.SimpleGuidance()
@@ -40,6 +44,7 @@ class Brain(object):
 
         elif self.solver_algorithm == "orca":
             return self.ORCA()
+        
     
     def NeuralNetwork(self):
        
@@ -83,13 +88,15 @@ class Brain(object):
     def ORCA(self):
 
         # start = time.time()
-        sim = rvo2.PyRVOSimulator(1/60.,   # 1/60.  float   timeStep           The time step of the simulation. Must be positive. 
-                                  3.0,     # 1.5    float   neighborDist       The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+        sim = rvo2.PyRVOSimulator(0.3,     # 1/60.  float   timeStep           The time step of the simulation. Must be positive. 
+                                  4.0,     # 1.5    float   neighborDist       The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
                                   4,       # 5      size_t  maxNeighbors       The maximal number of other agents the agent takes into account in the navigation
-                                  1.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
+                                  2.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
                                   2.5,     # 2      float   timeHorizonObst    The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to obstacles.
                                   0.5,     # 0.4    float   radius             The radius of the agent. Must be non-negative
                                   2.0)     # 2      float   maxSpeed           The maximum speed of the agent. Must be non-negative. 
+
+        # antiguo para 1-2: 1/60. 3.0 4 1.5 2.5 0.5 2.0
 
         agent_list = []
         for n_uas in np.arange(self.N_uav):

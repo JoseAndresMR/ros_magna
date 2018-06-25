@@ -18,7 +18,7 @@ from geometry_msgs.msg import *
 
 from Brain import *
 from gauss.srv import *
-from UAV import *
+from UAV import UAV
 
 class Ground_Station(object):
 
@@ -116,7 +116,7 @@ class Ground_Station(object):
             if self.new_path_incoming and self.state == "landed":
                 ### Take Off
                 time.sleep(10)
-                time.sleep((self.ID-1) * 1)
+                time.sleep((self.ID-1) * 8)
                 self.TakeOffCommand(5,True)
                 self.state = "inizializating"
                 self.ANSPStateActualization()

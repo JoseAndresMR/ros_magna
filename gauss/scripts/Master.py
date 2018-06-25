@@ -50,7 +50,7 @@ class Master(object):
         
         rospy.set_param('gazebo_gui',False)
 
-        user = "JA"
+        user = "Rebeca"
         if user == "JA":
             home_path = "josmilrom"
         elif user == "Rebeca":

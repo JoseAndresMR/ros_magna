@@ -41,7 +41,7 @@ class Master(object):
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               100                      ,\
+                            'N_iter'             :               0                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
@@ -50,7 +50,7 @@ class Master(object):
         
         rospy.set_param('gazebo_gui',False)
 
-        user = "Rebeca"
+        user = "JA"
         if user == "JA":
             home_path = "josmilrom"
         elif user == "Rebeca":

@@ -73,7 +73,7 @@ class Brain(object):
 
         #for n_uav in range(self.N_uav):
         #    if n_uav+1 != self.ID:
-                inputs.append(self.uavs_list[N_uav].velocity.twist.linear.x)
+                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.x)
                 inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
 
         for n_obs in range(self.N_obs):
@@ -86,9 +86,11 @@ class Brain(object):
         inputs_trans = np.asarray(inputs)
         inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
         
-        new_velocity_twist = self.session.run(self.model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
+        selected_velocity = self.session.run(self.model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
 
-        new_velocity_twist = Twist(Vector3(new_velocity_twist[0][0],new_velocity_twist[0][1],0),Vector3(0,0,0))
+        prefered_velocity = self.SimpleGuidance()
+
+        new_velocity_twist = Twist(Vector3(selected_velocity[0][0],selected_velocity[0][1],prefered_velocity.linear.z),Vector3(0,0,0))
 
         return new_velocity_twist
     

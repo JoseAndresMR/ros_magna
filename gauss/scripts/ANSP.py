@@ -84,7 +84,7 @@ class ANSP(object):
 
         for n_uav in np.arange(self.N_uav):
             self.PathCommand(n_uav+1,uavs_goal_paths_list[n_uav])
-        time.sleep(30)
+        # time.sleep(30)
 
 
     def Gauss(self):

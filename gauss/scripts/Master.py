@@ -35,20 +35,20 @@ class Master(object):
                             'type'               :                1                     ,\
                             'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                2                     ,\
+                            'N_uav'              :                1                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                0                     ,\
+                            'N_obs'              :                2                     ,\
                             'obs_tube'           :             [5,3,2]                ,\
                             'path_length'        :                4                     ,\
                             'solver_algorithm'   :             "orca"                   ,\
-                            'N_iter'             :               0                      ,\
+                            'N_iter'             :               200                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
                         }
 
 # Comando: roslaunch gauss Master_spawner_JA.launch
         
-        rospy.set_param('gazebo_gui',False)
+        rospy.set_param('gazebo_gui',True)
 
         user = "JA"
         if user == "JA":
@@ -103,6 +103,9 @@ class Master(object):
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
                     "/home/{0}/catkin_ws/src/jamrepo/gauss/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
+        # self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
+        #             "/home/{0}/catkin_ws/src/grvc-ual/uav_abstraction_layer/launch/test_server.launch".format(self.world_definition["home_path"])])
+                    
         self.Gazebo_launch.start()
         time.sleep(1)
 

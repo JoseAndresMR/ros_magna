@@ -144,6 +144,7 @@ class Ground_Station(object):
 
             if self.state == "hovering":
                 ### Land 
+                print "landing"
                 self.LandCommand(True)
                 self.state = "landed"
                 self.ANSPStateActualization()
@@ -186,8 +187,8 @@ class Ground_Station(object):
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
             if hover== False:
                 self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal_WP_pose)
-                # if self.state.split(" ")[0] == "to" and self.state.split(" ")[2] != "1":
-                self.SaveData()
+                if self.state.split(" ")[0] == "to" and self.state.split(" ")[2] != "1":
+                    self.SaveData()
 
             elif hover == True:
                 self.new_velocity_twist = self.brain.Hover()

@@ -85,35 +85,34 @@ class Worlds(object):
             self.world_definition["N_obs"] = self.n_obs
 
         elif self.project == "gauss":
+            self.obs_zone_rad = 3 #4
+            self.neutral_zone_width = 1 #2
+            self.uavs_zone_width = 1
+            self.goal_uncertainty = np.pi/4
+
             if self.world_type == 1:
-                self.obs_zone_rad = 3 #4
-                self.neutral_zone_width = 1 #2
-                self.uavs_zone_width = 1
-                self.goal_uncertainty = np.pi/4
+                self.obs_zone_lower_heigth = 5
+                self.obs_zone_upper_heigth = 5
 
-                if self.world_type == 1:
-                    self.obs_zone_lower_heigth = 5
-                    self.obs_zone_upper_heigth = 5
+            elif self.world_type == 2:
+                self.obs_zone_lower_heigth = 1
+                self.obs_zone_upper_heigth = 5
 
-                elif self.world_type == 2:
-                    self.obs_zone_lower_heigth = 1
-                    self.obs_zone_upper_heigth = 5
+            for self.n_obs in np.arange(self.N_obs):
+                obs_mu = 0
+                obs_sigma = self.obs_zone_rad*0.5     #### AJUSTAR SIGMA
+                obs_pose = Pose(Point(np.random.normal(obs_mu,obs_sigma,1),\
+                                        np.random.normal(obs_mu,obs_sigma,1),\
+                                        np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)),\
+                                Quaternion(0,0,0,0))
 
-                for self.n_obs in np.arange(self.N_obs):
-                    obs_mu = 0
-                    obs_sigma = self.obs_zone_rad*0.5     #### AJUSTAR SIGMA
-                    obs_pose = Pose(Point(np.random.normal(obs_mu,obs_sigma,1),\
-                                          np.random.normal(obs_mu,obs_sigma,1),\
-                                          np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)),\
-                                    Quaternion(0,0,0,0))
-
-                    shape = "sphere"
-                    self.obs_shape_list.append(shape)
-                    self.obs_list.append(Obstacle(self.n_obs,\
-                                                        product_xml_dict[shape],\
-                                                        obs_pose,\
-                                                        self.obs_transforms_list))
-                    self.obs_pose_list_simple.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
+                shape = "sphere"
+                self.obs_shape_list.append(shape)
+                self.obs_list.append(Obstacle(self.n_obs,\
+                                                    product_xml_dict[shape],\
+                                                    obs_pose,\
+                                                    self.obs_transforms_list))
+                self.obs_pose_list_simple.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
         
         self.world_definition["obs_shape"] = self.obs_shape_list
         self.world_definition["obs_pose_list_simple"] = self.obs_pose_list_simple

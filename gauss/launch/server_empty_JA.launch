@@ -21,6 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <group if="$(eval mode=='sitl')">
         <!-- Launch Gazebo simulation TODO: world location? -->
         <node pkg="px4_bringup" type="launch_gzworld_JA.py" name="gazebo_world" output="screen"
-        args="-physics=ode -world=$(find px4_bringup)/config/empty_light_JA.world -gui=$(arg gui)"/>
+        args="-physics=ode -world=$(find px4_bringup)/config/empty_light_JA.world"/>
     </group>
 </launch>

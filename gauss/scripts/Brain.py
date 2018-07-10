@@ -13,6 +13,7 @@ import math
 import numpy as np
 import tf
 import rvo2
+import rvo23d
 import time
 from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
@@ -27,7 +28,7 @@ class Brain(object):
     def __init__(self,ID):
         self.ID = ID
         self.GettingWorldDefinition()
-        self.timer_start = time.time()
+        # self.timer_start = time.time()
 
         if self.solver_algorithm == "neural_network":
             self.session = tflow.Session()
@@ -43,8 +44,8 @@ class Brain(object):
         self.uavs_list = uavs_list
         self.goal_WP_pose = goal_WP_pose
 
-        print "loop time", time.time() - self.timer_start
-        self.timer_start = time.time()
+        # print "loop time", time.time() - self.timer_start
+        # self.timer_start = time.time()
 
         if self.solver_algorithm == "simple":
             return self.SimpleGuidance()
@@ -54,6 +55,9 @@ class Brain(object):
 
         elif self.solver_algorithm == "orca":
             return self.ORCA()
+
+        elif self.solver_algorithm == "orca3":
+            return self.ORCA3()
         
     
     def NeuralNetwork(self):
@@ -110,7 +114,6 @@ class Brain(object):
         agent_list = []
         for n_uas in np.arange(self.N_uav):
             agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y)))
-            5
             # tuple pos, neighborDist=None,
             # maxNeighbors=None, timeHorizon=None,
             # timeHorizonObst=None, radius=None, maxSpeed=None,
@@ -145,6 +148,44 @@ class Brain(object):
         # print finish - start
 
         return new_velocity_twist
+
+    def ORCA3(self):
+        timeStep = 0.3          # 1/60.  float   The time step of the simulation. Must be positive. 
+        neighborDist = 4.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+        maxNeighbors = 4        # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
+        timeHorizon = 2.5       # 1.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
+        radius = 0.5            # 2      float   The radius of the agent. Must be non-negative
+        maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative. 
+        velocity = (1, 1, 1)    
+
+        sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, radius, maxSpeed, velocity)
+
+        agent_list = []
+        for n_uas in np.arange(self.N_uav):
+            agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y,self.uavs_list[n_uas].position.pose.position.z),
+            neighborDist, maxNeighbors, timeHorizon, radius, maxSpeed, (0, 0, 0)))
+
+        for n_uas in np.arange(self.N_uav):
+            if n_uas == self.ID-1:
+                prefered_velocity = self.SimpleGuidance()
+                sim.setAgentPrefVelocity(agent_list[n_uas],(prefered_velocity.linear.x,prefered_velocity.linear.y,prefered_velocity.linear.z))
+            else:
+                sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[n_uas].velocity.twist.linear.x,self.uavs_list[n_uas].velocity.twist.linear.y,self.uavs_list[n_uas].velocity.twist.linear.z))
+
+        for n_obs in np.arange(self.N_obs):
+            obs_pose = self.obs_pose_list_simple[n_obs]
+            agent_list.append(sim.addAgent((obs_pose[0],obs_pose[1],obs_pose[2]),
+            neighborDist, maxNeighbors, timeHorizon, radius, 0.0, (0, 0, 0)))
+
+        sim.doStep()
+        selected_velocity = sim.getAgentVelocity(self.ID-1)
+        new_velocity_twist = Twist(Vector3(0,0,prefered_velocity.linear.z),Vector3(0,0,0))
+        new_velocity_twist.linear.x = selected_velocity[0]
+        new_velocity_twist.linear.y = selected_velocity[1]
+        new_velocity_twist.linear.z = selected_velocity[2]
+
+        return new_velocity_twist
+
 
     def SimpleGuidance(self):
         desired_velocity_module = 2

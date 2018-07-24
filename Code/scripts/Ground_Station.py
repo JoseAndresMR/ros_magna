@@ -17,7 +17,7 @@ from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 
 from Brain import *
-from gauss.srv import *
+from pydag.srv import *
 from UAV import UAV
 
 class Ground_Station(object):
@@ -65,9 +65,9 @@ class Ground_Station(object):
     def GroundStationListener(self):
         if self.depth_camera_use == True:
             rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
-        rospy.Service('/gauss/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
-        rospy.Service('/gauss/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
-        rospy.Service('/gauss/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
+        rospy.Service('/pydag/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
+        rospy.Service('/pydag/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
+        rospy.Service('/pydag/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
     def handle_WP_list_command(self,req):
         self.goal_path_poses_list = req.goal_path_poses_list
@@ -345,17 +345,17 @@ class Ground_Station(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        folder_path = "/home/{6}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
+        folder_path = "/home/{6}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
 
         file_path = folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(file_path, sep=',') #,low_memory=False,
 
     # Function to inform ANSP about actual UAV's state
     def ANSPStateActualization(self):
-        rospy.wait_for_service('/gauss/ANSP/state_actualization')
+        rospy.wait_for_service('/pydag/ANSP/state_actualization')
         try:
             # print "path for uav {} command".format(ID)
-            ANSP_state_actualization = rospy.ServiceProxy('/gauss/ANSP/state_actualization', StateActualization)
+            ANSP_state_actualization = rospy.ServiceProxy('/pydag/ANSP/state_actualization', StateActualization)
             ANSP_state_actualization(self.ID,self.state,self.collision)
             return
         except rospy.ServiceException, e:

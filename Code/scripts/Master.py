@@ -24,7 +24,7 @@ from std_srvs.srv import *
 from sensor_msgs.msg import *
 import pandas as pd
 
-from gauss.srv import *
+from pydag.srv import *
 import utils
 
 class Master(object):
@@ -93,7 +93,7 @@ class Master(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-                    "/home/{0}/catkin_ws/src/jamrepo/gauss/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
+                    "/home/{0}/catkin_ws/src/pydag/Code/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
 
         self.Gazebo_launch.start()
         time.sleep(0.5)
@@ -103,7 +103,7 @@ class Master(object):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
         self.ANSP_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
-            "/home/{0}/catkin_ws/src/jamrepo/gauss/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
+            "/home/{0}/catkin_ws/src/pydag/Code/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
         self.ANSP_launch.start()
 
     # Control if defined new dataset already exists
@@ -114,7 +114,7 @@ class Master(object):
         elif self.world_definition["project"] == 'gauss':
             self.N_obs_mixed = self.world_definition['N_obs']
         # Build path from definition
-        self.first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
+        self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         
         # Ask user if conflict
@@ -176,7 +176,7 @@ class Master(object):
 
     #### listener functions ####
     def MasterListener(self):
-        rospy.Service('/gauss/ANSP/simulation_termination', DieCommand, self.handle_simulation_termination)
+        rospy.Service('/pydag/ANSP/simulation_termination', DieCommand, self.handle_simulation_termination)
 
     def handle_simulation_termination(self,data):
         self.simulation_finished = True

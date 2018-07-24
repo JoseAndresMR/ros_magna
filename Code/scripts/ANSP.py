@@ -28,7 +28,7 @@ from tf2_msgs.msg import *
 import utils
 from Ground_Station import *
 from Worlds import *
-from gauss.srv import *
+from pydag.srv import *
 
 class ANSP(object):
     def __init__(self):
@@ -126,9 +126,9 @@ class ANSP(object):
 
     # Function to send paths to each UAV
     def PathCommand(self,ID,goal_path_poses_list):
-        rospy.wait_for_service('/gauss/ANSP_UAV_{}/wp_list_command'.format(ID))
+        rospy.wait_for_service('/pydag/ANSP_UAV_{}/wp_list_command'.format(ID))
         try:
-            ual_path_command = rospy.ServiceProxy('/gauss/ANSP_UAV_{}/wp_list_command'.format(ID), WpPathCommand)
+            ual_path_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/wp_list_command'.format(ID), WpPathCommand)
             ual_path_command(np.array(goal_path_poses_list),False)
             return
         except rospy.ServiceException, e:
@@ -137,9 +137,9 @@ class ANSP(object):
 
     # Function to send instructions to each UAV
     def InstructionCommand(self,ID,Instruction):
-        rospy.wait_for_service('/gauss/ANSP_UAV_{}/instruction_command'.format(ID))
+        rospy.wait_for_service('/pydag/ANSP_UAV_{}/instruction_command'.format(ID))
         try:
-            instruction_command = rospy.ServiceProxy('/gauss/ANSP_UAV_{}/instruction_command'.format(ID), InstructionCommand)
+            instruction_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/instruction_command'.format(ID), InstructionCommand)
             instruction_command(Instruction)
             return
         except rospy.ServiceException, e:
@@ -148,9 +148,9 @@ class ANSP(object):
 
     # Function to send termination instruction to each UAV
     def SimulationTerminationCommand(self):
-        rospy.wait_for_service('/gauss/ANSP/simulation_termination')
+        rospy.wait_for_service('/pydag/ANSP/simulation_termination')
         try:
-            instruction_command = rospy.ServiceProxy('/gauss/ANSP/simulation_termination', DieCommand)
+            instruction_command = rospy.ServiceProxy('/pydag/ANSP/simulation_termination', DieCommand)
             instruction_command(True)
             return
         except rospy.ServiceException, e:
@@ -172,7 +172,7 @@ class ANSP(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{1}/catkin_ws/src/jamrepo/gauss/launch/{0}_spawner_JA.launch".format(self.world_definition['px4_use'],self.home_path)])
+            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA.launch".format(self.world_definition['px4_use'],self.home_path)])
         self.uav_spawner_launch.start()
 
     # Function to get Global ROS parameters
@@ -196,7 +196,7 @@ class ANSP(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         elif self.project == 'gauss':
             N_obs_mixed = self.N_obs
-        first_folder_path = "/home/{4}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.home_path,self.solver_algorithm)
+        first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.home_path,self.solver_algorithm)
 
         if not os.path.exists(first_folder_path):
             os.makedirs(first_folder_path)
@@ -209,7 +209,7 @@ class ANSP(object):
         if not os.path.exists(self.third_folder_path):
             os.makedirs(self.third_folder_path)
 
-        bag_folder_path = "/home/{6}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
+        bag_folder_path = "/home/{6}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
     # Function to update ROS parameters about simulation performance
@@ -236,9 +236,9 @@ class ANSP(object):
     # Function to close UAV Ground Station  process
     def UAVKiller(self):
         for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('/gauss/ANSP_UAV_{}/die_command'.format(n_uav+1))
+            rospy.wait_for_service('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1))
             try:
-                die_command = rospy.ServiceProxy('/gauss/ANSP_UAV_{}/die_command'.format(n_uav+1), DieCommand)
+                die_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1), DieCommand)
                 die_command(True)
                 time.sleep(0.1)
             except rospy.ServiceException, e:
@@ -262,7 +262,7 @@ class ANSP(object):
 
     #### listener functions ####
     def ANSPListener(self):
-        rospy.Service('/gauss/ANSP/state_actualization', StateActualization, self.handle_uav_status)
+        rospy.Service('/pydag/ANSP/state_actualization', StateActualization, self.handle_uav_status)
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 

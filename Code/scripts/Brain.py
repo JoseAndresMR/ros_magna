@@ -33,9 +33,9 @@ class Brain(object):
 
         if self.solver_algorithm == "neural_network":
             self.session = tflow.Session()
-            new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
-            new_saver.restore(self.session, tflow.train.latest_checkpoint('/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)))
-            #'/home/{0}/catkin_ws/src/jamrepo/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
+            new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
+            new_saver.restore(self.session, tflow.train.latest_checkpoint('/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)))
+            #'/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
             #model_multilayer = tflow.get_collection('multilayer_model')[0]
             self.model_multilayer = tflow.get_default_graph().get_operation_by_name('multilayer_model').outputs[0]
 

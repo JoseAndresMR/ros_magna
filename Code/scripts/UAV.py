@@ -6,8 +6,8 @@ import rospy, time, tf, tf2_ros
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
-from gauss.srv import *
-from gauss.msg import *
+from pydag.srv import *
+from pydag.msg import *
 from ADSB import ADSB
 
 

@@ -24,7 +24,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         - udp: for udp connection to px4
     -->
     <!-- Launch robot id=1 -->
-    <include file="$(find gauss)/launch/spawn_robot_JA.launch">
+    <include file="$(find pydag)/launch/spawn_robot_JA.launch">
         <arg name="id" value="1"/>
         <arg name="material" value="Orange"/>
         <arg name="mode" value="$(arg mode)"/>
@@ -33,7 +33,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
     <group if="$(arg multi_2)">
         <!-- Launch robot id=2 -->
-        <include file="$(find gauss)/launch/spawn_robot_JA.launch">
+        <include file="$(find pydag)/launch/spawn_robot_JA.launch">
             <arg name="id" value="2"/>
             <arg name="material" value="Indigo"/>
             <arg name="mode" value="sitl"/>
@@ -43,14 +43,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
     <group if="$(arg multi_3)">
         <!-- Launch robot id=2 -->
-        <include file="$(find gauss)/launch/spawn_robot_JA.launch">
+        <include file="$(find pydag)/launch/spawn_robot_JA.launch">
             <arg name="id" value="2"/>
             <arg name="material" value="Indigo"/>
             <arg name="mode" value="sitl"/>
             <arg name="ns_prefix" value="$(arg ns_prefix)"/>
         </include>
         <!-- Launch robot id=3 -->
-        <include file="$(find gauss)/launch/spawn_robot_JA.launch">
+        <include file="$(find pydag)/launch/spawn_robot_JA.launch">
             <arg name="id" value="3"/>
             <arg name="material" value="ZincYellow"/>
             <arg name="mode" value="sitl"/>
@@ -66,7 +66,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <param name="pose_frame_id" value="$(arg pose_frame_id)"/>
         <param name="ual_server" value="$(arg ual_server)"/>
     </node>
-    <node pkg="gauss" type="Ground_Station.py" name="ground_station_1" output="screen"
+    <node pkg="pydag" type="Ground_Station.py" name="ground_station_1" output="screen"
         args="-ID=1"/>
 
     <group if="$(arg multi_2)">
@@ -77,7 +77,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             <param name="pose_frame_id" value="$(arg pose_frame_id)"/>
             <param name="ual_server" value="$(arg ual_server)"/>
         </node>
-        <node pkg="gauss" type="Ground_Station.py" name="ground_station_2" output="screen"
+        <node pkg="pydag" type="Ground_Station.py" name="ground_station_2" output="screen"
             args="-ID=2"/>
     </group>
     
@@ -89,7 +89,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             <param name="pose_frame_id" value="$(arg pose_frame_id)"/>
             <param name="ual_server" value="$(arg ual_server)"/>
         </node>
-        <node pkg="gauss" type="Ground_Station.py" name="ground_station_2" output="screen"
+        <node pkg="pydag" type="Ground_Station.py" name="ground_station_2" output="screen"
             args="-ID=2"/>
 
         <!-- Launch UAL server for uav id=3 -->
@@ -99,7 +99,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             <param name="pose_frame_id" value="$(arg pose_frame_id)"/>
             <param name="ual_server" value="$(arg ual_server)"/>
         </node>
-        <node pkg="gauss" type="Ground_Station.py" name="ground_station_3" output="screen"
+        <node pkg="pydag" type="Ground_Station.py" name="ground_station_3" output="screen"
             args="-ID=3"/>
     </group>
 

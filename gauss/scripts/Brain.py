@@ -26,6 +26,7 @@ from tensorflow.python.tools import inspect_checkpoint as chkp
 
 class Brain(object):
     def __init__(self,ID):
+        # Local parameters inizialization
         self.ID = ID
         self.GettingWorldDefinition()
         # self.timer_start = time.time()
@@ -40,6 +41,7 @@ class Brain(object):
 
             pass
 
+    # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,uavs_list, goal_WP_pose):
         self.uavs_list = uavs_list
         self.goal_WP_pose = goal_WP_pose
@@ -48,7 +50,7 @@ class Brain(object):
         # self.timer_start = time.time()
 
         if self.solver_algorithm == "simple":
-            return self.SimpleGuidance()
+            return self.SimpleLinearGuidance()
 
         elif self.solver_algorithm == "neural_network":
             return self.NeuralNetwork()
@@ -59,10 +61,8 @@ class Brain(object):
         elif self.solver_algorithm == "orca3":
             return self.ORCA3()
         
-    
+    # Function to set new velocity using a Neural Network
     def NeuralNetwork(self):
-       
-
         main_uav_pos = self.uavs_list[self.ID-1].position.pose.position
         main_uav_vel = self.uavs_list[self.ID-1].velocity.twist.linear
         inputs = []
@@ -81,8 +81,8 @@ class Brain(object):
                 inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
 
         for n_obs in range(self.N_obs):
-            inputs.append(self.obs_pose_list_simple[n_obs][0]-main_uav_pos.x)
-            inputs.append(self.obs_pose_list_simple[n_obs][1]-main_uav_pos.y)
+            inputs.append(self.obs_pose_list[n_obs][0]-main_uav_pos.x)
+            inputs.append(self.obs_pose_list[n_obs][1]-main_uav_pos.y)
 
         inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
         inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
@@ -92,12 +92,13 @@ class Brain(object):
         
         selected_velocity = self.session.run(self.model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
 
-        prefered_velocity = self.SimpleGuidance()
+        prefered_velocity = self.SimpleLinearGuidance()
 
         new_velocity_twist = Twist(Vector3(selected_velocity[0][0],selected_velocity[0][1],prefered_velocity.linear.z),Vector3(0,0,0))
 
         return new_velocity_twist
     
+    # Function to set new velocity using ORCA on 2D
     def ORCA(self):
 
         # start = time.time()
@@ -123,7 +124,7 @@ class Brain(object):
         for n_obs in np.arange(self.N_obs):
             obs_reduced_list = []
             obs_raduis = 1
-            obs_pose = self.obs_pose_list_simple[n_obs]
+            obs_pose = self.obs_pose_list[n_obs]
             circle_division = 16
             for n in np.arange(circle_division):
                 obs_reduced_list.append((obs_pose[0]+obs_raduis*np.cos(2*np.pi*n/circle_division),obs_pose[1]+obs_raduis*np.sin(2*np.pi*n/circle_division)))
@@ -133,7 +134,7 @@ class Brain(object):
 
         for n_uas in np.arange(self.N_uav):
             if n_uas == self.ID-1:
-                prefered_velocity = self.SimpleGuidance()
+                prefered_velocity = self.SimpleLinearGuidance()
                 sim.setAgentPrefVelocity(agent_list[n_uas],(prefered_velocity.linear.x,prefered_velocity.linear.y))
             else:
                 sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[n_uas].velocity.twist.linear.x,self.uavs_list[n_uas].velocity.twist.linear.y))
@@ -149,6 +150,7 @@ class Brain(object):
 
         return new_velocity_twist
 
+    # Function to set velocity using ORCA on 3D
     def ORCA3(self):
         timeStep = 0.3          # 1/60.  float   The time step of the simulation. Must be positive. 
         neighborDist = 4.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
@@ -167,13 +169,13 @@ class Brain(object):
 
         for n_uas in np.arange(self.N_uav):
             if n_uas == self.ID-1:
-                prefered_velocity = self.SimpleGuidance()
+                prefered_velocity = self.SimpleLinearGuidance()
                 sim.setAgentPrefVelocity(agent_list[n_uas],(prefered_velocity.linear.x,prefered_velocity.linear.y,prefered_velocity.linear.z))
             else:
                 sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[n_uas].velocity.twist.linear.x,self.uavs_list[n_uas].velocity.twist.linear.y,self.uavs_list[n_uas].velocity.twist.linear.z))
 
         for n_obs in np.arange(self.N_obs):
-            obs_pose = self.obs_pose_list_simple[n_obs]
+            obs_pose = self.obs_pose_list[n_obs]
             agent_list.append(sim.addAgent((obs_pose[0],obs_pose[1],obs_pose[2]),
             neighborDist, maxNeighbors, timeHorizon, radius, 0.0, (0, 0, 0)))
 
@@ -186,7 +188,7 @@ class Brain(object):
 
         return new_velocity_twist
 
-
+    # Function to set velocity directly to goal
     def SimpleGuidance(self):
         desired_velocity_module = 2
         desired_velocity_module_at_goal = 0
@@ -217,8 +219,7 @@ class Brain(object):
         new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
                                    Vector3(0,\
                                    0,\
-                                #    relative_WP_pose_degrees.orientation.z-yaw))
-                                   0))
+                                   relative_WP_pose_degrees.orientation.z-yaw))
 
         # new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,1.5)
         # new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,1.5)
@@ -226,18 +227,33 @@ class Brain(object):
 
         return new_velocity_twist
 
+    def SimpleLinearGuidance(self):
+        new_velocity_twist = self.SimpleGuidance()
+        new_velocity_twist.angular.z = 0
+
+        return new_velocity_twist
+
+    def SimpleOrientationGuidance(self):
+        new_velocity_twist = self.SimpleGuidance()
+        new_velocity_twist.linear = Vector3(0,0,0)
+
+        return new_velocity_twist
+
+    # Function to set hovering velocity equal to zeros
     def Hover(self):
         new_velocity_twist = Twist(Vector3(0,0,0),Vector3(0,0,0))
 
         return new_velocity_twist
 
+    # Function to saturate a value
     def UpperLowerThresholds(self,value,threshold):
         if value > threshold:
             value = threshold
         elif value < -threshold:
             value = -threshold
         return value
-    
+
+    # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.project = self.world_definition['project']
@@ -247,5 +263,5 @@ class Brain(object):
         self.N_obs = self.world_definition['N_obs']
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
+        self.obs_pose_list = self.world_definition['obs_pose_list']
         self.home_path = self.world_definition['home_path']

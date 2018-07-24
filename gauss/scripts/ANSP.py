@@ -32,8 +32,8 @@ from gauss.srv import *
 
 class ANSP(object):
     def __init__(self):
+        # Global parameters inizialization
         self.GettingWorldDefinition()
-
         self.simulation_succeed = True
 
         self.states_list = []
@@ -44,16 +44,18 @@ class ANSP(object):
         for i in np.arange(self.N_uav):
             self.collisioned_list.append(False)
 
+        # ROS items inizialization
         rospy.init_node('ansp', anonymous=True)
-        
         self.ANSPListener()
 
+        # Start mission depending project
         if self.project == "dcdaa":
             self.Dcdaa()
 
         if self.project == "gauss":
             self.Gauss()
 
+        # Wait until mission is complete and close processess
         killing = False
         while killing == False:
             counter = 0
@@ -70,40 +72,43 @@ class ANSP(object):
 
     #### Commander functions ####
     def Dcdaa(self):
+        # Local parameters inizialization
         self.CreatingSimulationDataStorage()
         self.world = Worlds(1)
         self.GettingWorldDefinition()
         uavs_goal_paths_list = []
         for n_uav in np.arange(self.N_uav):
+            # UAV's mission parameters inizialization
             uav_goal_path = self.world.PathGenerator()
             uavs_goal_paths_list.append(uav_goal_path)
             first_pose = uav_goal_path[0]
             self.SetUavSpawnFeatures(n_uav+1,self.uav_models[n_uav],[first_pose.position.x,first_pose.position.y,0])       
  
+        # UAV spawn and path command
         self.UAVSpawner()
-
         for n_uav in np.arange(self.N_uav):
             self.PathCommand(n_uav+1,uavs_goal_paths_list[n_uav])
-        # time.sleep(30)
-
 
     def Gauss(self):
+        # Local parameters inizialization
         self.CreatingSimulationDataStorage()
         self.world = Worlds(1)
         self.GettingWorldDefinition()
         uavs_goal_paths_list = []
         for n_uav in np.arange(self.N_uav):
+            # UAV's mission parameters inizialization
             uav_goal_path = self.world.PathGenerator()
             uavs_goal_paths_list.append(uav_goal_path)
             first_pose = uav_goal_path[0]
             self.SetUavSpawnFeatures(n_uav+1,self.uav_models[n_uav],[first_pose.position.x,first_pose.position.y,0])       
 
+        # UAV spawn and path command
         self.UAVSpawner()
-
         for n_uav in np.arange(self.N_uav):
             self.PathCommand(n_uav+1,uavs_goal_paths_list[n_uav])
 
 
+        # Syncronization control of every UAV
         for i in np.arange(self.path_length):
             all_in_place = False
             while all_in_place == False:
@@ -119,6 +124,7 @@ class ANSP(object):
                     counter = 0
                 time.sleep(0.3)
 
+    # Function to send paths to each UAV
     def PathCommand(self,ID,goal_path_poses_list):
         rospy.wait_for_service('/gauss/ANSP_UAV_{}/wp_list_command'.format(ID))
         try:
@@ -129,6 +135,7 @@ class ANSP(object):
             print "Service call failed: %s"%e
             print "error in wp_list_command"
 
+    # Function to send instructions to each UAV
     def InstructionCommand(self,ID,Instruction):
         rospy.wait_for_service('/gauss/ANSP_UAV_{}/instruction_command'.format(ID))
         try:
@@ -139,6 +146,7 @@ class ANSP(object):
             print "Service call failed: %s"%e
             print "error in instruction_command"
 
+    # Function to send termination instruction to each UAV
     def SimulationTerminationCommand(self):
         rospy.wait_for_service('/gauss/ANSP/simulation_termination')
         try:
@@ -149,15 +157,17 @@ class ANSP(object):
             print "Service call failed: %s"%e
             print "error in simulation_termination"
 
+    # Function to set UAV's ROSparameters
     def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
         uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))
         uav_frame['translation'] = position
         if model == "typhoon_h480":
             yaw = yaw + np.pi
-        uav_frame['gz_initial_yaw'] =  yaw # radianes
+        uav_frame['gz_initial_yaw'] =  yaw # radians
         uav_frame['model'] = model
         rospy.set_param('uav_{}_home'.format(ID), uav_frame)
 
+    # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
     def UAVSpawner(self):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
@@ -165,15 +175,7 @@ class ANSP(object):
             "/home/{1}/catkin_ws/src/jamrepo/gauss/launch/{0}_spawner_JA.launch".format(self.world_definition['px4_use'],self.home_path)])
         self.uav_spawner_launch.start()
 
-        # time.sleep(0.2)
-        # temp_dir = utils.temp_dir(None)
-        # subprocess.call("mkdir -p " + temp_dir, shell=True)
-        # self.uavspawner_out = open(temp_dir + '/uavspawner.out', 'w')
-        # self.uavspawner_err = open(temp_dir + '/uavspawner.err', 'w')
-
-        # args = "roslaunch gauss {0}_spawner_JA.launch multi_{1}:='true'".format(self.world_definition['px4_use'],self.world_definition['N_uav'])
-        # self.uavspawner_subprocess = subprocess.Popen(args, stdout=screen, stderr=screen, cwd=temp_dir, shell=True, preexec_fn=os.setsid)
-
+    # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.project = self.world_definition['project']
@@ -188,6 +190,7 @@ class ANSP(object):
         self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
 
+    # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
         if self.project == 'dcdaa':
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
@@ -209,6 +212,7 @@ class ANSP(object):
         bag_folder_path = "/home/{6}/catkin_ws/src/jamrepo/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag".format(self.project,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
+    # Function to update ROS parameters about simulation performance
     def SavingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.world_definition['collisioned_list'] = self.collisioned_list
@@ -220,6 +224,7 @@ class ANSP(object):
             w.writeheader()
             w.writerow(self.world_definition)
 
+    # Function to close active child processess
     def Die(self):
         self.SavingWorldDefinition()
         self.UAVKiller()
@@ -228,14 +233,7 @@ class ANSP(object):
         self.SimulationTerminationCommand()
         rospy.signal_shutdown("end of experiment")
 
-    def HandleException(self):
-        # self.uav_spawner_launch.shutdown()
-        time.sleep(1)
-        if self.uavspawner_subprocess.poll() is None:
-            os.killpg(os.getpgid(self.uavspawner_subprocess.pid), signal.SIGTERM)
-        self.uavspawner_out.close()
-        self.uavspawner_err.close()
-
+    # Function to close UAV Ground Station  process
     def UAVKiller(self):
         for n_uav in np.arange(self.N_uav):
             rospy.wait_for_service('/gauss/ANSP_UAV_{}/die_command'.format(n_uav+1))
@@ -248,6 +246,7 @@ class ANSP(object):
                 print "error in die_command"
         return
 
+    # Function to close GAZEBO process
     def GazeboModelsKiller(self):
         for n_uav in np.arange(self.N_uav):
             rospy.wait_for_service('gazebo/delete_model')
@@ -267,18 +266,18 @@ class ANSP(object):
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 
+    # Function to update and local parameters of UAVs status
     def handle_uav_status(self,data):
         self.states_list[data.id-1] = data.state
         if data.collision == True:
             if self.collisioned_list[data.id-1] == False:
                 self.collisioned_list[data.id-1] == True
-            # self.Die()
             self.simulation_succeed = False
             rospy.loginfo_throttle(0,"Simulation not succeded, UAV {} collisioned".format(data.id))
         print self.states_list
-        rospy.loginfo_throttle(0,self.states_list)
         return True
 
+    # Functions to sava TF information inside ROS bag
     def tf_static_callback(self,data):
         try:
             self.bag.write('/tf_static', data)
@@ -292,14 +291,7 @@ class ANSP(object):
             print "The bag file does not exist"
         
 def main():
-    # try:
     ANSP()
-    # except KeyboardInterrupt:
-    #     rospy.signal_shutdown("end of experiment")
-    #     # ANSP.HandleException()
-    # except rospy.is_shutdown:
-    #     rospy.signal_shutdown("end of experiment")
-    #     # ANSP.HandleException()
 
 if __name__ == '__main__':
     main()

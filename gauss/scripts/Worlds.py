@@ -47,7 +47,7 @@ class Worlds(object):
         self.n_obs = 0
         self.obs_list = []
         self.obs_shape_list = []
-        self.obs_pose_list_simple = []
+        self.obs_pose_list = []
         self.obs_transforms_list = []
 
 
@@ -79,43 +79,72 @@ class Worlds(object):
                                                                 product_xml_dict[shape],\
                                                                 self.poses_matrix[i][j][k],\
                                                                 self.obs_transforms_list))              
-                            # self.obs_pose_list_simple.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
-                            self.obs_pose_list_simple.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
+                            # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
+                            self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
                             self.n_obs=self.n_obs+1
             self.world_definition["N_obs"] = self.n_obs
 
         elif self.project == "gauss":
-            self.obs_zone_rad = 3 #4
-            self.neutral_zone_width = 1 #2
-            self.uavs_zone_width = 1
-            self.goal_uncertainty = np.pi/4
-
             if self.world_type == 1:
-                self.obs_zone_lower_heigth = 5
-                self.obs_zone_upper_heigth = 5
-
-            elif self.world_type == 2:
+                self.obs_zone_rad = 3 #4
+                self.neutral_zone_width = 1 #2
+                self.uavs_zone_width = 1
+                self.goal_uncertainty = np.pi/4
                 self.obs_zone_lower_heigth = 1
                 self.obs_zone_upper_heigth = 5
 
-            for self.n_obs in np.arange(self.N_obs):
-                obs_mu = 0
-                obs_sigma = self.obs_zone_rad*0.5     #### AJUSTAR SIGMA
-                obs_pose = Pose(Point(np.random.normal(obs_mu,obs_sigma,1),\
-                                        np.random.normal(obs_mu,obs_sigma,1),\
-                                        np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)),\
-                                Quaternion(0,0,0,0))
+                for self.n_obs in np.arange(self.N_obs):
+                    obs_mu = 0
+                    obs_sigma = self.obs_zone_rad*0.5     #### AJUSTAR SIGMA
+                    obs_pose = Pose(Point(np.random.normal(obs_mu,obs_sigma,1),\
+                                            np.random.normal(obs_mu,obs_sigma,1),\
+                                            np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)),\
+                                    Quaternion(0,0,0,0))
 
-                shape = "sphere"
-                self.obs_shape_list.append(shape)
-                self.obs_list.append(Obstacle(self.n_obs,\
-                                                    product_xml_dict[shape],\
-                                                    obs_pose,\
-                                                    self.obs_transforms_list))
-                self.obs_pose_list_simple.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
-        
+                    shape = "sphere"
+                    self.obs_shape_list.append(shape)
+                    self.obs_list.append(Obstacle(self.n_obs,\
+                                                        product_xml_dict[shape],\
+                                                        obs_pose,\
+                                                        self.obs_transforms_list))
+                    self.obs_pose_list.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
+            
+            if self.world_type == 2:
+                self.dbo=[5,1.5,1.5]
+                self.obstacle_density = 0.7
+                self.obstacles_raw_matrix = np.random.rand(2,3,3)
+                self.obstacles_positions = self.obstacles_raw_matrix<=self.obstacle_density
+                self.empty_positions = self.obstacles_raw_matrix>self.obstacle_density
+                self.poses_matrix = self.obstacles_raw_matrix.tolist()
+
+                # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
+                for i in np.arange(self.obstacles_raw_matrix.shape[0]):       ##### O AL MENOS PONER ESTO EN UNA SOLA LINEA
+                    for k in np.arange(self.obstacles_raw_matrix.shape[2]):
+                        for j in np.arange(self.obstacles_raw_matrix.shape[1]):
+                            if self.world_type == 1:
+                                obs_orientation = Quaternion(0,0,0,0)
+                            elif self.world_type == 2:
+                                obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
+                                
+                            self.poses_matrix[i][j][k]=Pose(Point(-10+self.dbo[0]*1.5+i*self.dbo[0],\
+                                                                -(self.dbo[1]*self.obstacles_raw_matrix.shape[1])/2.0+j*self.dbo[1],\
+                                                                1+k*self.dbo[2]),\
+                                                            obs_orientation)
+                            if self.obstacles_positions[i,j,k] == True:
+                                shape = self.randomizeShape()
+                                self.obs_shape_list.append(shape)
+                                self.obs_list.append(Obstacle(self.n_obs,\
+                                                                    product_xml_dict[shape],\
+                                                                    self.poses_matrix[i][j][k],\
+                                                                    self.obs_transforms_list))              
+                                # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
+                                self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
+                                self.n_obs=self.n_obs+1
+                self.world_definition["N_obs"] = self.n_obs
+                    
+
         self.world_definition["obs_shape"] = self.obs_shape_list
-        self.world_definition["obs_pose_list_simple"] = self.obs_pose_list_simple
+        self.world_definition["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('world_definition', self.world_definition)
 
         print "world", self.ID, "created"
@@ -151,26 +180,44 @@ class Worlds(object):
             self.path_poses_list.append(goal_pose)
 
         elif self.project == "gauss":
-            uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                        self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
-                                        1)
-            uav_ang = np.random.uniform(0,2*np.pi,1)
-            uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-            self.path_poses_list=[Pose(Point(np.asscalar(uav_rad*np.cos(uav_ang)),\
-                                             np.asscalar(uav_rad*np.sin(uav_ang)),\
-                                             np.asscalar(uav_heigth)),\
-                                    Quaternion(0,0,0,0))]
-
-            for n_WP in np.arange(self.path_length-1):
+            if self.world_type == 1:
                 uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                        self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
-                                        1)
-                uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
+                                            self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
+                                            1)
+                uav_ang = np.random.uniform(0,2*np.pi,1)
                 uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-                self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
-                                                        uav_rad*np.sin(uav_ang),\
-                                                        uav_heigth),\
-                                                    Quaternion(0,0,0,0)))
+                self.path_poses_list=[Pose(Point(np.asscalar(uav_rad*np.cos(uav_ang)),\
+                                                np.asscalar(uav_rad*np.sin(uav_ang)),\
+                                                np.asscalar(uav_heigth)),\
+                                        Quaternion(0,0,0,0))]
+
+                for n_WP in np.arange(self.path_length-1):
+                    uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
+                                            self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
+                                            1)
+                    uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
+                    uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
+                    self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
+                                                            uav_rad*np.sin(uav_ang),\
+                                                            uav_heigth),\
+                                                        Quaternion(0,0,0,0)))
+
+            if self.world_type == 2:
+                self.path_poses_list=[Pose(Point(-10+self.dbo[0]*0.5,\
+                                                np.asscalar((np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1]),\
+                                                np.asscalar(1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2])),\
+                                        Quaternion(0,0,0,0))]
+                for n_WP in np.arange(self.path_length-1):
+                    if n_WP % 2 == 1:
+                        Point_x = -10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0]
+                    elif n_WP % 2 == 0:
+                        Point_x = -10+self.dbo[0]*0.5
+
+                    new_pose = Pose(Point(Point_x,\
+                                      (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
+                                      1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),\
+                                Quaternion(0,0,0,0))
+                    self.path_poses_list.append(new_pose)
 
         return self.path_poses_list
 

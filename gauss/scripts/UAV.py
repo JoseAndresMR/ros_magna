@@ -13,19 +13,19 @@ from ADSB import ADSB
 
 class UAV(object):
     def __init__(self,ID,main_uav,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
+        # Local parameters inizialization
         self.ID = ID
         self.main_uav = main_uav
 
         self.ICAO = ICAO
         self.with_ref = with_ref
         self.pos_ref = pos_ref
-
         self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
         self.GettingWorldDefinition()
-
         self.br = tf.TransformBroadcaster()
 
+        # Start listening
         self.listener()
 
     def listener(self):
@@ -38,6 +38,7 @@ class UAV(object):
         if self.project == 'dcdaa' and self.main_uav == self.ID:
             rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
 
+    # Callbacks
     def uav_pose_callback(self,data):
         self.position = data
         if self.main_uav != self.ID and self.communications == "ADSB":
@@ -56,7 +57,8 @@ class UAV(object):
         self.image_depth = data
         time.sleep(0.1)
         return
-            
+
+    # Function for distributing ADS-B msg depending on its TC
     def incoming_ADSB_msg_callback(self,msg):
         TC, extracted_info = self.ADSB.incoming_msg(msg.msg)
         if TC == "callsign":
@@ -77,7 +79,7 @@ class UAV(object):
             self.sil = extracted_info[0]
             self.nac_p = extracted_info[1]
         
-
+    # Function to broadcast transforms to visualize it on Rviz
     def PoseBroadcast(self):
         self.br.sendTransform((self.position.pose.position.x,self.position.pose.position.y,self.position.pose.position.z),
                         (self.position.pose.orientation.x,self.position.pose.orientation.y,self.position.pose.orientation.z,self.position.pose.orientation.w),
@@ -85,7 +87,8 @@ class UAV(object):
                         "uav_{}_by_{}".format(self.ID,self.main_uav),
                         "map")
         time.sleep(0.1)
-            
+
+    # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.project = self.world_definition['project']
@@ -97,7 +100,6 @@ class UAV(object):
         self.uav_models = self.world_definition['uav_models']
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list_simple = self.world_definition['obs_pose_list_simple']
         self.communications = self.world_definition['communications']
         self.home_path = self.world_definition['home_path']
 

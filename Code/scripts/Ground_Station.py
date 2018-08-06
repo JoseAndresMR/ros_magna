@@ -19,6 +19,7 @@ from geometry_msgs.msg import *
 from Brain import *
 from pydag.srv import *
 from UAV import UAV
+from Ground_Station_SM import Ground_Station_SM
 
 class Ground_Station(object):
 
@@ -58,6 +59,11 @@ class Ground_Station(object):
 
         # Start obbeying
         self.GroundStationCommander()
+        # gs_sm = Ground_Station_SM(self)
+        # outcome = self.gs_sm.gs_sm.execute()
+        # gs_sm.asw.run_server()
+
+        rospy.spin()
 
         return
 
@@ -86,7 +92,8 @@ class Ground_Station(object):
         return True
 
     def handle_die(self,req):
-        self.die_command = True               
+        # self.die_command = True  
+        rospy.signal_shutdown("end of experiment")
         return True
 
     #### Publisher functions #####
@@ -149,9 +156,9 @@ class Ground_Station(object):
                 self.state = "landed"
                 self.ANSPStateActualization()
                 
-            if self.die_command == True:
-                rospy.signal_shutdown("end of experiment")
-                return
+            # if self.die_command == True:
+            #     rospy.signal_shutdown("end of experiment")
+            #     return
 
             time.sleep(0.5)
 
@@ -271,8 +278,8 @@ class Ground_Station(object):
             self.ANSPStateActualization()
             self.SetVelocityCommand(True)
 
-            if self.die_command == True:
-                rospy.signal_shutdown("end of experiment")
+            # if self.die_command == True:
+            #     rospy.signal_shutdown("end of experiment")
 
             if self.new_path_incoming == True:
                 break
@@ -280,10 +287,30 @@ class Ground_Station(object):
             if self.project == "gauss":
                 while self.ANSP_instruction != "GoOn":
                     self.SetVelocityCommand(False)
-                    if self.die_command == True:
-                        rospy.signal_shutdown("end of experiment")
+                    # if self.die_command == True:
+                    #     rospy.signal_shutdown("end of experiment")
                     time.sleep(0.3)
                     self.Evaluator()
+
+        # Function to control states of UAV going to WP or waiting
+    def PathFollowerLegacy(self):
+        for i in np.arange(len(self.goal_path_poses_list)):
+            self.goal_WP_pose = self.goal_path_poses_list[i]
+            self.GoalStaticBroadcaster()
+            self.state = "to WP {}".format(i+1)
+            self.ANSPStateActualization()
+            while self.DistanceToGoal() > 1:
+                self.SetVelocityCommand(False)
+                time.sleep(0.2)
+                self.Evaluator()
+                if self.new_path_incoming == True:
+                    break
+            self.goal_WP_pose = self.goal_path_poses_list[i]
+            self.state = "in WP {}".format(i+1)
+            self.ANSPStateActualization()
+            time.sleep(0.3)
+            self.Evaluator()
+
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -331,7 +358,7 @@ class Ground_Station(object):
         #     single_frame["actual_UAV_{}_pose".format(n_uav+1)] = self.uavs_list[n_uav].position.pose   #### Cambiar cuando termine Rebeca para guardar todos los UAV objects
         #     single_frame["actual_UAV_{}_vel".format(n_uav+1)] = self.uavs_list[n_uav].velocity.twist
 
-        single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.goal_WP_pose], "uavs_list": self.uavs_list}
+        single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.goal_WP_pose], "uavs_list": [self.uavs_list]}
         
         if self.global_data_frame.empty:
             self.global_data_frame = pd.DataFrame(single_frame)

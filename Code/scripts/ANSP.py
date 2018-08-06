@@ -29,6 +29,7 @@ import utils
 from Ground_Station import *
 from Worlds import *
 from pydag.srv import *
+from ANSP_SM import ANSP_SM
 
 class ANSP(object):
     def __init__(self):
@@ -54,6 +55,10 @@ class ANSP(object):
 
         if self.project == "gauss":
             self.Gauss()
+            # self.ansp_sm = ANSP_SM(self)
+            # outcome = self.ansp_sm.ansp_sm.execute()
+
+        print "fuera ansp sm"
 
         # Wait until mission is complete and close processess
         killing = False
@@ -68,7 +73,6 @@ class ANSP(object):
             time.sleep(0.5)
 
         self.bag.close()
-
 
     #### Commander functions ####
     def Dcdaa(self):
@@ -85,7 +89,7 @@ class ANSP(object):
             self.SetUavSpawnFeatures(n_uav+1,self.uav_models[n_uav],[first_pose.position.x,first_pose.position.y,0])       
  
         # UAV spawn and path command
-        self.UAVSpawner()
+            self.UAVSpawner()
         for n_uav in np.arange(self.N_uav):
             self.PathCommand(n_uav+1,uavs_goal_paths_list[n_uav])
 
@@ -103,10 +107,10 @@ class ANSP(object):
             self.SetUavSpawnFeatures(n_uav+1,self.uav_models[n_uav],[first_pose.position.x,first_pose.position.y,0])       
 
         # UAV spawn and path command
-        self.UAVSpawner()
+            self.UAVSpawner()
+
         for n_uav in np.arange(self.N_uav):
             self.PathCommand(n_uav+1,uavs_goal_paths_list[n_uav])
-
 
         # Syncronization control of every UAV
         for i in np.arange(self.path_length):
@@ -168,12 +172,24 @@ class ANSP(object):
         rospy.set_param('uav_{}_home'.format(ID), uav_frame)
 
     # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
-    def UAVSpawner(self):
+    def UAVSpawner(self):  
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
             "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA.launch".format(self.world_definition['px4_use'],self.home_path)])
         self.uav_spawner_launch.start()
+
+        time.sleep(10000)
+
+    def UAVSpawner1(self,ID):  
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
+            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA_{2}.launch".format(self.world_definition['px4_use'],self.home_path,ID+1)])
+        self.uav_spawner_launch.start()
+
+        time.sleep(10000)
+
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -226,12 +242,19 @@ class ANSP(object):
 
     # Function to close active child processess
     def Die(self):
+        print "flag 1"
         self.SavingWorldDefinition()
+        print "flag 2"
         self.UAVKiller()
+        print "flag 3"
         self.world.eraseAllObstacles()
+        print "flag 4"
         self.GazeboModelsKiller()
+        print "flag 5"
         self.SimulationTerminationCommand()
+        print "flag 6"
         rospy.signal_shutdown("end of experiment")
+        print "flag 7"
 
     # Function to close UAV Ground Station  process
     def UAVKiller(self):

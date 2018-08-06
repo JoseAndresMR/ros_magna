@@ -36,14 +36,14 @@ class Master(object):
                             'n_simulation'       :                1                     ,\
                             'N_uav'              :                1                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                2                     ,\
+                            'N_obs'              :                0                     ,\
                             'obs_tube'           :             [5,3,2]                ,\
-                            'path_length'        :                4                     ,\
+                            'path_length'        :                2                     ,\
                             'solver_algorithm'   :             "orca3"                   ,\
                             'N_iter'             :               200                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
-                            'depth_camera_use'   :              True                 ,\
+                            'depth_camera_use'   :              False                 ,\
                         }
         
         # Gazebo visulization parameter definition
@@ -117,30 +117,32 @@ class Master(object):
         self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         
-        # Ask user if conflict
-        if os.path.exists(self.second_folder_path):
-            selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
-            # Quit option
-            if selected == "q":
-                return "q"
+        # # Ask user if conflict
+        # if os.path.exists(self.second_folder_path):
+        #     selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
+        #     # Quit option
+        #     if selected == "q":
+        #         return "q"
 
-            # Add option, from existing number of dataset
-            elif selected == "a":
-                n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
-                if self.world_definition["N_iter"] != 0:
-                    shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
-                    self.n_simulation_bias = n_prior_simulations -1
-                else:
-                    self.n_simulation_bias = n_prior_simulations
+        #     # Add option, from existing number of dataset
+        #     elif selected == "a":
+        #         n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
+        #         if self.world_definition["N_iter"] != 0:
+        #             shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
+        #             self.n_simulation_bias = n_prior_simulations -1
+        #         else:
+        #             self.n_simulation_bias = n_prior_simulations
 
-                return "a"
+        #         return "a"
 
-            # Reset dataset option
-            elif (selected != "q") and (selected != "a"):
-                shutil.rmtree(self.second_folder_path)
-                return "r"
-        else:
-            return "r"
+        #     # Reset dataset option
+        #     elif (selected != "q") and (selected != "a"):
+        #         shutil.rmtree(self.second_folder_path)
+        #         return "r"
+        # else:
+        #     return "r"
+
+        return "g"
 
     # Save parameters that define the whole dataset
     def SavingDatasetDefinition(self):

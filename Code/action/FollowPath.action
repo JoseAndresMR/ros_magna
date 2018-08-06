@@ -1,0 +1,8 @@
+# Define the goal
+geometry_msgs/Pose[] goal_path_poses_list
+--- 
+# Define the result
+bool success
+---
+# Define a feedback message
+float32 percent_complete

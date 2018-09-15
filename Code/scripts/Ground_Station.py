@@ -37,6 +37,10 @@ class Ground_Station(object):
         self.uav_frame_list = []
         for n_uav in np.arange(self.N_uav):
             self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
+
+        time.sleep(10 * self.N_uav)
+        time.sleep((self.ID-1) * 8)
+
             
         ICAO_IDs = {1: "40621D", 2:"40621D", 3: "40621D"}
 
@@ -54,13 +58,14 @@ class Ground_Station(object):
         self.die_command = False
 
         # Start listening
+        
         self.GroundStationListener()
         print "ground station",ID,"ready and listening"
 
         # Start obbeying
-        self.GroundStationCommander()
-        # gs_sm = Ground_Station_SM(self)
-        # outcome = self.gs_sm.gs_sm.execute()
+        # self.GroundStationCommander()
+        gs_sm = Ground_Station_SM(self)
+        outcome = gs_sm.gs_sm.execute()
         # gs_sm.asw.run_server()
 
         rospy.spin()
@@ -69,10 +74,10 @@ class Ground_Station(object):
 
     #### Listener functions ####
     def GroundStationListener(self):
-        if self.depth_camera_use == True:
-            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
-        rospy.Service('/pydag/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
-        rospy.Service('/pydag/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
+        # if self.depth_camera_use == True:
+        #     rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+        # rospy.Service('/pydag/ANSP_UAV_{}/wp_list_command'.format(self.ID), WpPathCommand, self.handle_WP_list_command)
+        # rospy.Service('/pydag/ANSP_UAV_{}/instruction_command'.format(self.ID), InstructionCommand, self.handle_ANSP_instruction)
         rospy.Service('/pydag/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
     def handle_WP_list_command(self,req):
@@ -120,6 +125,7 @@ class Ground_Station(object):
     def GroundStationCommander(self):
         while self.die_command != True:
             data_saved = True
+
             if self.new_path_incoming and self.state == "landed":
                 ### Take Off
                 time.sleep(10)
@@ -132,7 +138,15 @@ class Ground_Station(object):
             if self.new_path_incoming and (self.state == "inizializating" or self.state == "following_path"): ##### cambiar folloing path por in/to WP *
                 ### Path follow
                 self.new_path_incoming = False
+                #### INICIO PRUEBAS PARA UAVFOLLOW
+                # if self.ID == 1:
+                #     self.PathFollowerLegacy()
+                # elif self.ID == 2:
+                #     self.UAVFollower(1)
                 self.PathFollower()
+
+
+                #### Final PRUEBAS PARA UAVFOLLOW
                 if self.new_path_incoming == False:
                     self.state = "stabilizing"
                     self.ANSPStateActualization()
@@ -292,6 +306,21 @@ class Ground_Station(object):
                     time.sleep(0.3)
                     self.Evaluator()
 
+
+    def UAVFollower(self,target_ID):
+        self.goal_WP_pose = self.uavs_list[target_ID-1].position.pose
+        # self.GoalStaticBroadcaster()
+        self.state = "following UAV {}".format(target_ID)
+        self.ANSPStateActualization()
+        while self.new_path_incoming == False:
+            if self.DistanceToGoal() > 3:
+                self.SetVelocityCommand(False)
+                self.Evaluator()
+            else:
+                self.SetVelocityCommand(True)
+
+            time.sleep(0.2)
+
         # Function to control states of UAV going to WP or waiting
     def PathFollowerLegacy(self):
         for i in np.arange(len(self.goal_path_poses_list)):
@@ -305,10 +334,11 @@ class Ground_Station(object):
                 self.Evaluator()
                 if self.new_path_incoming == True:
                     break
+            self.SetVelocityCommand(True)
             self.goal_WP_pose = self.goal_path_poses_list[i]
             self.state = "in WP {}".format(i+1)
             self.ANSPStateActualization()
-            time.sleep(0.3)
+            time.sleep(0.2)
             self.Evaluator()
 
 

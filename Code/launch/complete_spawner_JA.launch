@@ -10,8 +10,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -->
 <launch>
 
-    <arg name="multi_1" default="true"/>
-    <arg name="multi_2" default="false"/>
+    <arg name="multi_1" default="false"/>
+    <arg name="multi_2" default="true"/>
     <arg name="multi_3" default="false"/>
     <arg name="ns_prefix" default="uav_"/>
     <arg name="mode" default="sitl"/>

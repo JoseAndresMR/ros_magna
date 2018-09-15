@@ -1,6 +1,6 @@
 from smach import StateMachine, State, CBState, cb_interface
 import smach_ros
-import time
+import rospy, time
 from smach_ros import ActionServerWrapper
 
 from pydag.msg import *
@@ -9,87 +9,124 @@ class Ground_Station_SM(object):
     def __init__(self,heritage):
         self.heritage = heritage
 
-        # @smach.cb_interface(input_keys=['q'],
-        #                     output_keys=['xyz'],
-        #                     outcomes=['foo'])
-        # def my_cb(ud, x, y, z):
-        #     ud.xyz = ud.q + x + y + z
-        #     return 'foo'
+        self.gs_sm = StateMachine(outcomes=['completed', 'failed'])
 
-        self.follow_path_sm = StateMachine(outcomes=['completed', 'failed'])
-        # self.gs_sm.userdata.heritage = heritage
+        with self.gs_sm:
 
-        self.asw = ActionServerWrapper(
+            StateMachine.add('take_off',
+                            CBState(self.take_off_stcb,
+                                         cb_kwargs={'heritage':heritage}),
+                            {'completed':'action_server_advertiser'})
+
+            self.asw_dicc = {}
+
+            ### FOLLOW PATH STATE MACHINE ###
+            self.follow_path_sm = StateMachine(outcomes=['completed', 'failed'],
+                                         input_keys=['action_goal'])
+
+            self.asw_dicc['follow_path'] = ActionServerWrapper(
                         '/pydag/ANSP_UAV_{}/follow_path_command'.format(heritage.ID),
                         FollowPathAction,
                         self.follow_path_sm,
-                        ['completed'], ['failed'], ['preempted'],)
-                        # goal_key = 'my_awesome_goal',
-                        # result_key = 'egad_its_a_result' )
+                        ['completed'], ['failed'], ['preempted'],
+                        goal_key = 'action_goal',
+                        result_key = 'action_result' )
 
-        with self.follow_path_sm:
+            with self.follow_path_sm:
 
-            StateMachine.add('take_off', CBState(self.take_off_stcb,cb_kwargs={'heritage':heritage}),
-                                    {'completed':'to_wp'})
+                StateMachine.add('follow_path',
+                                 CBState(self.follow_path_stcb,
+                                         input_keys=['action_goal'],
+                                         cb_kwargs={'heritage':heritage}),
+                                 {'completed':'completed'})
 
-            self.to_wp_sm = StateMachine(outcomes=['completed', 'failed'])
+            # StateMachine.add('to_wp', self.follow_path_sm,
+            #                         {'completed':'action_server_advertiser'})
 
-            with self.to_wp_sm:
+            ### FOLLOW UAV STATE MACHINE ###
+            self.follow_uav_sm = StateMachine(outcomes=['completed', 'failed'],
+                                         input_keys=['action_goal'])
 
-                StateMachine.add('going_to_wp', CBState(self.going_to_wp_stcb,cb_kwargs={'heritage':heritage}),
-                                        {'completed':'hovering'})
+            self.asw_dicc['follow_uav'] = ActionServerWrapper(
+                        '/pydag/ANSP_UAV_{}/follow_uav_command'.format(heritage.ID),
+                        FollowUAVAction,
+                        self.follow_uav_sm,
+                        ['completed'], ['failed'], ['preempted'],
+                        goal_key = 'action_goal',
+                        result_key = 'action_result' )
 
-                StateMachine.add('hovering', CBState(self.hovering_stcb,cb_kwargs={'heritage':heritage}),
-                                        {'completed':'completed'})
+            with self.follow_uav_sm:
 
-            StateMachine.add('to_wp', self.to_wp_sm,
-                                    {'completed':'landing'})
+                StateMachine.add('follow_uav',
+                                 CBState(self.follow_uav_stcb,
+                                         input_keys=['action_goal'],
+                                         cb_kwargs={'heritage':heritage}),
+                                 {'completed':'completed'})
 
-            StateMachine.add('landing', CBState(self.landing_stcb,cb_kwargs={'heritage':heritage}),
+            # StateMachine.add('to_wp', self.follow_path_sm,
+            #                         {'completed':'action_server_advertiser'})
+
+
+            ### ACTION SERVER ADVERTISING ###
+            StateMachine.add('action_server_advertiser',
+                            CBState(self.action_server_advertiser_stcb,
+                                         cb_kwargs={'heritage':heritage,'asw_dicc':self.asw_dicc}),
+                            {'completed':'land'})
+
+            StateMachine.add('land', CBState(self.landing_stcb,cb_kwargs={'heritage':heritage}),
                                     {'completed':'completed'})
-
-
-
 
     @cb_interface(outcomes=['completed','failed'])
     def take_off_stcb(ud,heritage):
-        time.sleep(10)
-        time.sleep((heritage.ID-1) * 8)
-        print "flag 1"
         heritage.TakeOffCommand(5,True)
-        print "flag 2"
         heritage.state = "inizializating"
         heritage.ANSPStateActualization()
-
-        clock_start = time.time()
-        clock = clock_start - time.time()
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def going_to_wp_stcb(ud,heritage):
+    def action_server_advertiser_stcb(ud,heritage,asw_dicc):
+        heritage.SetVelocityCommand(True)
+        asw_dicc['follow_path'].run_server()
+        asw_dicc['follow_uav'].run_server()
+        heritage.state = "waiting for action command"
+        heritage.ANSPStateActualization()
+
+        rospy.spin()
+
+        return 'completed'
+
+    @cb_interface(outcomes=['completed','failed'])
+    def follow_path_stcb(ud,heritage):
         heritage.new_path_incoming = False
+        heritage.goal_path_poses_list = ud.action_goal.goal_path_poses_list
         heritage.PathFollowerLegacy()
-        if heritage.new_path_incoming == False:
-            heritage.state = "stabilizing"
-            heritage.ANSPStateActualization()
-        else:
-            pass
+        # if heritage.new_path_incoming == False:
+        #     heritage.state = "stabilizing"
+        #     heritage.ANSPStateActualization()
+        # else:
+        #     pass
         
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def hovering_stcb(ud,heritage):
-        heritage.SetVelocityCommand(True)
-        time.sleep(0.1)
-        heritage.state = "hovering"
+    def follow_uav_stcb(ud,heritage):
+        heritage.new_path_inceoming = False
+        heritage.state = "following UAV {0}".format(ud.action_goal.target_ID)
         heritage.ANSPStateActualization()
-
+        heritage.UAVFollower(ud.action_goal.target_ID)
+        # if heritage.new_path_incoming == False:
+        #     heritage.state = "stabilizing"
+        #     heritage.ANSPStateActualization()
+        # else:
+        #     pass
+        
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
     def landing_stcb(ud,heritage):
         print "landing"
+        heritage.CreatingCSV()
         heritage.LandCommand(True)
         heritage.state = "landed"
         heritage.ANSPStateActualization()

@@ -34,20 +34,23 @@ class Master(object):
                             'type'               :                1                     ,\
                             'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                1                     ,\
+                            'N_uav'              :                2                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
                             'N_obs'              :                0                     ,\
                             'obs_tube'           :             [5,3,2]                ,\
-                            'path_length'        :                2                     ,\
+                            'path_length'        :                6                     ,\
                             'solver_algorithm'   :             "orca3"                   ,\
                             'N_iter'             :               200                      ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
-                            'depth_camera_use'   :              False                 ,\
+                            'depth_camera_use'   :              True                 ,\
                         }
         
         # Gazebo visulization parameter definition
         rospy.set_param('gazebo_gui',True)
+
+        # Kill prior unwanted processess
+        [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node","python","python2"]]
 
         # Project path definition for each user
         user = "JA"
@@ -78,7 +81,7 @@ class Master(object):
                 while (self.simulation_finished == False) and not rospy.is_shutdown():
                     time.sleep(2)
                     # Control of exceeded simulation duration
-                    if (time.time() - timer_start) > self.world_definition["path_length"]*50:
+                    if (time.time() - timer_start) > self.world_definition["path_length"]*600:
                         self.ANSP_launch.shutdown()
                         self.error_msg = "Simulation time exceeded"
                         self.simulation_finished = True
@@ -86,6 +89,10 @@ class Master(object):
                 
         # Save all dataset information
         self.SavingDatasetDefinition()
+
+        # Kill unwanted processess
+        [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node","python","python2"]]
+
 
     #### commander functions ####
     # Launching GAZEBO client and server

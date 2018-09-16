@@ -85,6 +85,9 @@ class Master(object):
                         self.ANSP_launch.shutdown()
                         self.error_msg = "Simulation time exceeded"
                         self.simulation_finished = True
+                        
+                # Kill unwanted processess
+                [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node"]]
                 self.GazeboRestart()
                 
         # Save all dataset information

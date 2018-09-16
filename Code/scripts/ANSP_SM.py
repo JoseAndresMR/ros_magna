@@ -14,14 +14,37 @@ class ANSP_SM(object):
         with self.ansp_sm:
 
             ### CALLBACKS
-            def follow_path_goal_cb(ud, goal, heritage):
-                goal.goal_path_poses_list = np.array(heritage.uavs_goal_paths_list[ud.id-1])
+            def take_off_goal_cb(ud, goal):
+                goal.heigth = 5
 
                 return goal
 
-            def follow_wp_goal_cb(ud, goal, heritage,ID,N_WP):
-                print(ID,N_WP)
-                goal.goal_path_poses_list = [heritage.uavs_goal_paths_list[ID-1][N_WP]]
+            def take_off_result_cb(ud, result, something):
+                return "succeeded"
+
+            def land_goal_cb(ud, goal):
+                goal.something = True
+
+                return goal
+
+            def land_result_cb(ud, result, something):
+                return "succeeded"
+
+            def save_csv_goal_cb(ud, goal):
+                goal.something = True
+
+                return goal
+
+            def save_csv_result_cb(ud, result, something):
+                return "succeeded"
+
+            def follow_path_goal_cb(ud, goal, heritage, id):
+                goal.goal_path_poses_list = np.array(heritage.uavs_goal_paths_list[id-1])
+
+                return goal
+
+            def follow_wp_goal_cb(ud, goal, heritage, id, n_wp):
+                goal.goal_path_poses_list = [heritage.uavs_goal_paths_list[id-1][n_wp]]
 
                 return goal
 
@@ -43,69 +66,100 @@ class ANSP_SM(object):
             StateMachine.add('new_world', CBState(self.new_world_stcb,cb_kwargs={'heritage':heritage}),
                                     {'completed':'spawn_uavs'})
 
-            self.ansp_sm.userdata.id = 1
-            self.ansp_sm.userdata.n_wp = 0
-            self.ansp_sm.userdata.id_to_follow = 1
+            self.id = 1
+            self.n_wp = 0
+            self.id_to_follow = 1
 
-            StateMachine.add('spawn_uavs'.format(self.ansp_sm.userdata.id),
+            StateMachine.add('spawn_uavs'.format(self.id),
                     CBState(self.spawn_uavs_stcb,
-                                        input_keys=['id'],
+                                        input_keys=[],
                                         cb_kwargs={'heritage':heritage}),
-                    {'completed': 'wait'},
-                    remapping={'id':'id','n_wp':'n_wp'})
+                    {'completed': 'all_take_off_ccr'},
+                    remapping={})
+
+            ### ALL TAKE OFF
+
+            outcome_map = {"completed" : {}}
+
+            for self.id in range(1,heritage.N_uav+1):
+                outcome_map["completed"]["{0}_take_off".format(self.id)] = "succeeded"
+            
+            self.all_take_off_ccr = Concurrence(outcomes=['completed','failed'],
+                                    input_keys = [],
+                                    output_keys = [],
+                                    default_outcome = 'completed',
+                                    outcome_map = outcome_map)
+            with self.all_take_off_ccr:
+                for self.id in range(1,heritage.N_uav+1):
+                     Concurrence.add('{0}_take_off'.format(self.id),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/take_off_command'.format(self.id),
+                                                    TakeOffAction,
+                                                    goal_cb=take_off_goal_cb,
+                                                    result_cb=take_off_result_cb,
+                                                    input_keys=['id','n_wp'],
+                                                    output_keys=['id','n_wp'],
+                                                    goal_cb_kwargs={},
+                                                    result_cb_kwargs={}),
+                                remapping={})
+
+            StateMachine.add('all_take_off_ccr'.format(self.n_wp)
+                                    ,self.all_take_off_ccr,
+                                    transitions = {'completed':'wait',
+                                                    'failed': 'failed'})
+
+            ### WAIT
 
             StateMachine.add('wait', CBState(self.wait_stcb,cb_kwargs={'heritage':heritage}),
                                     {'completed':'follow_paths_sbys_sm'})
 
-            outcome_map = {"completed" : {}}
+            
 
             ### SM - PATHFOLLOWERS, SINGLE WPS
+
             self.follow_paths_sbys_sm = StateMachine(outcomes=['completed', 'failed'],
-                                                    input_keys=['id','n_wp'])
+                                                    input_keys=[])
 
             with self.follow_paths_sbys_sm:
 
-                for self.ansp_sm.userdata.n_wp in range(heritage.path_length):
+                for self.n_wp in range(heritage.path_length):
 
                     outcome_map = {"completed" : {}}
 
-                    for self.ansp_sm.userdata.id in range(1,heritage.N_uav+1):
-                        outcome_map["completed"]["{0}_follow_wp_{1}".format(self.ansp_sm.userdata.id,self.ansp_sm.userdata.n_wp)] = "succeeded"
+                    for self.id in range(1,heritage.N_uav+1):
+                        outcome_map["completed"]["{0}_follow_wp_{1}".format(self.id,self.n_wp)] = "succeeded"
                     
-                    print(outcome_map)
-
                     self.follow_wp_ccr = Concurrence(outcomes=['completed','failed'],
-                                            input_keys = ['id','n_wp'],
-                                            output_keys = ['id','n_wp'],
+                                            input_keys = [],
+                                            output_keys = [],
                                             default_outcome = 'completed',
                                             outcome_map = outcome_map)
                     with self.follow_wp_ccr:
-                        for self.ansp_sm.userdata.id in range(1,heritage.N_uav+1):
-                            Concurrence.add('{0}_follow_wp_{1}'.format(self.ansp_sm.userdata.id,self.ansp_sm.userdata.n_wp),
-                                SimpleActionState('/pydag/ANSP_UAV_{}/follow_path_command'.format(self.ansp_sm.userdata.id),
+                        for self.id in range(1,heritage.N_uav+1):
+                            Concurrence.add('{0}_follow_wp_{1}'.format(self.id,self.n_wp),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/follow_path_command'.format(self.id),
                                                     FollowPathAction,
                                                     goal_cb=follow_wp_goal_cb,
                                                     result_cb=follow_path_result_cb,
                                                     input_keys=['id','n_wp'],
                                                     output_keys=['id','n_wp'],
-                                                    goal_cb_kwargs={'heritage':heritage,'ID':self.ansp_sm.userdata.id,'N_WP':self.ansp_sm.userdata.n_wp},
+                                                    goal_cb_kwargs={'heritage':heritage,'id':self.id,'n_wp':self.n_wp},
                                                     result_cb_kwargs={"heritage":heritage}),
-                                remapping={'id':'id','n_wp':'n_wp'})
+                                remapping={})
 
-                    if self.ansp_sm.userdata.n_wp != int(heritage.path_length)-1:
-                        transitions = {'completed':'follow_wp_{0}_ccr'.format(self.ansp_sm.userdata.n_wp+1),
+                    if self.n_wp != int(heritage.path_length)-1:
+                        transitions = {'completed':'follow_wp_{0}_ccr'.format(self.n_wp+1),
                                         'failed': 'failed'}
                     else:
                         transitions = {'completed':'completed',
                                         'failed': 'failed'}
 
-                    StateMachine.add('follow_wp_{0}_ccr'.format(self.ansp_sm.userdata.n_wp)
+                    StateMachine.add('follow_wp_{0}_ccr'.format(self.n_wp)
                                     ,self.follow_wp_ccr,
                                     transitions = transitions)
 
             StateMachine.add('follow_paths_sbys_sm',
                             self.follow_paths_sbys_sm,
-                            transitions={'completed':'completed',
+                            transitions={'completed':'all_save_csv_ccr',
                                             'failed': 'failed'})
 
             ### SM - QUEUE OF FOLLOWERS
@@ -122,9 +176,9 @@ class ANSP_SM(object):
             #                           default_outcome = 'completed',
             #                           outcome_map = outcome_map)
             # with self.queue_of_followers_ccr:
-            #     self.ansp_sm.userdata.id = 1
+            #     self.id = 1
             #     Concurrence.add('1_follow_path',
-            #         SimpleActionState('/pydag/ANSP_UAV_{}/follow_path_command'.format(self.ansp_sm.userdata.id),
+            #         SimpleActionState('/pydag/ANSP_UAV_{}/follow_path_command'.format(self.id),
             #                             FollowPathAction,
             #                             goal_cb=follow_path_goal_cb,
             #                             result_cb=follow_path_result_cb,
@@ -135,10 +189,10 @@ class ANSP_SM(object):
             #         remapping={'id':'id'})
 
             #     if heritage.N_uav > 1:
-            #         self.ansp_sm.userdata.id = 2
-            #         self.ansp_sm.userdata.id_to_follow = 1
+            #         self.id = 2
+            #         self.id_to_follow = 1
             #         Concurrence.add('2_follow_uav_1',
-            #             SimpleActionState('/pydag/ANSP_UAV_{}/follow_uav_command'.format(self.ansp_sm.userdata.id),
+            #             SimpleActionState('/pydag/ANSP_UAV_{}/follow_uav_command'.format(self.id),
             #                                 FollowUAVAction,
             #                                 goal_cb=follow_uav_goal_cb,
             #                                 result_cb=follow_uav_result_cb,
@@ -149,10 +203,10 @@ class ANSP_SM(object):
             #             remapping={'id':'id','id_to_follow':'id_to_follow'})
 
             #     if heritage.N_uav > 2:
-            #         self.ansp_sm.userdata.id = 3
-            #         self.ansp_sm.userdata.id_to_follow = 2
+            #         self.id = 3
+            #         self.id_to_follow = 2
             #         Concurrence.add('3_follow_uav_2',
-            #             SimpleActionState('/pydag/ANSP_UAV_{}/follow_uav_command'.format(self.ansp_sm.userdata.id),
+            #             SimpleActionState('/pydag/ANSP_UAV_{}/follow_uav_command'.format(self.id),
             #                                 FollowUAVAction,
             #                                 goal_cb=follow_uav_goal_cb,
             #                                 result_cb=follow_uav_result_cb,
@@ -164,7 +218,67 @@ class ANSP_SM(object):
 
             # StateMachine.add('queue_of_followers_ccr',self.queue_of_followers_ccr,
             #                         transitions={'completed':'completed',
-            #                                      'failed': 'queue_of_followers_ccr'})            
+            #                                      'failed': 'queue_of_followers_ccr'})       
+
+            ### ALL SAVE CSV
+
+            outcome_map = {"completed" : {}}
+
+            for self.id in range(1,heritage.N_uav+1):
+                outcome_map["completed"]["{0}_save_csv".format(self.id)] = "succeeded"
+            
+            self.all_save_csv_ccr = Concurrence(outcomes=['completed','failed'],
+                                    input_keys = [],
+                                    output_keys = [],
+                                    default_outcome = 'completed',
+                                    outcome_map = outcome_map)
+            with self.all_save_csv_ccr:
+                for self.id in range(1,heritage.N_uav+1):
+                     Concurrence.add('{0}_save_csv'.format(self.id),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/land_command'.format(self.id),
+                                                    LandAction,
+                                                    goal_cb=save_csv_goal_cb,
+                                                    result_cb=save_csv_result_cb,
+                                                    input_keys=['id','n_wp'],
+                                                    output_keys=['id','n_wp'],
+                                                    goal_cb_kwargs={},
+                                                    result_cb_kwargs={}),
+                                remapping={})
+
+            StateMachine.add('all_save_csv_ccr'.format(self.n_wp)
+                                    ,self.all_save_csv_ccr,
+                                    transitions = {'completed':'all_land_ccr',
+                                                    'failed': 'failed'})
+            ### ALL LAND
+
+            outcome_map = {"completed" : {}}
+
+            for self.id in range(1,heritage.N_uav+1):
+                outcome_map["completed"]["{0}_land".format(self.id)] = "succeeded"
+            
+            self.all_land_ccr = Concurrence(outcomes=['completed','failed'],
+                                    input_keys = [],
+                                    output_keys = [],
+                                    default_outcome = 'completed',
+                                    outcome_map = outcome_map)
+            with self.all_land_ccr:
+                for self.id in range(1,heritage.N_uav+1):
+                     Concurrence.add('{0}_land'.format(self.id),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/land_command'.format(self.id),
+                                                    LandAction,
+                                                    goal_cb=land_goal_cb,
+                                                    result_cb=land_result_cb,
+                                                    input_keys=['id','n_wp'],
+                                                    output_keys=['id','n_wp'],
+                                                    goal_cb_kwargs={},
+                                                    result_cb_kwargs={}),
+                                remapping={})
+
+            StateMachine.add('all_land_ccr'.format(self.n_wp)
+                                    ,self.all_land_ccr,
+                                    transitions = {'completed':'completed',
+                                                    'failed': 'failed'})
+ 
 
     @cb_interface(outcomes=['completed','failed'])
     def new_world_stcb(ud,heritage):

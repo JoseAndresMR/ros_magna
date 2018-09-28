@@ -189,6 +189,7 @@ class ANSP(object):
         self.path_length = self.world_definition['path_length']
         self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
+        self.smach_view = self.world_definition['smach_view']
 
     # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
@@ -219,10 +220,9 @@ class ANSP(object):
         self.world_definition['simulation_succeed'] = self.simulation_succeed
         rospy.set_param('world_definition',self.world_definition)
         file_path = self.third_folder_path + '/world_definition.csv'
-        with open(file_path, 'wb') as f:
-            w = csv.DictWriter(f, self.world_definition.keys())
-            w.writeheader()
-            w.writerow(self.world_definition)
+        with open(file_path,'wb') as f:
+            w = csv.writer(f)
+            w.writerows(self.world_definition.items())
 
     # Function to close active child processess
     def Die(self):

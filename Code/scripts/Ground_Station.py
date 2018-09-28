@@ -35,6 +35,7 @@ class Ground_Station(object):
         self.ANSP_instruction = ""
         self.start=time.time()
         self.uav_frame_list = []
+        self.last_saved_time = 0
         for n_uav in np.arange(self.N_uav):
             self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
 
@@ -122,61 +123,61 @@ class Ground_Station(object):
 
 
     #### Commander functions ####
-    def GroundStationCommander(self):
-        while self.die_command != True:
-            data_saved = True
+    # def GroundStationCommander(self):
+    #     while self.die_command != True:
+    #         data_saved = True
 
-            if self.new_path_incoming and self.state == "landed":
-                ### Take Off
-                time.sleep(10)
-                time.sleep((self.ID-1) * 8)
-                self.TakeOffCommand(5,True)
-                self.state = "inizializating"
-                self.ANSPStateActualization()
-                data_saved = False
+    #         if self.new_path_incoming and self.state == "landed":
+    #             ### Take Off
+    #             time.sleep(10)
+    #             time.sleep((self.ID-1) * 8)
+    #             self.TakeOffCommand(5,True)
+    #             self.state = "inizializating"
+    #             self.ANSPStateActualization()
+    #             data_saved = False
 
-            if self.new_path_incoming and (self.state == "inizializating" or self.state == "following_path"): ##### cambiar folloing path por in/to WP *
-                ### Path follow
-                self.new_path_incoming = False
-                #### INICIO PRUEBAS PARA UAVFOLLOW
-                # if self.ID == 1:
-                #     self.PathFollowerLegacy()
-                # elif self.ID == 2:
-                #     self.UAVFollower(1)
-                self.PathFollower()
+    #         if self.new_path_incoming and (self.state == "inizializating" or self.state == "following_path"): ##### cambiar folloing path por in/to WP *
+    #             ### Path follow
+    #             self.new_path_incoming = False
+    #             #### INICIO PRUEBAS PARA UAVFOLLOW
+    #             # if self.ID == 1:
+    #             #     self.PathFollowerLegacy()
+    #             # elif self.ID == 2:
+    #             #     self.UAVFollower(1)
+    #             self.PathFollower()
 
 
-                #### Final PRUEBAS PARA UAVFOLLOW
-                if self.new_path_incoming == False:
-                    self.state = "stabilizing"
-                    self.ANSPStateActualization()
-                else:
-                    pass
+    #             #### Final PRUEBAS PARA UAVFOLLOW
+    #             if self.new_path_incoming == False:
+    #                 self.state = "stabilizing"
+    #                 self.ANSPStateActualization()
+    #             else:
+    #                 pass
 
-            if self.state == "stabilizing":
-                self.SetVelocityCommand(True)
-                time.sleep(0.1)
-                self.state = "hovering"
-                self.ANSPStateActualization()
+    #         if self.state == "stabilizing":
+    #             self.SetVelocityCommand(True)
+    #             time.sleep(0.1)
+    #             self.state = "hovering"
+    #             self.ANSPStateActualization()
 
-            if data_saved == False:
-                self.CreatingCSV()
-                data_saved = True
+    #         if data_saved == False:
+    #             self.CreatingCSV()
+    #             data_saved = True
 
-            if self.state == "hovering":
-                ### Land 
-                print "landing"
-                self.LandCommand(True)
-                self.state = "landed"
-                self.ANSPStateActualization()
+    #         if self.state == "hovering":
+    #             ### Land 
+    #             print "landing"
+    #             self.LandCommand(True)
+    #             self.state = "landed"
+    #             self.ANSPStateActualization()
                 
-            # if self.die_command == True:
-            #     rospy.signal_shutdown("end of experiment")
-            #     return
+    #         # if self.die_command == True:
+    #         #     rospy.signal_shutdown("end of experiment")
+    #         #     return
 
-            time.sleep(0.5)
+    #         time.sleep(0.5)
 
-        return 
+    #     return 
 
     # Function for UAL server Land
     def LandCommand(self,blocking):
@@ -190,12 +191,12 @@ class Ground_Station(object):
             print "error in go_to_waypoint"
 
     # Function for UAL server Go To Way Point
-    def GoToWPCommand(self,blocking):
+    def GoToWPCommand(self,blocking,goal_WP_pose):
         rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
         try:
             ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
             h = std_msgs.msg.Header()
-            ual_go_to_waypoint(PoseStamped(h,self.goal_WP_pose),blocking)
+            ual_go_to_waypoint(PoseStamped(h,goal_WP_pose),blocking)
             while self.DistanceToGoal() > 0.2:
                 time.sleep(0.1)
             time.sleep(1)
@@ -209,10 +210,12 @@ class Ground_Station(object):
         try:
             #print "velocity command"
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
-            if hover== False:
+            if hover== False: 
                 self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal_WP_pose)
-                if self.state.split(" ")[0] == "to" and self.state.split(" ")[2] != "1":
+                time_condition = time.time() - self.last_saved_time
+                if self.state.split(" ")[0] == "to" and time_condition >= 1:
                     self.SaveData()
+                    self.last_saved_time == time.time()
 
             elif hover == True:
                 self.new_velocity_twist = self.brain.Hover()
@@ -307,18 +310,39 @@ class Ground_Station(object):
                     self.Evaluator()
 
 
-    def UAVFollower(self,target_ID):
-        self.goal_WP_pose = self.uavs_list[target_ID-1].position.pose
+    def UAVFollowerAtDistance(self,target_ID,distance):
         # self.GoalStaticBroadcaster()
-        self.state = "following UAV {}".format(target_ID)
+        self.state = "following UAV {} at distance".format(target_ID)
         self.ANSPStateActualization()
         while self.new_path_incoming == False:
-            if self.DistanceToGoal() > 3:
+            self.goal_WP_pose = self.uavs_list[target_ID-1].position.pose
+            if self.DistanceToGoal() > distance:
                 self.SetVelocityCommand(False)
                 self.Evaluator()
             else:
                 self.SetVelocityCommand(True)
+            time.sleep(0.5)
 
+    def UAVFollowerAtPosition(self,target_ID,pos):
+        # self.GoalStaticBroadcaster()
+        self.state = "following UAV {} at position".format(target_ID)
+        self.ANSPStateActualization()
+        while self.new_path_incoming == False:
+            tar_vel_lin = self.uavs_list[target_ID-1].velocity.twist.linear
+
+            tar_pos = self.uavs_list[target_ID-1].position.pose.position
+            tar_ori = self.uavs_list[target_ID-1].position.pose.orientation
+
+            near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
+                       np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5  + \
+                       np.asarray(pos)
+            self.goal_WP_pose = Pose(Point(near_pos[0],near_pos[1],near_pos[2]),
+                                    tar_ori)
+            if self.DistanceToGoal() > 0.5:
+                self.SetVelocityCommand(False)
+                self.Evaluator()
+            else:
+                self.SetVelocityCommand(True)
             time.sleep(0.2)
 
         # Function to control states of UAV going to WP or waiting
@@ -341,6 +365,30 @@ class Ground_Station(object):
             time.sleep(0.2)
             self.Evaluator()
 
+    def basic_move(self,move_type,dynamic,direction,value):
+        if move_type == "take_off":
+            heritage.TakeOffCommand(value,True)
+        elif move_type == "land":
+            heritage.LandCommand(True)
+        elif move_type == ("translation" or "rotation"):
+            change_vect=[[0,0,0],[0,0,0]]
+            if move_type == "translation":
+                if direction == ("up" or "down"):
+                    change_dict[0][2] = value*(1-2*(direction=="down"))
+                elif direction == ("left" or "rigth"):
+                    change_dict[0][1] = value*(1-2*(direction=="left"))
+                elif direction == ("forward" or "barckward"):
+                    change_dict[0][0] = value*(1-2*(direction=="down"))
+            if move_type == "turn":
+                change_dict[1][3] = value*(1-2*(direction=="left"))
+
+            if dynamic == "position":
+                goal_WP_pose = self.uavs_list[self.ID-1]
+                goal_WP_pose.position = Pose(np.asarray(goal_WP_pose.position) + np.asarray(change_vect[0]))
+                heritage.GoToWPCommand(True,goal_WP_pose)
+            elif dynamic == "velocity":
+                pass
+            
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -357,6 +405,7 @@ class Ground_Station(object):
         self.obs_pose_list = self.world_definition['obs_pose_list']
         self.home_path = self.world_definition['home_path']
         self.depth_camera_use = self.world_definition['depth_camera_use']
+        self.smach_view = self.world_definition['smach_view']
 
     # Function to evaluate performance about distance from UAV to other UAVs or obstacles 
     def Evaluator(self):
@@ -387,13 +436,38 @@ class Ground_Station(object):
         # for n_uav in np.arange(self.N_uav):
         #     single_frame["actual_UAV_{}_pose".format(n_uav+1)] = self.uavs_list[n_uav].position.pose   #### Cambiar cuando termine Rebeca para guardar todos los UAV objects
         #     single_frame["actual_UAV_{}_vel".format(n_uav+1)] = self.uavs_list[n_uav].velocity.twist
+        single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.parse_4CSV(self.goal_WP_pose,"Pose")],
+                        "selected_velocity" : [self.parse_4CSV(self.new_velocity_twist,"Twist")],
+                        "uavs_list": [self.parse_4CSV(self.uavs_list,"uavs_list")]}
+        if self.depth_camera_use == True:
+            single_frame["image_depth"] = self.uavs_list[self.ID-1].image_depth
 
-        single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.goal_WP_pose], "uavs_list": [self.uavs_list]}
-        
         if self.global_data_frame.empty:
             self.global_data_frame = pd.DataFrame(single_frame)
         else:
             self.global_data_frame = self.global_data_frame.append(pd.DataFrame(single_frame),ignore_index=True)
+    
+    def parse_4CSV(self,data,data_type):
+        if data_type == "Pose":
+            position = data.position
+            orientation = data.orientation
+            parsed = [[position.x,position.y,position.z],[orientation.x,orientation.y,orientation.z,orientation.w]]
+        
+        elif data_type == "Twist":
+            linear = data.linear
+            angular = data.angular
+            parsed = [[linear.x,linear.y,linear.z],[angular.x,angular.y,angular.z]]
+
+        elif data_type == "uavs_list":
+            parsed = []
+            for i in range(len(data)):
+                position = data[i].position.pose
+                velocity = data[i].velocity.twist
+                dicc = {"Pose":self.parse_4CSV(position,"Pose"),
+                        "Twist":self.parse_4CSV(velocity,"Twist")}
+                parsed.append(dicc)
+
+        return parsed
 
     # Function to create and store UAV information of the whole simulation
     def CreatingCSV(self):

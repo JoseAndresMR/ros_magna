@@ -35,7 +35,8 @@ class UAV(object):
             
         elif self.main_uav != self.ID and self.communications == "ADSB":
             rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback)
-        if self.project == 'dcdaa' and self.main_uav == self.ID:
+        if self.depth_camera_use == True and self.main_uav == self.ID:
+            print("camaraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
 
     # Callbacks
@@ -55,7 +56,7 @@ class UAV(object):
         # bridge = CvBridge()
         # self.image_depth = bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding)[:,:,1]
         self.image_depth = data
-        time.sleep(0.1)
+        time.sleep(0.5)
         return
 
     # Function for distributing ADS-B msg depending on its TC
@@ -102,6 +103,7 @@ class UAV(object):
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.communications = self.world_definition['communications']
         self.home_path = self.world_definition['home_path']
+        self.depth_camera_use = self.world_definition['depth_camera_use']
 
 if __name__ == '__main__':
     uav = UAV("485020",True,[0,0])

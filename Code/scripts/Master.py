@@ -37,20 +37,18 @@ class Master(object):
                             'N_uav'              :                2                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
                             'N_obs'              :                0                     ,\
-                            'obs_tube'           :             [5,3,2]                ,\
-                            'path_length'        :                6                     ,\
-                            'solver_algorithm'   :             "orca3"                   ,\
-                            'N_iter'             :               200                      ,\
+                            'obs_tube'           :             [5,3,2]                  ,\
+                            'path_length'        :                10                    ,\
+                            'solver_algorithm'   :             "orca3"                  ,\
+                            'N_iter'             :               200                    ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
-                            'depth_camera_use'   :              True                 ,\
+                            'depth_camera_use'   :              False                   ,\
+                            'smach_view'         :              True                   ,\
                         }
         
         # Gazebo visulization parameter definition
         rospy.set_param('gazebo_gui',True)
-
-        # Kill prior unwanted processess
-        [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node","python","python2"]]
 
         # Project path definition for each user
         user = "JA"
@@ -72,30 +70,32 @@ class Master(object):
             # Run every simulation
             for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.world_definition["N_iter"] + 1):
                 # Inizialization for each simulation
-                rospy.set_param('world_definition/n_simulation', n_simulation)
-                print 'n_simulation',n_simulation
-                self.ANSPSpawner()
-                self.simulation_finished = False
-                timer_start = time.time()
-                # Wait until simulation finishes
-                while (self.simulation_finished == False) and not rospy.is_shutdown():
-                    time.sleep(2)
-                    # Control of exceeded simulation duration
-                    if (time.time() - timer_start) > self.world_definition["path_length"]*600:
-                        self.ANSP_launch.shutdown()
-                        self.error_msg = "Simulation time exceeded"
-                        self.simulation_finished = True
+                try:
+                    rospy.set_param('world_definition/n_simulation', n_simulation)
+                    print 'n_simulation',n_simulation
+                    self.ANSPSpawner()
+                    self.simulation_finished = False
+                    timer_start = time.time()
+                    # Wait until simulation finishes
+                    while (self.simulation_finished == False) and not rospy.is_shutdown():
+                        time.sleep(2)
+                        # Control of exceeded simulation duration
+                        if (time.time() - timer_start) > self.world_definition["path_length"]*600:
+                            self.ANSP_launch.shutdown()
+                            self.error_msg = "Simulation time exceeded"
+                            self.simulation_finished = True
+                except:
+                    self.processess_killer(2)
                         
                 # Kill unwanted processess
-                [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node"]]
+                self.processess_killer(1)
                 self.GazeboRestart()
                 
         # Save all dataset information
-        self.SavingDatasetDefinition()
+        self.SavingDatasetDefinition(1)
 
         # Kill unwanted processess
-        [os.system("pkill -0 {}".format(proc)) for proc in ["px4","server","mavros_node","python","python2"]]
-
+        self.processess_killer(2)
 
     #### commander functions ####
     # Launching GAZEBO client and server
@@ -127,30 +127,30 @@ class Master(object):
         self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         
-        # # Ask user if conflict
-        # if os.path.exists(self.second_folder_path):
-        #     selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
-        #     # Quit option
-        #     if selected == "q":
-        #         return "q"
+        # Ask user if conflict
+        if os.path.exists(self.second_folder_path):
+            selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
+            # Quit option
+            if selected == "q":
+                return "q"
 
-        #     # Add option, from existing number of dataset
-        #     elif selected == "a":
-        #         n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
-        #         if self.world_definition["N_iter"] != 0:
-        #             shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
-        #             self.n_simulation_bias = n_prior_simulations -1
-        #         else:
-        #             self.n_simulation_bias = n_prior_simulations
+            # Add option, from existing number of dataset
+            elif selected == "a":
+                n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
+                if self.world_definition["N_iter"] != 0:
+                    shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
+                    self.n_simulation_bias = n_prior_simulations -1
+                else:
+                    self.n_simulation_bias = n_prior_simulations
 
-        #         return "a"
+                return "a"
 
-        #     # Reset dataset option
-        #     elif (selected != "q") and (selected != "a"):
-        #         shutil.rmtree(self.second_folder_path)
-        #         return "r"
-        # else:
-        #     return "r"
+            # Reset dataset option
+            elif (selected != "q") and (selected != "a"):
+                shutil.rmtree(self.second_folder_path)
+                return "r"
+        else:
+            return "r"
 
         return "g"
 
@@ -172,10 +172,9 @@ class Master(object):
         # Write new info
         self.performance_info = pd.DataFrame(local_dicc).sort_values(by=['simulation_n'])
         self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',') #,low_memory=False,
-        with open(self.second_folder_path + '/dataset_definition.csv', 'wb') as f:
-            w = csv.DictWriter(f, self.world_definition.keys())
-            w.writeheader()
-            w.writerow(self.world_definition)
+        with open(self.second_folder_path + '/dataset_definition.csv','wb') as f:
+            w = csv.writer(f)
+            w.writerows(self.world_definition.items())
 
     # Close and start Gazebo for every simulation
     def GazeboRestart(self):
@@ -185,6 +184,11 @@ class Master(object):
         rospy.set_param('world_definition', self.world_definition)
         time.sleep(5)
 
+    def processess_killer(self,level):
+        
+        [os.system("pkill -9 {}".format(proc)) for proc in ["px4","mavros_node"]]
+        if level >= 2:
+            [os.system("pkill -9 {}".format(proc)) for proc in ["server","python","python2"]]
 
     #### listener functions ####
     def MasterListener(self):

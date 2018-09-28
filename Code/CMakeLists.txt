@@ -77,7 +77,9 @@ add_service_files(
    Land.action
    SaveCSV.action
    FollowPath.action
-   FollowUAV.action
+   FollowUAVAD.action
+   FollowUAVAP.action
+   BasicMove.action
 )
 
 ## Generate added messages and services with any dependencies listed here

@@ -1,0 +1,11 @@
+# Define the goal
+string move_type
+string dynamic
+string direction
+float32 value
+--- 
+# Define the result
+bool success
+---
+# Define a feedback message
+float32 percent_complete

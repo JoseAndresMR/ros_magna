@@ -170,9 +170,9 @@ class Ground_Station_SM(object):
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed'})
             
-            # if heritage.smach_view == True:
-            #     sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.gs_sm, '/UAV_{}'.format(heritage.ID))
-            #     sis.start()
+            if heritage.smach_view == True:
+                sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.gs_sm, '/UAV_{}'.format(heritage.ID))
+                sis.start()
 
     @cb_interface(outcomes=['completed','failed'])
     def take_off_stcb(ud,heritage):
@@ -186,14 +186,10 @@ class Ground_Station_SM(object):
     @cb_interface(outcomes=['completed','failed'])
     def action_server_advertiser_stcb(ud,heritage,asw_dicc):
         heritage.SetVelocityCommand(True)
-        # [asw_dicc[key].run_server() for key in asw_dicc.keys()]
-        asw_dicc['take_off'].run_server()
-        asw_dicc['land'].run_server()
-        asw_dicc['save_csv'].run_server()
-        asw_dicc['follow_path'].run_server()
-        asw_dicc['follow_uav_ad'].run_server()
-        asw_dicc['follow_uav_ap'].run_server()
-        asw_dicc['basic_move'].run_server()
+
+        for key in asw_dicc.keys():
+            asw_dicc[key].run_server()
+
         heritage.state = "waiting for action command"
         heritage.ANSPStateActualization()
 
@@ -202,6 +198,11 @@ class Ground_Station_SM(object):
         rospy.spin()
 
         return 'completed'
+    
+    # def action_server_disadvertiser(self):
+    #     for key in asw_dicc.keys():
+    #         if key ~= 'hola':
+    #             asw_dicc[key].
 
     @cb_interface(outcomes=['completed','failed'])
     def follow_path_stcb(ud,heritage):

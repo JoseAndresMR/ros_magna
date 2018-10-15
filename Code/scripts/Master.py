@@ -32,13 +32,13 @@ class Master(object):
         # World paramenters inizialization
         self.world_definition = {'project'       :             "gauss"                  ,\
                             'type'               :                1                     ,\
-                            'n_dataset'          :                1                     ,\
+                            'n_dataset'          :                3                     ,\
                             'n_simulation'       :                1                     ,\
                             'N_uav'              :                2                     ,\
                             'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                0                     ,\
+                            'N_obs'              :                1                     ,\
                             'obs_tube'           :             [5,3,2]                  ,\
-                            'path_length'        :                10                    ,\
+                            'path_length'        :                5                    ,\
                             'solver_algorithm'   :             "orca3"                  ,\
                             'N_iter'             :               200                    ,\
                             'px4_use'            :             "complete"               ,\
@@ -54,8 +54,6 @@ class Master(object):
         user = "JA"
         if user == "JA":
             home_path = "josmilrom"
-        elif user == "Rebeca":
-            home_path = "rebeca/Documentos/ROS"
         self.world_definition["home_path"] = home_path
 
         # Inizializations

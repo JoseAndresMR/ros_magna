@@ -24,11 +24,12 @@ from Ground_Station_SM import Ground_Station_SM
 class Ground_Station(object):
 
     def __init__(self,ID):
+        self.ID = int(ID)
         # Global parameters inizialization
         self.GettingWorldDefinition()
 
         # Local parameters inizialization
-        self.ID = int(ID)
+        
         self.brain = Brain(self.ID)
         self.global_data_frame = pd.DataFrame()
         self.distance_to_goal = 10000
@@ -120,64 +121,6 @@ class Ground_Station(object):
         static_transformStamped.transform.rotation.w = quat[3]
     
         broadcaster.sendTransform(static_transformStamped)
-
-
-    #### Commander functions ####
-    # def GroundStationCommander(self):
-    #     while self.die_command != True:
-    #         data_saved = True
-
-    #         if self.new_path_incoming and self.state == "landed":
-    #             ### Take Off
-    #             time.sleep(10)
-    #             time.sleep((self.ID-1) * 8)
-    #             self.TakeOffCommand(5,True)
-    #             self.state = "inizializating"
-    #             self.ANSPStateActualization()
-    #             data_saved = False
-
-    #         if self.new_path_incoming and (self.state == "inizializating" or self.state == "following_path"): ##### cambiar folloing path por in/to WP *
-    #             ### Path follow
-    #             self.new_path_incoming = False
-    #             #### INICIO PRUEBAS PARA UAVFOLLOW
-    #             # if self.ID == 1:
-    #             #     self.PathFollowerLegacy()
-    #             # elif self.ID == 2:
-    #             #     self.UAVFollower(1)
-    #             self.PathFollower()
-
-
-    #             #### Final PRUEBAS PARA UAVFOLLOW
-    #             if self.new_path_incoming == False:
-    #                 self.state = "stabilizing"
-    #                 self.ANSPStateActualization()
-    #             else:
-    #                 pass
-
-    #         if self.state == "stabilizing":
-    #             self.SetVelocityCommand(True)
-    #             time.sleep(0.1)
-    #             self.state = "hovering"
-    #             self.ANSPStateActualization()
-
-    #         if data_saved == False:
-    #             self.CreatingCSV()
-    #             data_saved = True
-
-    #         if self.state == "hovering":
-    #             ### Land 
-    #             print "landing"
-    #             self.LandCommand(True)
-    #             self.state = "landed"
-    #             self.ANSPStateActualization()
-                
-    #         # if self.die_command == True:
-    #         #     rospy.signal_shutdown("end of experiment")
-    #         #     return
-
-    #         time.sleep(0.5)
-
-    #     return 
 
     # Function for UAL server Land
     def LandCommand(self,blocking):
@@ -314,20 +257,20 @@ class Ground_Station(object):
         # self.GoalStaticBroadcaster()
         self.state = "following UAV {} at distance".format(target_ID)
         self.ANSPStateActualization()
-        while self.new_path_incoming == False:
+        while self.uavs_list[1].preempt_flag == False:
             self.goal_WP_pose = self.uavs_list[target_ID-1].position.pose
             if self.DistanceToGoal() > distance:
                 self.SetVelocityCommand(False)
                 self.Evaluator()
             else:
                 self.SetVelocityCommand(True)
-            time.sleep(0.5)
+            time.sleep(0.2)
 
     def UAVFollowerAtPosition(self,target_ID,pos):
         # self.GoalStaticBroadcaster()
         self.state = "following UAV {} at position".format(target_ID)
         self.ANSPStateActualization()
-        while self.new_path_incoming == False:
+        while self.uavs_list[1].preempt_flag == False:
             tar_vel_lin = self.uavs_list[target_ID-1].velocity.twist.linear
 
             tar_pos = self.uavs_list[target_ID-1].position.pose.position
@@ -406,6 +349,22 @@ class Ground_Station(object):
         self.home_path = self.world_definition['home_path']
         self.depth_camera_use = self.world_definition['depth_camera_use']
         self.smach_view = self.world_definition['smach_view']
+        self.global_mission = self.world_definition['global_mission']
+
+        if self.global_mission == "follow_paths_sbys_sm":
+            self.mission = "path"
+
+        elif self.global_mission == "queue_of_followers_ad_sm":
+            if self.ID == 1:
+                self.mission = "path"
+            elif self.ID != 1:
+                self.mission = "uav_ad"
+
+        elif self.global_mission == "queue_of_followers_ap_sm":
+            if self.ID == 1:
+                self.mission = "path"
+            elif self.ID != 1:
+                self.mission = "uav_ap"
 
     # Function to evaluate performance about distance from UAV to other UAVs or obstacles 
     def Evaluator(self):
@@ -439,6 +398,14 @@ class Ground_Station(object):
         single_frame = {"goal_UAV_{}_pose".format(self.ID): [self.parse_4CSV(self.goal_WP_pose,"Pose")],
                         "selected_velocity" : [self.parse_4CSV(self.new_velocity_twist,"Twist")],
                         "uavs_list": [self.parse_4CSV(self.uavs_list,"uavs_list")]}
+        
+        if self.mission == "path":
+            single_frame["goal"] = [self.parse_4CSV(self.goal_WP_pose,"Pose")]
+        elif self.mission == "uav_ad":
+            single_frame["goal"] = self.ID - 1
+        elif self.mission == "uav_ap":
+            single_frame["goal"] = self.ID - 1
+        
         if self.depth_camera_use == True:
             single_frame["image_depth"] = self.uavs_list[self.ID-1].image_depth
 
@@ -446,7 +413,7 @@ class Ground_Station(object):
             self.global_data_frame = pd.DataFrame(single_frame)
         else:
             self.global_data_frame = self.global_data_frame.append(pd.DataFrame(single_frame),ignore_index=True)
-    
+
     def parse_4CSV(self,data,data_type):
         if data_type == "Pose":
             position = data.position

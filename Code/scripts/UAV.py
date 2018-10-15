@@ -22,6 +22,8 @@ class UAV(object):
         self.pos_ref = pos_ref
         self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
+        self.preempt_flag = False
+
         self.GettingWorldDefinition()
         self.br = tf.TransformBroadcaster()
 
@@ -36,8 +38,10 @@ class UAV(object):
         elif self.main_uav != self.ID and self.communications == "ADSB":
             rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback)
         if self.depth_camera_use == True and self.main_uav == self.ID:
-            print("camaraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+        if self.ID == self.main_uav and  self.main_uav != 1: # and mission == 
+            rospy.Service('/pydag/ANSP/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
 
     # Callbacks
     def uav_pose_callback(self,data):
@@ -58,6 +62,12 @@ class UAV(object):
         self.image_depth = data
         time.sleep(0.5)
         return
+
+    def handle_preemption_command(self,data):
+        print("preempted flag",self.preempt_flag)
+        self.preempt_flag = True
+
+        return True
 
     # Function for distributing ADS-B msg depending on its TC
     def incoming_ADSB_msg_callback(self,msg):

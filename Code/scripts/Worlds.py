@@ -150,6 +150,35 @@ class Worlds(object):
         print "world", self.ID, "created"
 
     def PathGenerator(self):
+        # if self.project == "dcdaa":
+        #     goal_pose = Pose(Point(-10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0],\
+        #                            (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
+        #                            1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),\
+        #                      Quaternion(0,0,0,0))
+        #     self.path_poses_list=[Pose(Point(-10+self.dbo[0]*0.5,\
+        #                                      np.asscalar((np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1]),\
+        #                                      np.asscalar(1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2])),\
+        #                                Quaternion(0,0,0,0))]
+        #     for i in np.arange(self.obstacles_raw_matrix.shape[0]):
+        #         max_distance = 10000
+        #         for j in np.arange(self.obstacles_raw_matrix.shape[1]):
+        #             for k in np.arange(self.obstacles_raw_matrix.shape[2]):
+        #                 if self.empty_positions[i,j,k] == True:
+        #                     current_distance = DistanceBetweenPoses(self.path_poses_list[i],self.poses_matrix[i][j][k])\
+        #                                     +DistanceBetweenPoses(self.poses_matrix[i][j][k],goal_pose)
+        #                     if current_distance<max_distance:
+        #                         max_distance = current_distance
+        #                         selected_pose = self.poses_matrix[i][j][k]
+
+        #         security_selected_pose_1 = copy.deepcopy(selected_pose)
+        #         security_selected_pose_2 = copy.deepcopy(selected_pose)
+        #         security_selected_pose_1.position.x = selected_pose.position.x - self.dbo[0]*1/3.0
+        #         security_selected_pose_2.position.x = selected_pose.position.x + self.dbo[0]*1/3.0
+        #         self.path_poses_list.append(security_selected_pose_1)
+        #         self.path_poses_list.append(security_selected_pose_2)
+
+        #     self.path_poses_list.append(goal_pose)
+
         if self.project == "dcdaa":
             goal_pose = Pose(Point(-10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0],\
                                    (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
@@ -159,23 +188,18 @@ class Worlds(object):
                                              np.asscalar((np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1]),\
                                              np.asscalar(1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2])),\
                                        Quaternion(0,0,0,0))]
-            for i in np.arange(self.obstacles_raw_matrix.shape[0]):
-                max_distance = 10000
-                for j in np.arange(self.obstacles_raw_matrix.shape[1]):
-                    for k in np.arange(self.obstacles_raw_matrix.shape[2]):
-                        if self.empty_positions[i,j,k] == True:
-                            current_distance = DistanceBetweenPoses(self.path_poses_list[i],self.poses_matrix[i][j][k])\
-                                            +DistanceBetweenPoses(self.poses_matrix[i][j][k],goal_pose)
-                            if current_distance<max_distance:
-                                max_distance = current_distance
-                                selected_pose = self.poses_matrix[i][j][k]
-
-                security_selected_pose_1 = copy.deepcopy(selected_pose)
-                security_selected_pose_2 = copy.deepcopy(selected_pose)
-                security_selected_pose_1.position.x = selected_pose.position.x - self.dbo[0]*1/3.0
-                security_selected_pose_2.position.x = selected_pose.position.x + self.dbo[0]*1/3.0
-                self.path_poses_list.append(security_selected_pose_1)
-                self.path_poses_list.append(security_selected_pose_2)
+            # for i in np.arange(self.obstacles_raw_matrix.shape[0]):
+            #     max_distance = 10000
+            #     for j in np.arange(self.obstacles_raw_matrix.shape[1]):
+            #         for k in np.arange(self.obstacles_raw_matrix.shape[2]):
+            #             if self.empty_positions[i,j,k] == True:
+            #                 current_distance = DistanceBetweenPoses(self.path_poses_list[i],self.poses_matrix[i][j][k])\
+            #                                 +DistanceBetweenPoses(self.poses_matrix[i][j][k],goal_pose)
+            #                 if current_distance<max_distance:
+            #                     max_distance = current_distance
+            #                     selected_pose = self.poses_matrix[i][j][k]
+            #     self.path_poses_list.append(security_selected_pose_1)
+            #     self.path_poses_list.append(security_selected_pose_2)
 
             self.path_poses_list.append(goal_pose)
 

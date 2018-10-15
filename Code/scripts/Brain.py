@@ -19,8 +19,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
-# import tensorflow as tflow
-# from tensorflow.python.tools import inspect_checkpoint as chkp
+import tensorflow as tflow
+# from tensorflow.python.tools import inspesct_checkpoint as chkp
 
 
 
@@ -31,15 +31,15 @@ class Brain(object):
         self.GettingWorldDefinition()
         # self.timer_start = time.time()
 
-        # if self.solver_algorithm == "neural_network":
-        #     self.session = tflow.Session()
-        #     new_saver = tflow.train.import_meta_graph('/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}.meta'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs), clear_devices=True)
-        #     new_saver.restore(self.session, tflow.train.latest_checkpoint('/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs)))
-        #     #'/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/gauss/saved_model/world_{1}_{2}/world_{3}_{4}'.format(self.world_definition["home_path"],self.N_uav,self.N_obs,self.N_uav,self.N_obs))
-        #     #model_multilayer = tflow.get_collection('multilayer_model')[0]
-        #     self.model_multilayer = tflow.get_default_graph().get_operation_by_name('multilayer_model').outputs[0]
+        if self.solver_algorithm == "neural_network":
+            self.session = tflow.Session()
+            new_saver = tflow.train.import_meta_graph("/home/josmilrom/Libraries/gml/Sessions/{}/model.meta".format(self.project))
+            new_saver.restore(self.session,tflow.train.latest_checkpoint('/home/josmilrom/Libraries/gml/Sessions/{}'.format(self.project)))
+            self.graph_inputs = tflow.get_default_graph().get_tensor_by_name("single_input:0")
+            self.graph_outputs = tflow.get_default_graph().get_tensor_by_name("vel_posttreated:0")
 
-        #     pass
+            # self.single_vel_logits_tensor = tflow.get_default_graph().get_tensor_by_name("single_vel_logits:0")
+
 
     # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,uavs_list, goal_WP_pose):
@@ -67,35 +67,46 @@ class Brain(object):
         main_uav_vel = self.uavs_list[self.ID-1].velocity.twist.linear
         inputs = []
         
+        # own vel
         inputs.append(main_uav_vel.x)
         inputs.append(main_uav_vel.y)
+        inputs.append(main_uav_vel.z)
+
+        # own goal
+        inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
+        inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
+        inputs.append(self.goal_WP_pose.position.z-main_uav_pos.z)
+
         for n_uav in range(self.N_uav):
             if n_uav+1 != self.ID:
+                #pos
                 inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
                 inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
-
-
-        #for n_uav in range(self.N_uav):
-        #    if n_uav+1 != self.ID:
+                inputs.append(self.uavs_list[n_uav].position.pose.position.z-main_uav_pos.z)
+                #vel
                 inputs.append(self.uavs_list[n_uav].velocity.twist.linear.x)
                 inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
+                inputs.append(self.uavs_list[n_uav].velocity.twist.linear.z)
 
         for n_obs in range(self.N_obs):
             inputs.append(self.obs_pose_list[n_obs][0]-main_uav_pos.x)
             inputs.append(self.obs_pose_list[n_obs][1]-main_uav_pos.y)
-
-        inputs.append(self.goal_WP_pose.position.x-main_uav_pos.x)
-        inputs.append(self.goal_WP_pose.position.y-main_uav_pos.y)
+            inputs.append(self.obs_pose_list[n_obs][2]-main_uav_pos.z)
 
         inputs_trans = np.asarray(inputs)
         inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
+
+        #
+        # selected_velocity = self.session.run(self.single_vel_logits_tensor, feed_dict={self.graph_inputs:inputs_trans})
+        # print(selected_velocity)
+        #
         
-        selected_velocity = self.session.run(self.model_multilayer, feed_dict={'input_matrix:0':inputs_trans})
+        selected_velocity = self.session.run(self.graph_outputs, feed_dict={self.graph_inputs:inputs_trans})
 
-        prefered_velocity = self.SimpleLinearGuidance()
+        new_velocity_twist = Twist(Vector3(selected_velocity[0][0],selected_velocity[0][1],selected_velocity[0][2]),Vector3(0,0,0))
 
-        new_velocity_twist = Twist(Vector3(selected_velocity[0][0],selected_velocity[0][1],prefered_velocity.linear.z),Vector3(0,0,0))
-
+        # print("nn",new_velocity_twist)
+        # self.ORCA3()
         return new_velocity_twist
     
     # Function to set new velocity using ORCA on 2D
@@ -186,6 +197,7 @@ class Brain(object):
         new_velocity_twist.linear.y = selected_velocity[1]
         new_velocity_twist.linear.z = selected_velocity[2]
 
+        # print(new_velocity_twist)
         return new_velocity_twist
 
     # Function to set velocity directly to goal

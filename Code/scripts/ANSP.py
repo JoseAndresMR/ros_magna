@@ -55,6 +55,28 @@ class ANSP(object):
 
         if self.project == "gauss":
             # self.Gauss()
+            self.ansp_sm_def=[]
+            step_1 = {"type":"new_world"}
+            self.ansp_sm_def.append(step_1)
+            step_2 = {"type":"spawn_uavs"}
+            self.ansp_sm_def.append(step_2)
+            step_3 = {"type":"all_take_off_ccr"}
+            self.ansp_sm_def.append(step_3)
+            step_4 = {"type":"wait"}
+            self.ansp_sm_def.append(step_4)
+            # step_5 = {"type":"queue_of_followers_ap_sm"}
+            step_5 = {"type":"queue_of_followers_ad_sm"}
+            # step_5 = {"type":"follow_paths_sbys_sm"}
+            self.ansp_sm_def.append(step_5)
+            step_6 = {"type":"all_save_csv_ccr"}
+            self.ansp_sm_def.append(step_6)
+            step_7 = {"type":"all_land_ccr"}
+            self.ansp_sm_def.append(step_7)
+
+            self.world_definition = rospy.get_param('world_definition')
+            self.world_definition['global_mission'] = self.ansp_sm_def[4]["type"]
+            rospy.set_param('world_definition',self.world_definition)
+
             self.ansp_sm = ANSP_SM(self)
             outcome = self.ansp_sm.ansp_sm.execute()
 
@@ -245,6 +267,17 @@ class ANSP(object):
                 print "Service call failed: %s"%e
                 print "error in die_command"
         return
+
+    # def PreemptCommand(self):
+    #     rospy.wait_for_service('/pydag/ANSP/preemption_command_to_2')
+    #     try:
+    #         # print "path for uav {} command".format(ID)
+    #         PreemptCommander = rospy.ServiceProxy('/pydag/ANSP/preemption_command_to_2', StateActualization)
+            # PreemptCommander(self.ID,"preempt",self.collision)
+    #         return
+    #     except rospy.ServiceException, e:
+    #         print "Service call failed: %s"%e
+    #         print "error in state_actualization"
 
     # Function to close GAZEBO process
     def GazeboModelsKiller(self):

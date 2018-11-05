@@ -9,6 +9,7 @@ from std_msgs.msg import String
 from pydag.srv import *
 from pydag.msg import *
 from ADSB import ADSB
+from cv_bridge import CvBridge, CvBridgeError
 
 
 class UAV(object):
@@ -23,51 +24,76 @@ class UAV(object):
         self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
         self.preempt_flag = False
+        self.bridge = CvBridge()
 
         self.GettingWorldDefinition()
         self.br = tf.TransformBroadcaster()
 
-        # Start listening
-        self.listener()
+        self.listener()     # Start listening to subcribed topics
 
+    #### Listener functions ####
+
+    # Function to decide where to subscribe
     def listener(self):
+
+        # Subscribe to position and velocity of every UAV if comms are direct or is own UAV
         if self.main_uav == self.ID or (self.main_uav != self.ID and self.communications == "direct"):
             rospy.Subscriber('/uav_{}/ual/pose'.format(self.ID), PoseStamped, self.uav_pose_callback)
             rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback)
-            
+        
+        # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented 
         elif self.main_uav != self.ID and self.communications == "ADSB":
             rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback)
+
+        # Subscribe to depth camera if its use flag is activated
         if self.depth_camera_use == True and self.main_uav == self.ID:
             rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
-            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+
+        # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
+        # In the future this will be implemented to wrap different roles and different IDs
         if self.ID == self.main_uav and  self.main_uav != 1: # and mission == 
             rospy.Service('/pydag/ANSP/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
 
     # Callbacks
+
+    # Function to deal with pose data
     def uav_pose_callback(self,data):
-        self.position = data
-        if self.main_uav != self.ID and self.communications == "ADSB":
+
+        self.position = data        # Store the received position into the position of the UAV
+
+        # If pose has been received via ADSB, pubish TF of it
+        if self.main_uav != self.ID and self.communications == "ADSB":      
             self.PoseBroadcast()
+
         time.sleep(0.1)
 
+    # Function to deal with velocity data
     def uav_vel_callback(self,data):
-        self.velocity = data
+
+        self.velocity = data        # Store the received velocity into the position of the UAV
+
         time.sleep(0.1)
 
+    # Function to deal with depth image data
     def image_raw_callback(self,data):
-        #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.pose.position)
-        #print "Image info recieved", data.height, data.width, data.encoding, data.is_bigendian, data.step
-        # bridge = CvBridge()
-        # self.image_depth = bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding)[:,:,1]
-        self.image_depth = data
+        try:
+            # Transform the received information eith the bridge and store it into its variable
+            self.image_depth = np.array(self.bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding).data)
+            # print(len(data.data))
+        except CvBridgeError as e:
+            print(e)
+
         time.sleep(0.5)
         return
 
+    # Function to deal with a preemption command from ANSP
     def handle_preemption_command(self,data):
-        print("preempted flag",self.preempt_flag)
-        self.preempt_flag = True
+        # print("preempted flag",self.preempt_flag)
+        self.preempt_flag = True        # Set the variable
 
         return True
+
+    #### Commander functions ####
 
     # Function for distributing ADS-B msg depending on its TC
     def incoming_ADSB_msg_callback(self,msg):
@@ -102,7 +128,7 @@ class UAV(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.project = self.world_definition['project']
+        self.mission = self.world_definition['mission']
         self.world_type = self.world_definition['type']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']

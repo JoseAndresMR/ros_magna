@@ -29,79 +29,117 @@ import utils
 
 class Master(object):
     def __init__(self):
-        # World paramenters inizialization
-        self.world_definition = {'project'       :             "gauss"                  ,\
-                            'type'               :                1                     ,\
-                            'n_dataset'          :                3                     ,\
+        # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
+        self.world_definition = {'mission'       :     "long_wait"          ,\
+                            'type'               :                2                     ,\
+                            'n_dataset'          :                1                     ,\
                             'n_simulation'       :                1                     ,\
-                            'N_uav'              :                2                     ,\
-                            'uav_models'         : ["typhoon_h480","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                1                     ,\
-                            'obs_tube'           :             [5,3,2]                  ,\
-                            'path_length'        :                5                    ,\
+                            'N_uav'              :                1                     ,\
+                            'uav_models'         : ["plane","typhoon_h480","typhoon_h480"]     ,\
+                            'N_obs'              :                0                     ,\
+                            'obs_tube'           :             [1,3,3]                  ,\
+                            'path_length'        :                2                     ,\
                             'solver_algorithm'   :             "orca3"                  ,\
                             'N_iter'             :               200                    ,\
                             'px4_use'            :             "complete"               ,\
                             'communications'     :             "direct"                 ,\
-                            'depth_camera_use'   :              False                   ,\
-                            'smach_view'         :              True                   ,\
+                            'heading_use'        :              False                   ,\
+                            'depth_camera_use'   :              True                   ,\
+                            'smach_view'         :              False                   ,\
                         }
-        
-        # Gazebo visulization parameter definition
-        rospy.set_param('gazebo_gui',True)
 
-        # Project path definition for each user
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization ROS parameter definition
+
+        # mission path definition for each user
         user = "JA"
         if user == "JA":
             home_path = "josmilrom"
         self.world_definition["home_path"] = home_path
 
-        # Inizializations
-        self.GazeboLauncher()
-        rospy.set_param('world_definition', self.world_definition)
-        rospy.init_node('master', anonymous=True)
-        self.MasterListener()
-        self.n_simulation_bias = 0
+        # Flag to save simulation data if active. The user will be asked to deactive
+        self.world_definition["save_flag"] = True
 
-        # Ask if current dataset already exists
-        if self.DatasetExistanceChecker() != "q":
+        # Function to check if current dataset is already created and ask the user what to do in each case
+        botton_selected = self.DatasetExistanceChecker()
+        
+        ### Creation of the dictionary that defines the State Machine that composes the global mission
+        # First part of mission is common
+        ansp_sm_def=[]
+        step_1 = {"type":"new_world"}
+        ansp_sm_def.append(step_1)
+        step_2 = {"type":"spawn_uavs"}
+        ansp_sm_def.append(step_2)
+        # step_3 = {"type":"all_take_off_ccr"}
+        # ansp_sm_def.append(step_3)
+        step_4 = {"type":"wait"}
+        ansp_sm_def.append(step_4)
+        
+        # This mission part is customized for every type of mission
+        step_5 = {"type":"{}_sm".format(self.world_definition['mission'])}
+        ansp_sm_def.append(step_5)
+
+        # This part of the mission is only introduced if save flag is active
+        if self.world_definition["save_flag"]:
+            step_6 = {"type":"all_save_csv_ccr"}
+            ansp_sm_def.append(step_6)
+
+        # Last part is common for every mission
+        step_7 = {"type":"all_land_ccr"}
+        ansp_sm_def.append(step_7)
+        self.world_definition['ansp_sm_def'] = ansp_sm_def
+
+        ### Initializations
+        self.GazeboLauncher()    # Start Gazebo standalone
+        rospy.set_param('world_definition', self.world_definition)    # Upload ROS params above defined
+        rospy.init_node('master', anonymous=True)     # Start node
+        self.MasterListener()       # Start subscribers
+        self.n_simulation_bias = 0      # Initi
+
+
+        ### Bunch of simulations
+        if botton_selected != "q":    # If user decission was not to abort, start bunch of simulations
             # Run every simulation
             for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.world_definition["N_iter"] + 1):
-                # Inizialization for each simulation
                 try:
+                    ### Initialization for each simulation
+                    # Set ROS param of current simulation id
                     rospy.set_param('world_definition/n_simulation', n_simulation)
                     print 'n_simulation',n_simulation
-                    self.ANSPSpawner()
+
+                    self.ANSPSpawner()   # Start ANSP node. It will be in charge of this particuar mission
+
+                    # Initialize flag to finish simulation. Will be activated later
                     self.simulation_finished = False
+
+                    # Initialize time counter to check mission time
                     timer_start = time.time()
-                    # Wait until simulation finishes
+
+                    ### Process to finish simulation when time exceeded
+                    # Wait until simulation finishes, it is when flag is raised or master breaks
                     while (self.simulation_finished == False) and not rospy.is_shutdown():
                         time.sleep(2)
                         # Control of exceeded simulation duration
                         if (time.time() - timer_start) > self.world_definition["path_length"]*600:
-                            self.ANSP_launch.shutdown()
-                            self.error_msg = "Simulation time exceeded"
-                            self.simulation_finished = True
+                            self.ANSP_launch.shutdown()     # Terminate ANSP
+                            self.simulation_finished = True    # Activate end flag
                 except:
                     self.processess_killer(2)
-                        
-                # Kill unwanted processess
-                self.processess_killer(1)
-                self.GazeboRestart()
-                
-        # Save all dataset information
-        self.SavingDatasetDefinition(1)
 
-        # Kill unwanted processess
-        self.processess_killer(2)
+                self.processess_killer(1)       # Kill unwanted processess
+                self.GazeboRestart()        # Restart Gazebo for next simulation
+
+        
+        self.SavingDatasetDefinition(1)     # Save all dataset information 
+        self.processess_killer(2)       # Kill unwanted processess
 
     #### commander functions ####
+
     # Launching GAZEBO client and server
     def GazeboLauncher(self):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-                    "/home/{0}/catkin_ws/src/pydag/Code/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
+            "/home/{0}/catkin_ws/src/pydag/Code/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
 
         self.Gazebo_launch.start()
         time.sleep(0.5)
@@ -112,29 +150,45 @@ class Master(object):
         roslaunch.configure_logging(uuid1)
         self.ANSP_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
             "/home/{0}/catkin_ws/src/pydag/Code/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
+        
         self.ANSP_launch.start()
 
     # Control if defined new dataset already exists
     def DatasetExistanceChecker(self):
-        # Redefinition of number of obstacles
-        if self.world_definition["project"] == 'dcdaa':
-            self.N_obs_mixed = int('{0}{1}{2}'.format(self.world_definition["obs_tube"][0],self.world_definition["obs_tube"][1],self.world_definition["obs_tube"][2]))
-        elif self.world_definition["project"] == 'gauss':
-            self.N_obs_mixed = self.world_definition['N_obs']
+        # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
+        # This code fixes that divergence for later storing.
+        # In the future, this piece of code should be a common utility
+        if self.world_definition["type"] == 3 or self.world_definition["type"] == 4:
+            N_obs_mixed = int('{0}{1}{2}'.format(self.world_definition["obs_tube"][0],self.world_definition["obs_tube"][1],self.world_definition["obs_tube"][2]))
+        else:
+            N_obs_mixed = self.world_definition['N_obs']
+            
         # Build path from definition
-        self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}".format(self.world_definition["project"],self.world_definition["type"],self.world_definition["N_uav"],self.world_definition["N_obs"],self.world_definition["home_path"],self.world_definition["solver_algorithm"])
+        self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}"\
+                                 .format(self.world_definition["mission"],self.world_definition["type"],self.world_definition["N_uav"],
+                                 N_obs_mixed,self.world_definition["home_path"],self.world_definition["solver_algorithm"])
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
         
-        # Ask user if conflict
+        # Ask user if the new simulation already exists
         if os.path.exists(self.second_folder_path):
-            selected = raw_input("Selected dataset already exists. To finish simulation, press \"q\". To add, press \"a\". To renew the dataset, press any other.")
+            selected = raw_input("Selected dataset already exists. \
+                \nTo finish simulation, press \"q\". To skip saving, press \"n\". \
+                \nTo add, press \"a\". \nTo renew the dataset, press any other.")
             # Quit option
             if selected == "q":
                 return "q"
 
+            # No saving option, deactivate its flag
+            elif selected == "n":
+                self.world_definition['save_flag'] = False
+                return "n"
+
             # Add option, from existing number of dataset
             elif selected == "a":
+                # Read how mane simulations already exist
                 n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
+
+                # Create a bias to add it to the new simulation pointer
                 if self.world_definition["N_iter"] != 0:
                     shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
                     self.n_simulation_bias = n_prior_simulations -1
@@ -143,7 +197,7 @@ class Master(object):
 
                 return "a"
 
-            # Reset dataset option
+            # Reset dataset option, remove existing simulations and start by 0
             elif (selected != "q") and (selected != "a"):
                 shutil.rmtree(self.second_folder_path)
                 return "r"
@@ -152,24 +206,26 @@ class Master(object):
 
         return "g"
 
-    # Save parameters that define the whole dataset
+    # Save parameters that define the whole dataset.
+    # This function is called to sum up the dataset and contains information of its performance
     def SavingDatasetDefinition(self):
-        local_dicc = {'simulation_n' : [], 'succeed' : [], 'message': []}
+        global_dicc = {'simulation_n' : [], 'succeed' : [], 'message': []}
 
-        # Check file existance and read it
+        # Check every file existance, read its success and message info and add it to a
+        # global dictionary with info of all dataset
         for f in os.listdir(self.second_folder_path):
             if os.path.isdir(os.path.join(self.second_folder_path, f)):
                 try:
                     df = pd.read_csv(self.second_folder_path + '/' + f + '/' + 'world_definition.csv')
-                    local_dicc['simulation_n'].append(int(f.split('_')[1]))
-                    local_dicc['succeed'].append(df['simulation_succeed'][0])
-                    local_dicc['message'].append("still_nothing")
+                    global_dicc['simulation_n'].append(int(f.split('_')[1]))
+                    global_dicc['succeed'].append(df['simulation_succeed'][0])
+                    global_dicc['message'].append("still_nothing")
                 except:
                     pass
         
-        # Write new info
-        self.performance_info = pd.DataFrame(local_dicc).sort_values(by=['simulation_n'])
-        self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',') #,low_memory=False,
+        # Convert the global dictionary into csv and write it to file
+        self.performance_info = pd.DataFrame(global_dicc).sort_values(by=['simulation_n'])
+        self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',')
         with open(self.second_folder_path + '/dataset_definition.csv','wb') as f:
             w = csv.writer(f)
             w.writerows(self.world_definition.items())
@@ -182,13 +238,14 @@ class Master(object):
         rospy.set_param('world_definition', self.world_definition)
         time.sleep(5)
 
+    # After a simulation, some processes stay alive nut must be closed
     def processess_killer(self,level):
-        
         [os.system("pkill -9 {}".format(proc)) for proc in ["px4","mavros_node"]]
         if level >= 2:
             [os.system("pkill -9 {}".format(proc)) for proc in ["server","python","python2"]]
 
     #### listener functions ####
+    # Master only listens to ANSP for the end of simulation message
     def MasterListener(self):
         rospy.Service('/pydag/ANSP/simulation_termination', DieCommand, self.handle_simulation_termination)
 

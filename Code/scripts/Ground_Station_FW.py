@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 import os
@@ -23,39 +23,46 @@ from pydag.srv import *
 from UAV import UAV
 from Ground_Station_SM import Ground_Station_SM
 
+# from FwQgc import FwQgc
+
 class Ground_Station(object):
 
+    ### Initialiations ###
     def __init__(self,ID):
 
         self.ID = int(ID)
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
 
-        self.brain = Brain(self.ID,self.role)       # Creation of a brain associated to this drone
+        self.brain = Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
 
         # Local variables initialization
         self.global_data_frame = pd.DataFrame()     # Data frame where to store this UAV dynamical simulation data for future dump into a csv
         self.global_frame_depth = []        # Data frame where to store this UAV depth image simulation data for future dump into a csv
+
         self.distance_to_goal = 10000
         self.goal = {}      # Structure to store goal specifications
-        self.accepted_target_radio = 0.5
-
-        self.start=time.time()      # Counter to check elapsed time from beginning of mission
-        self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
         self.start_time_to_target = time.time()     # Counter to check elapsed time to achieve a goal
 
-        # Creation of a list with every UAVs' home frame
-        self.uav_frame_list = []
-        for n_uav in np.arange(self.N_uav):
-            self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
+        self.accepted_target_radio = 0.5        # In the future, received on the world definition
+
+        self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
+        self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
+
+        # # Creation of a list with every UAVs' home frame
+        # self.uav_frame_list = []
+        # for n_uav in np.arange(self.N_uav):
+        #     self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
 
         # Wait time to let Gazebo's Real Time recover from model spawns
         time.sleep(10 * self.N_uav)
         time.sleep((self.ID-1) * 8)
 
-
         # Assiignation of an ICAO number for every UAV. Used if ADSB communications are active
         ICAO_IDs = {1: "40621D", 2:"40621D", 3: "40621D"}
+        self.state = "landed"       # Initially the UAV is soposed to be landed
+        self.collision = False       # Initially there has not been collisions
+        self.die_command = False        # Flag later activate from ANSP to finish simulation
 
         rospy.init_node('ground_station_{}'.format(self.ID), anonymous=True)        # Start the node
 
@@ -65,13 +72,12 @@ class Ground_Station(object):
         for n_uav in range(1,self.N_uav+1):
             self.uavs_list.append(UAV(n_uav,self.ID,ICAO_IDs[n_uav]))
 
-
-        self.state = "landed"       # Initially the UAV is soposed to be landed
-        self.collision = False       # Initially there has not been collisions
-        self.die_command = False        # Flag later activate from ANSP to finish simulation
-
         self.GroundStationListener()        # Start listening
         print "ground station",ID,"ready and listening"
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.fw_qgc = FwQgc()
+            self.fw_qgc.ual_use = True
 
         gs_sm = Ground_Station_SM(self)     # Create Ground Station State Machine
         outcome = gs_sm.gs_sm.execute()     # Execute State Machine
@@ -123,8 +129,15 @@ class Ground_Station(object):
     ## Functions to deal with any UAL server.
     # In the future, one utility should be used to replicate code for wait and send message
 
+    ### Commander functions ###
+
     # Function to deal with UAL server Land
     def LandCommand(self,blocking):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.LandCommand_FW(blocking)
+            return
+
         rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
         try:
             ual_land = rospy.ServiceProxy('/uav_{}/ual/land'.format(self.ID), Land)
@@ -133,6 +146,13 @@ class Ground_Station(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in go_to_waypoint"
+
+    def LandCommand_FW(self, blocking, land_point):
+
+        actual_position = self.uavs_list[self.ID-1].position.pose.position
+        self.fw_qgc.MoveCommand("land",[[actual_position.x,actual_position.y,10.0],
+                                   [actual_position.x,actual_position.y + 100.0,0.0]]
+                                   ,0)
 
     # Function to deal with UAL server Go To Way Point
     def GoToWPCommand(self,blocking,goal_WP_pose):
@@ -194,6 +214,11 @@ class Ground_Station(object):
 
     # Function to deal with UAL server Take Off
     def TakeOffCommand(self,heigth, blocking):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.TakeOffCommand_FW(heigth, blocking)
+            return
+
         rospy.wait_for_service('/uav_{}/ual/take_off'.format(self.ID))
         try:
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/take_off'.format(self.ID), TakeOff)
@@ -202,6 +227,11 @@ class Ground_Station(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in take_off"
+
+    def TakeOffCommand_FW(self,heigth, blocking):
+
+        actual_position = self.uavs_list[self.ID-1].position.pose.position
+        self.fw_qgc.MoveCommand("takeoff",[actual_position.x,actual_position.y,actual_position.z + heigth],0)
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
@@ -214,25 +244,12 @@ class Ground_Station(object):
             print "Service call failed: %s"%e
             print "error in set_home"
 
-    # Function to inform ANSP about actual UAV's state
-    def ANSPStateActualization(self):
-        rospy.wait_for_service('/pydag/ANSP/state_actualization')
-        try:
-            # print "path for uav {} command".format(ID)
-            ANSP_state_actualization = rospy.ServiceProxy(
-                '/pydag/ANSP/state_actualization', StateActualization)
-            ANSP_state_actualization(self.ID, self.state, self.collision)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
-            print "error in state_actualization"
-
     ### Role functions ###
 
     # Function to model the target of role UAV Follower AD
     def UAVFollowerAtDistance(self,target_ID,distance):
 
-        self.queue_of_followers_ad_distance = distance      # Save the distance requiered
+        self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
         # Actualize the state and send it to ANSP
         self.state = "following UAV {} at distance".format(target_ID)
@@ -270,7 +287,7 @@ class Ground_Station(object):
                 self.Evaluator()        # Evaluate the situation
 
             else:
-                self.SetVelocityCommand(True)       # If on goal, hover
+                self.SetVelocityCommand(True)       # If on goal, hover. In future should still be take care off collisions
 
             time.sleep(0.2)
 
@@ -309,12 +326,12 @@ class Ground_Station(object):
 
             self.GoalStaticBroadcaster()        # Broadcast TF of goal. In future should not be static
 
-            # Fulfil goal variable fields to be later stored
+            # Fulfil goal variable fields to be later stored. Those are no used, fix in the future.
             self.goal["pose"] = self.goal_WP_pose
             self.goal["vel"] = self.uavs_list[target_ID-1].velocity.twist
 
             # Control distance to goal
-            if self.DistanceToGoal() > 0.5:
+            if self.DistanceToGoal() > self.accepted_target_radio:
 
                 self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
                 self.Evaluator()        # Evaluate the situation
@@ -326,6 +343,10 @@ class Ground_Station(object):
 
     # Function to model the target of role follow static waypoint path
     def PathFollower(self):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.PathFollower_FW()
+            return
 
         # Control in every single component of the list
         for i in np.arange(len(self.goal_path_poses_list)):
@@ -347,7 +368,7 @@ class Ground_Station(object):
                 time.sleep(0.2)
 
             self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
-            self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
+            #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
 
             # Actualize state and send it to ANSP
             self.state = "in WP {}".format(i+1)
@@ -357,6 +378,14 @@ class Ground_Station(object):
 
             self.Evaluator()          # Evaluate the situation
 
+    def PathFollower_FW(self):
+        goal_list = []
+        for i in np.arange(len(self.goal_path_poses_list)):
+            goal_WP_pose = self.goal_path_poses_list[i].pose
+
+            goal_list.append([goal_WP_pose.x,goal_WP_pose.y,goal_WP_pose.z])
+        self.fw_qgc.MoveCommand("pass",goal_list,0)
+
     # Function to model the target of role of single basic move
     def basic_move(self,move_type,dynamic,direction,value):
 
@@ -365,29 +394,29 @@ class Ground_Station(object):
             self.TakeOffCommand(value,True)
         elif move_type == "land":
             self.LandCommand(True)
-        elif move_type == ("translation" or "rotation"):
+        elif move_type == ("translation" or "rotation"):        # Future, rotation or turn? Choose onw
 
             # If translation, check direction
-            change_vect=[[0,0,0],[0,0,0]]
+            change_matrix=[[0,0,0],[0,0,0]]
             if move_type == "translation":
                 if direction == "up" or direction == "down":
-                    change_vect[0][2] = value*(1-2*(direction=="down"))
+                    change_matrix[0][2] = value*(1-2*(direction=="down"))
                 elif direction == "left" or direction == "right":
-                    change_vect[0][1] = value*(1-2*(direction=="left"))
+                    change_matrix[0][1] = value*(1-2*(direction=="left"))
                 elif direction == "forward" or direction == "backward":
-                    change_vect[0][0] = value*(1-2*(direction=="backward"))
+                    change_matrix[0][0] = value*(1-2*(direction=="backward"))
 
             # If turn, check direction
             if move_type == "turn":
-                change_vect[1][3] = value*(1-2*(direction=="left"))
+                change_matrix[1][3] = value*(1-2*(direction=="left"))
 
             # If position change, add direction, actualize goal and call PathFollower
             if dynamic == "position":
                 goal_WP_pose = copy.deepcopy(self.uavs_list[self.ID-1].position.pose)
 
-                goal_WP_pose.position.x += change_vect[0][0]
-                goal_WP_pose.position.y += change_vect[0][1]
-                goal_WP_pose.position.z += change_vect[0][2]
+                goal_WP_pose.position.x += change_matrix[0][0]
+                goal_WP_pose.position.y += change_matrix[0][1]
+                goal_WP_pose.position.z += change_matrix[0][2]
                 # self.goal_WP_pose = goal_WP_pose
                 self.goal_path_poses_list = [goal_WP_pose]
                 self.PathFollower()
@@ -400,34 +429,14 @@ class Ground_Station(object):
                 ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
                 h = std_msgs.msg.Header()
                 goal_WP_vel = TwistStamped()
-                goal_WP_vel.linear.x += change_vect[0][0]
-                goal_WP_vel.linear.y += change_vect[0][1]
-                goal_WP_vel.linear.z += change_vect[0][2]
+                goal_WP_vel.linear.x += change_matrix[0][0]
+                goal_WP_vel.linear.y += change_matrix[0][1]
+                goal_WP_vel.linear.z += change_matrix[0][2]
                 ual_set_velocity(TwistStamped(h,new_velocity_twist))
 
         return "completed"
 
     ### Utility functions ###
-
-    # Function to calculate the distance from actual position to goal position
-    def DistanceToGoal(self):
-        self.distance_to_goal = math.sqrt((self.uavs_list[self.ID-1].position.pose.position.x-self.goal_WP_pose.position.x)**2+(self.uavs_list[self.ID-1].position.pose.position.y-self.goal_WP_pose.position.y)**2+(self.uavs_list[self.ID-1].position.pose.position.z-self.goal_WP_pose.position.z)**2)
-        return self.distance_to_goal
-
-    # Function to calculate the distance between two poses
-    def DistanceBetweenPoses(self,pose_1,pose_2):
-        Distance = math.sqrt((pose_1.position.x-pose_2.position.x)**2+(pose_1.position.y-pose_2.position.y)**2+(pose_1.position.z-pose_2.position.z)**2)
-        return Distance
-
-    # Function to calculate the distance from actual position to an obstacle position
-    def DistanceToObs(self,pose_1,vector):
-        Distance = math.sqrt((pose_1.position.x-vector[0])**2+(pose_1.position.y-vector[1])**2+(pose_1.position.z-vector[2])**2)
-        return Distance
-
-    # Function to calculate the Velocity Module of a Twist
-    def VelocityModule(self,twist):
-        Module = np.sqrt(twist.linear.x**2+twist.linear.y**2+twist.linear.z**2)
-        return Module
 
     # Function to evaluate performance about different terms
     def Evaluator(self):
@@ -490,7 +499,7 @@ class Ground_Station(object):
 
         elif main_role == "uav_ad":
             single_frame["goal"] = [[self.parse_4CSV([self.uavs_list[self.ID - 2]],"uavs_list")[0]]]
-            single_frame["goal"][0][0]["distance"] = self.queue_of_followers_ad_distance
+            single_frame["goal"][0][0]["distance"] = self.queue_of_followers_at_distance
 
         elif main_role == "uav_ap":
             single_frame["goal"] = [[self.parse_4CSV([self.uavs_list[self.ID - 2]],"uavs_list")[0]]]
@@ -562,6 +571,42 @@ class Ground_Station(object):
         if self.depth_camera_use == True:
             with open(folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
                 pickle.dump(self.global_frame_depth, f, pickle.HIGHEST_PROTOCOL)
+
+    # Function to inform ANSP about actual UAV's state
+    def ANSPStateActualization(self):
+        self.uavs_list[self.ID-1].changed_state = True       # Actualization of the state to the main UAV object
+
+        rospy.wait_for_service('/pydag/ANSP/state_actualization')
+        try:
+            # print "path for uav {} command".format(ID)
+            ANSP_state_actualization = rospy.ServiceProxy(
+                '/pydag/ANSP/state_actualization', StateActualization)
+            ANSP_state_actualization(self.ID, self.state, self.collision)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+            print "error in state_actualization"
+
+    # Function to calculate the distance from actual position to goal position
+    def DistanceToGoal(self):
+        self.distance_to_goal = math.sqrt((self.uavs_list[self.ID-1].position.pose.position.x-self.goal_WP_pose.position.x)**2+(self.uavs_list[self.ID-1].position.pose.position.y-self.goal_WP_pose.position.y)**2+(self.uavs_list[self.ID-1].position.pose.position.z-self.goal_WP_pose.position.z)**2)
+        return self.distance_to_goal
+
+    # Function to calculate the distance between two poses
+    def DistanceBetweenPoses(self,pose_1,pose_2):
+        Distance = math.sqrt((pose_1.position.x-pose_2.position.x)**2+(pose_1.position.y-pose_2.position.y)**2+(pose_1.position.z-pose_2.position.z)**2)
+        return Distance
+
+    # Function to calculate the distance from actual position to an obstacle position
+    def DistanceToObs(self,pose_1,vector):
+        Distance = math.sqrt((pose_1.position.x-vector[0])**2+(pose_1.position.y-vector[1])**2+(pose_1.position.z-vector[2])**2)
+        return Distance
+
+    # Function to calculate the Velocity Module of a Twist
+    def VelocityModule(self,twist):
+        Module = np.sqrt(twist.linear.x**2+twist.linear.y**2+twist.linear.z**2)
+        return Module
+
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):

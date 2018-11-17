@@ -13,7 +13,6 @@ import time
 import math
 import numpy as np
 import tf, tf2_ros
-from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
@@ -36,8 +35,8 @@ class Worlds(object):
             # Save world definition params
             self.N_uav = self.world_definition['N_uav']
             self.N_obs = self.world_definition['N_obs']
-            self.path_length = self.world_definition['path_length']
-        
+            self.path_length = self.world_definition['path_length']         # In the future would be interesting to be able to decide this for every path generatoiion
+
         self.obstacleGenerator()        # Decide position and spawn the obstacles
 
     # Decide the position and shape and spawn in Gazebo the obstacles
@@ -52,7 +51,7 @@ class Worlds(object):
 
         # Initialization of lists
         self.n_obs = 0
-        self.obs_list = []      # List with the objects that deal with an obstacle 
+        self.obs_list = []      # List with the objects that deal with an obstacle
         self.obs_shape_list = []         # List with the shapes of the objects
         self.obs_pose_list = []         # List with the poses of the objects
         self.obs_transforms_list = []       # List of obstacles TF
@@ -93,7 +92,7 @@ class Worlds(object):
 
                 # Add to the wholes poses list
                 self.obs_pose_list.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
-        
+
         # elif self.world_type == 2:
 
         #     # Set scenario parameters
@@ -112,7 +111,7 @@ class Worlds(object):
         #                     obs_orientation = Quaternion(0,0,0,0)
         #                 elif self.world_type == 2:
         #                     obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
-                            
+
         #                 self.poses_matrix[i][j][k]=Pose(Point(-10+self.dbo[0]*1.5+i*self.dbo[0],\
         #                                                     -(self.dbo[1]*self.obstacles_raw_matrix.shape[1])/2.0+j*self.dbo[1],\
         #                                                     1+k*self.dbo[2]),\
@@ -123,8 +122,8 @@ class Worlds(object):
         #                     self.obs_list.append(Obstacle(self.n_obs,\
         #                                                         product_xml_dict[shape],\
         #                                                         self.poses_matrix[i][j][k],\
-        #                                                         self.obs_transforms_list))              
-        #                     # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
+        #                                                         self.obs_transforms_list))
+        #                     # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
         #                     self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
         #                     self.n_obs=self.n_obs+1
         #     self.world_definition["N_obs"] = self.n_obs
@@ -132,7 +131,7 @@ class Worlds(object):
         elif self.world_type == 3 or self.world_type == 4:
 
             # Set scenario parameters
-            self.dbo=[10,5,5]       # Define the distance between objects of the tube of objects
+            self.dbo=[10,3.5,3.5]       # Define the distance between objects of the tube of objects
             self.obstacle_density = 0.5     # Defines the probability that in a point of the tube there is an obstacle or not
 
             # Initializes a tensor with random values and shaped as the obstacle tube
@@ -158,14 +157,14 @@ class Worlds(object):
                             obs_orientation = Quaternion(0,0,0,0)
                         elif self.world_type == 4:
                             obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
-                            
+
                         # Create a matrix with the poses of the obstacles in the positions in which has been created one
-                        self.poses_matrix[i][j][k]=Pose(Point(-10+self.dbo[0]*1.5+i*self.dbo[0],\
+                        self.poses_matrix[i][j][k]=Pose(Point(i*self.dbo[0],\
                                                               -(-self.dbo[1]/2.0+self.dbo[1]*self.obstacles_raw_matrix.shape[1])/2.0+j*self.dbo[1],\
-                                                              1+k*self.dbo[2]),\
+                                                              (k+0.5)*self.dbo[2]),\
                                                         obs_orientation)
 
-                        # For every obstacled that has been created                     
+                        # For every obstacled that has been created
                         if self.obstacles_positions[i,j,k] == True:
 
                             # Randomize shape or not
@@ -180,13 +179,13 @@ class Worlds(object):
                             self.obs_list.append(Obstacle(self.n_obs,\
                                                                 product_xml_dict[shape],\
                                                                 self.poses_matrix[i][j][k],\
-                                                                self.obs_transforms_list))              
+                                                                self.obs_transforms_list))
 
-                            # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])       
+                            # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
                             # Add also its single list pose to the list of single list poses
                             self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
-                            
+
                             self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
 
             self.world_definition["N_obs"] = self.n_obs     # Actualize the final number of obstacles to the world definition so it will be a ROS param
@@ -201,9 +200,8 @@ class Worlds(object):
     # Generate a new adequate path for each world
     def PathGenerator(self):
 
-
         if self.world_type == 1:
-            
+
             # Think on cylindric coordinates. The base circle is centered in [0,0,0]
             # Definition of a random radius, angle and height for the first waypoint
             uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
@@ -254,26 +252,25 @@ class Worlds(object):
 
         elif self.world_type == 3 or self.world_type == 4:
 
-            # Position a random point at the edge of the obstacles tube that is neares to [0,0,0]
-            self.path_poses_list = [Pose(Point(-10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0],
-                                        (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
-                                        1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),\
-                                    Quaternion(0,0,0,0))]
 
-            # for the next waypoints, posision random points at one edge of the tube every each time
-            for n_WP in np.arange(self.path_length-1):
+            # for every waypoint, posision random points at one edge of the tube every each time
+            self.path_poses_list = []
+            for n_WP in np.arange(self.path_length):
                 if n_WP % 2 == 1:
-                    Point_x = -10 + \
-                        self.dbo[0]*3 + \
-                        self.obstacles_raw_matrix.shape[0]*self.dbo[0]
+                    Point_x = -10 + self.obstacles_raw_matrix.shape[0]*self.dbo[0] + 10
                 elif n_WP % 2 == 0:
-                    Point_x = -10+self.dbo[0]*0.5
+                    Point_x = -10
+
+                # new_pose = Pose(Point(Point_x,
+                #                       float((np.random.rand(1)-0.5) * self.obstacles_raw_matrix.shape[1]),
+                #                       1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),
+                #                 Quaternion(0, 0, 0, 0))
 
                 new_pose = Pose(Point(Point_x,
-                                      (np.random.rand(1)-0.5) *
-                                      self.obstacles_raw_matrix.shape[1],
-                                      1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),
+                                      0,
+                                      self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2),
                                 Quaternion(0, 0, 0, 0))
+
                 self.path_poses_list.append(new_pose)
 
             # for i in np.arange(self.obstacles_raw_matrix.shape[0]):
@@ -318,7 +315,6 @@ class Worlds(object):
 
         #     self.path_poses_list.append(goal_pose)
 
-
         return self.path_poses_list
 
     # Function to all every saved obstacle and call its erase method
@@ -345,7 +341,6 @@ class Worlds(object):
         self.mission = self.world_definition['mission']
         self.world_type = self.world_definition['type']
         self.home_path = self.world_definition['home_path']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_tube = self.world_definition['obs_tube']
 
 # Class to deal with one single obstacle
@@ -376,7 +371,7 @@ class Obstacle(object):
 
     # Function to query the service to spawn an obstacle
     def Spawner(self):
-        try: 
+        try:
             rospy.wait_for_service('gazebo/spawn_sdf_model')
             item_name = 'obstacle_{0}'.format(self.ID)
             item_pose = self.pose
@@ -395,9 +390,9 @@ class Obstacle(object):
         static_transformStamped.header.stamp = rospy.Time.now()
         static_transformStamped.header.frame_id = "map"
         static_transformStamped.child_frame_id = "obs_{}".format(self.ID+1)
-    
+
         static_transformStamped.transform.translation = self.pose.position
-    
+
         quat = tf.transformations.quaternion_from_euler(0,0,0)
         static_transformStamped.transform.rotation.x = quat[0]
         static_transformStamped.transform.rotation.y = quat[1]
@@ -406,7 +401,7 @@ class Obstacle(object):
 
 
         self.obstacle_transform_list.append(static_transformStamped)
-        
+
     # Broadcast all transformations in the list
     def Tf2UnifiedBroadcaster(self):
         broadcaster = tf2_ros.StaticTransformBroadcaster()

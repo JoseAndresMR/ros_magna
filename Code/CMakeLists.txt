@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   message_generation
   uav_abstraction_layer
+  fixedwingual
   actionlib_msgs
   actionlib
 )

@@ -15,18 +15,16 @@ import tf
 import rvo2
 import rvo23d
 import time
-from cv_bridge import CvBridge, CvBridgeError
+# from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
-import tensorflow as tflow
+# import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
-
-
 
 class Brain(object):
     def __init__(self,ID,role):
-        # Local parameters inizialization from arguments 
+        # Local parameters inizialization from arguments
         self.ID = ID
         self.role = role
 
@@ -71,7 +69,7 @@ class Brain(object):
 
         elif self.solver_algorithm == "orca3":
             return self.ORCA3()
-        
+
     # Function to set new velocity using a Neural Network
     def NeuralNetwork(self):
 
@@ -92,10 +90,10 @@ class Brain(object):
         inputs = []
         main_uav_pos = self.uavs_list[self.ID-1].position.pose.position
         main_uav_vel = self.uavs_list[self.ID-1].velocity.twist.linear
-        
+
         # For every input in the dictionary, crate if needed and add it to inputs
         for n_input in input_dicc:
-            
+
             # own vel
             if n_input == "own_vel":
                 inputs.append(main_uav_vel.x)
@@ -115,7 +113,7 @@ class Brain(object):
 
             elif n_input == "distance":
                 inputs.append(self.goal["dist"])
-            
+
             elif n_input == "others_pos_rel":
                 for n_uav in range(self.N_uav):
                     if n_uav+1 != self.ID:
@@ -123,7 +121,7 @@ class Brain(object):
                         inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
                         inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
                         inputs.append(self.uavs_list[n_uav].position.pose.position.z-main_uav_pos.z)
-                
+
             elif n_input == "others_vel":
                 for n_uav in range(self.N_uav):
                     if n_uav+1 != self.ID:
@@ -154,28 +152,28 @@ class Brain(object):
                 # Construct the twist
                 new_velocity_twist = Twist(Vector3(selected_velocity[0],selected_velocity[1],selected_velocity[2]),Vector3(0,0,0))
                 output_index += 3
-                
+
         # print("nn",new_velocity_twist)
         # self.ORCA3()
         return new_velocity_twist
-    
+
     # Function to set velocity using ORCA on 3D
     def ORCA3(self):
 
         # Give value to orca algorithm parameters
-        timeStep = 0.3          # 1/60.  float   The time step of the simulation. Must be positive. 
+        timeStep = 0.3          # 1/60.  float   The time step of the simulation. Must be positive.
         neighborDist = 4.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
-        maxNeighbors = 4        # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
-        timeHorizon = 2.5       # 1.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
+        maxNeighbors = 10        # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
+        timeHorizon = 10       # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
         uav_radius = 0.5        # 2      float   The radius of the agent. Must be non-negative
-        maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative. 
-        velocity = (1, 1, 1)    
+        maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
+        velocity = (1, 1, 1)
 
         # Select obstacle radius depending on world type
         if self.world_type == 1:
             obs_radius = 0.5
         elif self.world_type == 3:
-            obs_radius = 3.5
+            obs_radius = 2.5
 
         # Create an object of orca3 solver class and give the above defined parameters
         sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, velocity)
@@ -233,7 +231,7 @@ class Brain(object):
         relative_distance = np.asarray([self.goal["pose"].position.x-self.uavs_list[self.ID-1].position.pose.position.x,\
                                 self.goal["pose"].position.y-self.uavs_list[self.ID-1].position.pose.position.y,\
                                 self.goal["pose"].position.z-self.uavs_list[self.ID-1].position.pose.position.z])
-                        
+
         distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
 
         # If at a distance shorter than aproximation distance, reduce the velocity module
@@ -273,13 +271,13 @@ class Brain(object):
     # def ORCA(self):
 
     #     # start = time.time()
-    #     sim = rvo2.PyRVOSimulator(0.3,     # 1/60.  float   timeStep           The time step of the simulation. Must be positive. 
+    #     sim = rvo2.PyRVOSimulator(0.3,     # 1/60.  float   timeStep           The time step of the simulation. Must be positive.
     #                             4.0,     # 1.5    float   neighborDist       The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
     #                             4,       # 5      size_t  maxNeighbors       The maximal number of other agents the agent takes into account in the navigation
-    #                             2.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents. 
+    #                             2.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
     #                             2.5,     # 2      float   timeHorizonObst    The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to obstacles.
     #                             0.5,     # 0.4    float   radius             The radius of the agent. Must be non-negative
-    #                             2.0)     # 2      float   maxSpeed           The maximum speed of the agent. Must be non-negative. 
+    #                             2.0)     # 2      float   maxSpeed           The maximum speed of the agent. Must be non-negative.
 
     #     # antiguo para 1-2: 1/60. 3.0 4 1.5 2.5 0.5 2.0
 
@@ -350,7 +348,7 @@ class Brain(object):
             Distance = math.sqrt((obs_pos[0]-own_pose.x)**2+(obs_pos[1]-own_pose.y)**2+(obs_pos[2]-own_pose.z)**2)
             obs_distances.append(Distance)
         obs_distances_sorted = list(np.argsort(obs_distances))[:self.N_obs]
-        
+
         return uav_distances_sorted, obs_distances_sorted
 
     # Function to get Global ROS parameters

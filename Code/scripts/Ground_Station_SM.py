@@ -24,7 +24,7 @@ class Ground_Station_SM(object):
                             {'completed':'completed'})
 
             # Every action service wrapper is similar following a structure defined by SMACH.
-            # Each wrapper is defined and added to 
+            # Each wrapper is defined and added to
             # To understand what they do, see callbacks below
 
             ### TAKE-OFF STATE MACHINE & WRAPPER ###
@@ -171,7 +171,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed'})
-            
+
             if heritage.smach_view == True:
                 sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.gs_sm, '/UAV_{}'.format(heritage.ID))
                 sis.start()
@@ -197,7 +197,7 @@ class Ground_Station_SM(object):
 
     @cb_interface(outcomes=['completed','failed'])
     def take_off_stcb(ud,heritage):
-        print("TAKE OF COMMAND")
+        print("TAKE OFF COMMAND")
 
         heritage.TakeOffCommand(5,True)     # Tell GS to take off. In the future altitude will be received
 
@@ -211,7 +211,7 @@ class Ground_Station_SM(object):
     def follow_path_stcb(ud,heritage):
 
         # Copy the goal path to follow into GS's variable
-        heritage.goal_path_poses_list = ud.action_goal.goal_path_poses_list     
+        heritage.goal_path_poses_list = ud.action_goal.goal_path_poses_list
         heritage.PathFollower()     # Tell the GS to execute that node
 
         return 'completed'
@@ -270,7 +270,7 @@ class Ground_Station_SM(object):
         value = ud.action_goal.value
 
         # Tell the GS to execute basic move role with parsed information
-        heritage.basic_move(move_type,dynamic,direction,value)        
+        heritage.basic_move(move_type,dynamic,direction,value)
 
 
         return 'completed'

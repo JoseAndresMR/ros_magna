@@ -17,7 +17,6 @@ import shutil
 import csv
 import subprocess
 import signal
-from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from std_srvs.srv import *
@@ -30,27 +29,28 @@ import utils
 class Master(object):
     def __init__(self):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
-        self.world_definition = {'mission'       :     "long_wait"          ,\
-                            'type'               :                2                     ,\
-                            'n_dataset'          :                1                     ,\
-                            'n_simulation'       :                1                     ,\
-                            'N_uav'              :                1                     ,\
-                            'uav_models'         : ["plane","typhoon_h480","typhoon_h480"]     ,\
-                            'N_obs'              :                0                     ,\
-                            'obs_tube'           :             [1,3,3]                  ,\
-                            'path_length'        :                2                     ,\
-                            'solver_algorithm'   :             "orca3"                  ,\
-                            'N_iter'             :               200                    ,\
-                            'px4_use'            :             "complete"               ,\
-                            'communications'     :             "direct"                 ,\
-                            'heading_use'        :              False                   ,\
-                            'depth_camera_use'   :              True                   ,\
-                            'smach_view'         :              False                   ,\
-                        }
+        self.world_definition = {
+        'mission'            :              "follow_paths_sbys",              # Global mission that characterizes every UAV's role
+        'type'               :                       1,                       # Type of the world or sceneario created
+        'n_dataset'          :                       1,                       # Number of the dataset to create
+        'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
+        'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
+        'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
+        'N_obs'              :                       1,                       # Number of obstacles placed onto some kind of scenarios
+        'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
+        'path_length'        :                       2,                      # Length of the path for roles that follow one
+        'solver_algorithm'   :                    "orca3",                    # Algorithm for path-avoiding
+        'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
+        'px4_use'            :                    "complete",                 # Flag to decide if PX4 is used
+        'communications'     :                    "direct",                   # Kind of communications between UAVs
+        'heading_use'        :                     False,                     # Flag to decide if heading is controlled
+        'depth_camera_use'   :                     True,                     # Flag to decide if the info from depth camera is used
+        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
+        }
 
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization ROS parameter definition
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
 
-        # mission path definition for each user
+        # computer' path definition for each user
         user = "JA"
         if user == "JA":
             home_path = "josmilrom"
@@ -61,7 +61,7 @@ class Master(object):
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
-        
+
         ### Creation of the dictionary that defines the State Machine that composes the global mission
         # First part of mission is common
         ansp_sm_def=[]
@@ -69,11 +69,11 @@ class Master(object):
         ansp_sm_def.append(step_1)
         step_2 = {"type":"spawn_uavs"}
         ansp_sm_def.append(step_2)
-        # step_3 = {"type":"all_take_off_ccr"}
-        # ansp_sm_def.append(step_3)
+        step_3 = {"type":"all_take_off_ccr"}
+        ansp_sm_def.append(step_3)
         step_4 = {"type":"wait"}
         ansp_sm_def.append(step_4)
-        
+
         # This mission part is customized for every type of mission
         step_5 = {"type":"{}_sm".format(self.world_definition['mission'])}
         ansp_sm_def.append(step_5)
@@ -95,7 +95,6 @@ class Master(object):
         self.MasterListener()       # Start subscribers
         self.n_simulation_bias = 0      # Initi
 
-
         ### Bunch of simulations
         if botton_selected != "q":    # If user decission was not to abort, start bunch of simulations
             # Run every simulation
@@ -104,7 +103,7 @@ class Master(object):
                     ### Initialization for each simulation
                     # Set ROS param of current simulation id
                     rospy.set_param('world_definition/n_simulation', n_simulation)
-                    print 'n_simulation',n_simulation
+                    print('n_simulation',n_simulation)
 
                     self.ANSPSpawner()   # Start ANSP node. It will be in charge of this particuar mission
 
@@ -123,13 +122,13 @@ class Master(object):
                             self.ANSP_launch.shutdown()     # Terminate ANSP
                             self.simulation_finished = True    # Activate end flag
                 except:
-                    self.processess_killer(2)
+                    self.processess_killer(2)       # Kill unwanted processess
 
                 self.processess_killer(1)       # Kill unwanted processess
                 self.GazeboRestart()        # Restart Gazebo for next simulation
 
-        
-        self.SavingDatasetDefinition(1)     # Save all dataset information 
+
+        self.SavingDatasetDefinition(1)     # Save all dataset information
         self.processess_killer(2)       # Kill unwanted processess
 
     #### commander functions ####
@@ -150,7 +149,7 @@ class Master(object):
         roslaunch.configure_logging(uuid1)
         self.ANSP_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
             "/home/{0}/catkin_ws/src/pydag/Code/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
-        
+
         self.ANSP_launch.start()
 
     # Control if defined new dataset already exists
@@ -162,17 +161,17 @@ class Master(object):
             N_obs_mixed = int('{0}{1}{2}'.format(self.world_definition["obs_tube"][0],self.world_definition["obs_tube"][1],self.world_definition["obs_tube"][2]))
         else:
             N_obs_mixed = self.world_definition['N_obs']
-            
+
         # Build path from definition
         self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}"\
                                  .format(self.world_definition["mission"],self.world_definition["type"],self.world_definition["N_uav"],
                                  N_obs_mixed,self.world_definition["home_path"],self.world_definition["solver_algorithm"])
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
-        
+
         # Ask user if the new simulation already exists
         if os.path.exists(self.second_folder_path):
             selected = raw_input("Selected dataset already exists. \
-                \nTo finish simulation, press \"q\". To skip saving, press \"n\". \
+                \nTo finish simulation, press \"q\". \nTo skip saving, press \"n\". \
                 \nTo add, press \"a\". \nTo renew the dataset, press any other.")
             # Quit option
             if selected == "q":
@@ -222,7 +221,7 @@ class Master(object):
                     global_dicc['message'].append("still_nothing")
                 except:
                     pass
-        
+
         # Convert the global dictionary into csv and write it to file
         self.performance_info = pd.DataFrame(global_dicc).sort_values(by=['simulation_n'])
         self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',')

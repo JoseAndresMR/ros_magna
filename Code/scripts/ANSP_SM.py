@@ -18,13 +18,15 @@ class ANSP_SM(object):
             self.id = 1
             self.n_wp = 0
             self.target_ID = 1
-            
+
             # Addution of virtual state at the end of sm defining steps list
             heritage.ansp_sm_def.append({"type":"completed"})
 
             # For every entity in sm defining steps list, call function to add the step to sm
             for n_step in range(len(heritage.ansp_sm_def)):
                 self.add_sm_from_CSV(heritage,n_step)
+
+
 
             # If flag to view the sm is arised, start the introspector
             if heritage.smach_view == True:
@@ -39,6 +41,7 @@ class ANSP_SM(object):
 
         ### NEW WORLD
         if heritage.ansp_sm_def[n_step]["type"] == "new_world":
+
             StateMachine.add('new_world', CBState(self.new_world_stcb,cb_kwargs={'heritage':heritage}),
                                 {'completed':heritage.ansp_sm_def[n_step+1]["type"]})
 
@@ -50,6 +53,85 @@ class ANSP_SM(object):
                                         cb_kwargs={'heritage':heritage}),
                     {'completed': heritage.ansp_sm_def[n_step+1]["type"]},
                     remapping={})
+
+        ### WAIT
+        if heritage.ansp_sm_def[n_step]["type"] == "wait":
+            StateMachine.add('wait', CBState(self.wait_stcb,cb_kwargs={'heritage':heritage}),
+                                    {'completed':heritage.ansp_sm_def[n_step+1]["type"]})
+
+        ### LONG WAIT
+        if heritage.ansp_sm_def[n_step]["type"] == "long_wait_sm":
+            StateMachine.add('long_wait_sm', CBState(self.long_wait_stcb,cb_kwargs={'heritage':heritage}),
+                                    {'completed':heritage.ansp_sm_def[n_step+1]["type"]})
+
+        ### ALL TAKE OFF
+        if heritage.ansp_sm_def[n_step]["type"] == "all_take_off_ccr":
+
+            # Creation of a dictionary that defines outcomes. Now only implemented completed outcomes
+            outcome_map = {"completed" : {}}
+            for self.id in range(1,heritage.N_uav+1):
+                outcome_map["completed"]["{0}_take_off".format(self.id)] = "succeeded"
+
+            # Create Concurrence State machine and define its outputs
+            self.all_take_off_ccr = Concurrence(outcomes=['completed','failed'],
+                                    input_keys = [],
+                                    output_keys = [],
+                                    default_outcome = 'completed',
+                                    outcome_map = outcome_map)
+
+            with self.all_take_off_ccr:     # Define inside of Concurrence SM
+
+                for self.id in range(1,heritage.N_uav+1):       # Add an Action takeoff State for every AUV
+                     Concurrence.add('{0}_take_off'.format(self.id),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/take_off_command'.format(self.id),
+                                                    TakeOffAction,
+                                                    goal_cb=self.take_off_goal_cb,
+                                                    result_cb=self.take_off_result_cb,
+                                                    input_keys=['id','n_wp'],
+                                                    output_keys=['id','n_wp'],
+                                                    goal_cb_kwargs={},
+                                                    result_cb_kwargs={}),
+                                remapping={})
+
+            StateMachine.add('all_take_off_ccr'     # Add definded Concurrence State Machine
+                                ,self.all_take_off_ccr,
+                                transitions = {'completed':heritage.ansp_sm_def[n_step+1]["type"],
+                                                'failed': 'failed'})
+
+        ### ALL LAND
+        if heritage.ansp_sm_def[n_step]["type"] == "all_land_ccr":
+
+            # Creation of a dictionary that defines outcomes. Now only implemented completed outcomes
+            outcome_map = {"completed" : {}}
+            for self.id in range(1,heritage.N_uav+1):
+                outcome_map["completed"]["{0}_land".format(self.id)] = "succeeded"
+
+            # Create Concurrence State machine and define its outputs
+            self.all_land_ccr = Concurrence(outcomes=['completed','failed'],
+                                    input_keys = [],
+                                    output_keys = [],
+                                    default_outcome = 'completed',
+                                    outcome_map = outcome_map)
+
+            with self.all_land_ccr:
+
+                # Add an Action land State for every AUV
+                for self.id in range(1,heritage.N_uav+1):
+                     Concurrence.add('{0}_land'.format(self.id),
+                                SimpleActionState('/pydag/ANSP_UAV_{}/land_command'.format(self.id),
+                                                    LandAction,
+                                                    goal_cb=self.land_goal_cb,
+                                                    result_cb=self.land_result_cb,
+                                                    input_keys=['id','n_wp'],
+                                                    output_keys=['id','n_wp'],
+                                                    goal_cb_kwargs={},
+                                                    result_cb_kwargs={}),
+                                remapping={})
+
+            StateMachine.add('all_land_ccr'.format(self.n_wp)
+                                    ,self.all_land_ccr,
+                                    transitions = {'completed':'completed',
+                                                    'failed': 'failed'})
 
         ### BASIC MOVE
         if heritage.ansp_sm_def[n_step]["type"] == "basic_move_sm":
@@ -79,58 +161,14 @@ class ANSP_SM(object):
                     transitions={'completed':'completed',
                                     'failed': 'failed'})
 
-        ### WAIT
-        if heritage.ansp_sm_def[n_step]["type"] == "wait":
-            StateMachine.add('wait', CBState(self.wait_stcb,cb_kwargs={'heritage':heritage}),
-                                    {'completed':heritage.ansp_sm_def[n_step+1]["type"]})
-
-        ### LONG WAIT
-        if heritage.ansp_sm_def[n_step]["type"] == "long_wait_sm":
-            StateMachine.add('long_wait_sm', CBState(self.long_wait_stcb,cb_kwargs={'heritage':heritage}),
-                                    {'completed':heritage.ansp_sm_def[n_step+1]["type"]})
-
-        ### ALL TAKE OFF
-        if heritage.ansp_sm_def[n_step]["type"] == "all_take_off_ccr":
-
-            # Creation of a dictionary that defines outcomes. Now only implemented completed outcomes
-            outcome_map = {"completed" : {}}
-            for self.id in range(1,heritage.N_uav+1):
-                outcome_map["completed"]["{0}_take_off".format(self.id)] = "succeeded"
-            
-            # Create Concurrence State machine and define its outputs
-            self.all_take_off_ccr = Concurrence(outcomes=['completed','failed'],
-                                    input_keys = [],
-                                    output_keys = [],
-                                    default_outcome = 'completed',
-                                    outcome_map = outcome_map)
-
-            with self.all_take_off_ccr:     # Define inside of Concurrence SM
-                
-                for self.id in range(1,heritage.N_uav+1):       # Add an Action takeoff State for every AUV
-                     Concurrence.add('{0}_take_off'.format(self.id),
-                                SimpleActionState('/pydag/ANSP_UAV_{}/take_off_command'.format(self.id),
-                                                    TakeOffAction,
-                                                    goal_cb=self.take_off_goal_cb,
-                                                    result_cb=self.take_off_result_cb,
-                                                    input_keys=['id','n_wp'],
-                                                    output_keys=['id','n_wp'],
-                                                    goal_cb_kwargs={},
-                                                    result_cb_kwargs={}),
-                                remapping={})
-
-            StateMachine.add('all_take_off_ccr'     # Add definded Concurrence State Machine
-                                ,self.all_take_off_ccr,
-                                transitions = {'completed':heritage.ansp_sm_def[n_step+1]["type"],
-                                                'failed': 'failed'})
-
         ### FOLLOW PATHS SBYS
         if heritage.ansp_sm_def[n_step]["type"] == "follow_paths_sbys_sm":
 
             # Create global State machine and define its outputs
             self.follow_paths_sbys_sm = StateMachine(outcomes=['completed', 'failed'],
                                                     input_keys=[])
-            
-            with self.follow_paths_sbys_sm:     
+
+            with self.follow_paths_sbys_sm:
 
                 for self.n_wp in range(heritage.path_length):       # Add a state for every waypoint
 
@@ -138,7 +176,7 @@ class ANSP_SM(object):
                     outcome_map = {"completed" : {}}
                     for self.id in range(1,heritage.N_uav+1):
                         outcome_map["completed"]["{0}_follow_wp_{1}".format(self.id,self.n_wp)] = "succeeded"
-                    
+
                     # Create Concurrence State machine and define its outputs
                     self.follow_wp_ccr = Concurrence(outcomes=['completed','failed'],
                                             input_keys = [],
@@ -146,7 +184,7 @@ class ANSP_SM(object):
                                             default_outcome = 'completed',
                                             outcome_map = outcome_map)
 
-                    
+
                     with self.follow_wp_ccr:        # Define inside of Concurrence SM
 
                         for self.id in range(1,heritage.N_uav+1):       # Add an Action State for every AUV
@@ -185,7 +223,7 @@ class ANSP_SM(object):
             # Create global State machine and define its outputs
             self.queue_of_followers_ad_sm = StateMachine(outcomes=['completed', 'failed'],
                                                     input_keys=[])
-            
+
             with self.queue_of_followers_ad_sm:
 
                 # Creation of a dictionary that defines outcomes. Now only implemented completed outcomes
@@ -223,7 +261,7 @@ class ANSP_SM(object):
                     # For the rest of UAVs, define a state to follow the previous UAV at distance
                     for self.id in range(2,heritage.N_uav+1):
                         target_ID = self.id - 1
-                        
+
                         # Definition of distance, in the future will be defined externally
                         distance = 3
 
@@ -321,20 +359,20 @@ class ANSP_SM(object):
             outcome_map = {"completed" : {}}
             for self.id in range(1,heritage.N_uav+1):
                 outcome_map["completed"]["{0}_save_csv".format(self.id)] = "succeeded"
-            
-            # Create Concurrence State machine and define its outputs  
+
+            # Create Concurrence State machine and define its outputs
             self.all_save_csv_ccr = Concurrence(outcomes=['completed','failed'],
                                     input_keys = [],
                                     output_keys = [],
                                     default_outcome = 'completed',
                                     outcome_map = outcome_map)
-                                 
+
             with self.all_save_csv_ccr:
 
                 for self.id in range(1,heritage.N_uav+1):
 
                     # Add an Action save data State for every AUV
-                    Concurrence.add('{0}_save_csv'.format(self.id),        
+                    Concurrence.add('{0}_save_csv'.format(self.id),
                                 SimpleActionState('/pydag/ANSP_UAV_{}/save_csv_command'.format(self.id),
                                                     LandAction,
                                                     goal_cb=self.save_csv_goal_cb,
@@ -349,42 +387,6 @@ class ANSP_SM(object):
                                 ,self.all_save_csv_ccr,
                                 transitions = {'completed':heritage.ansp_sm_def[n_step+1]["type"],
                                                 'failed': 'failed'})
-
-        ### ALL LAND
-        if heritage.ansp_sm_def[n_step]["type"] == "all_land_ccr":
-
-            # Creation of a dictionary that defines outcomes. Now only implemented completed outcomes
-            outcome_map = {"completed" : {}}
-            for self.id in range(1,heritage.N_uav+1):
-                outcome_map["completed"]["{0}_land".format(self.id)] = "succeeded"
-            
-            # Create Concurrence State machine and define its outputs  
-            self.all_land_ccr = Concurrence(outcomes=['completed','failed'],
-                                    input_keys = [],
-                                    output_keys = [],
-                                    default_outcome = 'completed',
-                                    outcome_map = outcome_map)
-
-
-            with self.all_land_ccr:
-
-                # Add an Action land State for every AUV
-                for self.id in range(1,heritage.N_uav+1):
-                     Concurrence.add('{0}_land'.format(self.id),
-                                SimpleActionState('/pydag/ANSP_UAV_{}/land_command'.format(self.id),
-                                                    LandAction,
-                                                    goal_cb=self.land_goal_cb,
-                                                    result_cb=self.land_result_cb,
-                                                    input_keys=['id','n_wp'],
-                                                    output_keys=['id','n_wp'],
-                                                    goal_cb_kwargs={},
-                                                    result_cb_kwargs={}),
-                                remapping={})
-
-            StateMachine.add('all_land_ccr'.format(self.n_wp)
-                                    ,self.all_land_ccr,
-                                    transitions = {'completed':'completed',
-                                                    'failed': 'failed'})
 
     #### STATE CALLBACKS ####
 
@@ -419,18 +421,18 @@ class ANSP_SM(object):
 
         for i in range(heritage.N_uav):     # Do it for every UAV
             uav_goal_path = heritage.world.PathGenerator()      # Ask world to generate a path
-            print(len(uav_goal_path))
+
             heritage.path_length = len(uav_goal_path)       # Reset path length information
             heritage.uavs_goal_paths_list.append(uav_goal_path)     # Append the asked path to existing one
             first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
             # Change spawn features so it spawns under its first waypoint
-            heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0])      
+            heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0])
             heritage.UAVSpawner(i)      # Call service to spawn the UAV
             time.sleep(5)
         # time.sleep(20 * heritage.N_uav)
 
         return "completed"
-    
+
     #### ACTIONS CALLBACKS ####
 
     # Goal callback for takeoff state service

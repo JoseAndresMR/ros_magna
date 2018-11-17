@@ -18,7 +18,6 @@ import rosbag
 import subprocess
 import signal
 from std_msgs.msg import Int32, String
-from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
@@ -33,11 +32,11 @@ from ANSP_SM import ANSP_SM
 
 class ANSP(object):
     def __init__(self):
-        # Global parameters inizialization. 
+        # Global parameters inizialization.
         self.GettingWorldDefinition()
 
         ### Initializations
-        
+
         self.setRoles()     # Decompose mision into rules
         self.simulation_succeed = True      # Initialize succeed flag of this single simulation
 
@@ -62,100 +61,10 @@ class ANSP(object):
         self.bag.close()        # Close the rosbag that stores the simulation
 
 
-    #### Commander functions ####
-
-    # Function to send paths to each UAV. Launched by State Machine
-    def PathCommand(self,ID,goal_path_poses_list):
-        # Wait unit the required service is active
-        rospy.wait_for_service('/pydag/ANSP_UAV_{}/wp_list_command'.format(ID))
-        try:
-            # Create a proxy of the service
-            ual_path_command = rospy.ServiceProxy(
-                '/pydag/ANSP_UAV_{}/wp_list_command'.format(ID), WpPathCommand)
-
-            # Send the request with received information as goal
-            ual_path_command(np.array(goal_path_poses_list),False)
-            return
-
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in wp_list_command"
-
-    # Function to send instructions to each UAV. Launched by State Machine
-    def InstructionCommand(self,ID,Instruction):
-        rospy.wait_for_service('/pydag/ANSP_UAV_{}/instruction_command'.format(ID))
-        try:
-            instruction_command = rospy.ServiceProxy(
-                '/pydag/ANSP_UAV_{}/instruction_command'.format(ID), InstructionCommand)
-
-            instruction_command(Instruction)
-            return
-
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in instruction_command"
-
-    # Function to send termination instruction to each UAV
-    def SimulationTerminationCommand(self):
-        rospy.wait_for_service('/pydag/ANSP/simulation_termination')
-        try:
-            instruction_command = rospy.ServiceProxy('/pydag/ANSP/simulation_termination', DieCommand)
-            instruction_command(True)
-            return
-
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in simulation_termination"
-
-    # Function to close UAV Ground Station process
-    def UAVKiller(self):
-        for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1))
-            try:
-                die_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1), DieCommand)
-                die_command(True)
-                time.sleep(0.1)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                print "error in die_command"
-        return
-
-    # Function to close GAZEBO process
-    def GazeboModelsKiller(self):
-        for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('gazebo/delete_model')
-            try:
-                del_model_prox = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
-                model_name = "{0}_{1}".format(self.uav_models[n_uav],n_uav+1)
-                del_model_prox(model_name)
-                time.sleep(0.1)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e  
-                print "error in delete_model uav"
-        return
-
-    # Function to set UAV's ROSparameters. Launched by State Machine
-    def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
-        uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
-        uav_frame['translation'] = position
-        if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
-            yaw = yaw + np.pi
-        uav_frame['gz_initial_yaw'] =  yaw # radians
-        uav_frame['model'] = model      # Actualize on received param info
-        rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
-
-    # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
-    def UAVSpawner(self,ID):  
-        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-        roslaunch.configure_logging(uuid)
-        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA_{2}.launch".\
-            format(self.world_definition['px4_use'],self.home_path,ID+1)])
-        self.uav_spawner_launch.start()
+    #### Starter functions ####
 
     # Function to decompose each mission on a role for each UAV and set its param
     def setRoles(self):
-
         # Definition of decomposing dictionary
         mission_to_role_dicc = {"follow_paths_sbys":["path","path","path"],
                                 "queue_of_followers_ad":["path","uav_ad","uav_ad"],
@@ -171,6 +80,26 @@ class ANSP(object):
                 self.world_definition["roles_list"][n_uav] = self.world_definition["roles_list"][n_uav] \
                                                             + "_depth"
         rospy.set_param('world_definition',self.world_definition)       # Set the ROS param
+
+    # Function to set UAV's ROSparameters. Launched by State Machine
+    def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
+        uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
+        uav_frame['translation'] = position
+        if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
+            yaw = yaw + np.pi
+        uav_frame['gz_initial_yaw'] =  yaw # radians
+        uav_frame['model'] = model      # Actualize on received param info
+        print uav_frame
+        rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
+
+    # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
+    def UAVSpawner(self,ID):
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
+            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA_{2}.launch".\
+            format(self.world_definition['px4_use'],self.home_path,ID+1)])
+        self.uav_spawner_launch.start()
 
     # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
@@ -193,7 +122,7 @@ class ANSP(object):
         second_folder_path = first_folder_path + "/dataset_{}".format(self.n_dataset)
         if not os.path.exists(second_folder_path):
             os.makedirs(second_folder_path)
-            
+
         # Check existance of simulation path. Create in case
         self.third_folder_path = second_folder_path + "/simulation_{}".format(self.n_simulation)
         if not os.path.exists(self.third_folder_path):
@@ -204,7 +133,20 @@ class ANSP(object):
                                 .format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
-    # Function to update ROS parameters about simulation performance
+
+    #### Finisher functions ####
+
+    # Function to close active child processess
+    def Die(self):
+        self.SavingWorldDefinition()        # Update ROS params
+        self.UAVKiller()        # Terminate UAVs nodes
+        self.GazeboModelsKiller()       # Delete robot models from Gazebo
+        self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
+        self.SimulationTerminationCommand()     # Send to Master message of simulation ended
+        rospy.signal_shutdown("end of experiment")      # Finish ANSP process
+
+
+    # Function to update ROS parameters about simulation performance and store them
     def SavingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.world_definition['collisioned_list'] = self.collisioned_list
@@ -215,18 +157,48 @@ class ANSP(object):
             w = csv.writer(f)
             w.writerows(self.world_definition.items())
 
-    # Function to close active child processess
-    def Die(self):
-        self.SavingWorldDefinition()        # Update ROS params
-        self.UAVKiller()        # Terminate UAVs nodes
-        self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
-        self.GazeboModelsKiller()       # Delete robot models from Gazebo
-        self.SimulationTerminationCommand()     # Send to Master message of simulation ended
-        rospy.signal_shutdown("end of experiment")      # Finish ANSP process
+    # Function to close UAV Ground Station process.In the furure would be done by GS
+    def UAVKiller(self):
+        for n_uav in np.arange(self.N_uav):
+            rospy.wait_for_service('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1))
+            try:
+                die_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1), DieCommand)
+                die_command(True)
+                time.sleep(0.1)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                print "error in die_command"
+        return
+
+    # Function to close GAZEBO process
+    def GazeboModelsKiller(self):
+        for n_uav in np.arange(self.N_uav):
+            rospy.wait_for_service('gazebo/delete_model')
+            try:
+                del_model_prox = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+                model_name = "{0}_{1}".format(self.uav_models[n_uav],n_uav+1)
+                del_model_prox(model_name)
+                time.sleep(0.1)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                print "error in delete_model uav"
+        return
+
+    # Function to send termination instruction to each UAV
+    def SimulationTerminationCommand(self):
+        rospy.wait_for_service('/pydag/ANSP/simulation_termination')
+        try:
+            instruction_command = rospy.ServiceProxy('/pydag/ANSP/simulation_termination', DieCommand)
+            instruction_command(True)
+            return
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in simulation_termination"
 
     #### listener functions ####
 
-    # Function to start subscribing and offering 
+    # Function to start subscribing and offering
     def ANSPListener(self):
 
         # Start service for UAVs to actualize its state
@@ -248,7 +220,7 @@ class ANSP(object):
             # Change succeed information if a collision has been reported
             self.simulation_succeed = False
             rospy.loginfo_throttle(0,"Simulation not succeded, UAV {} collisioned".format(data.id))
-            
+
         print self.states_list
         return True
 
@@ -282,7 +254,7 @@ class ANSP(object):
         self.smach_view = self.world_definition['smach_view']
         self.ansp_sm_def = self.world_definition['ansp_sm_def']
         self.depth_camera_use = self.world_definition['depth_camera_use']
-        
+
 def main():
     ANSP()
 

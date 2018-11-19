@@ -12,7 +12,7 @@ import time
 import math
 import numpy as np
 import tf
-import rvo2
+# import rvo2
 import rvo23d
 import time
 # from cv_bridge import CvBridge, CvBridgeError

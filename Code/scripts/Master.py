@@ -53,7 +53,7 @@ class Master(object):
         # computer' path definition for each user
         user = "JA"
         if user == "JA":
-            home_path = "josmilrom"
+            home_path = "joseandresmr"
         self.world_definition["home_path"] = home_path
 
         # Flag to save simulation data if active. The user will be asked to deactive

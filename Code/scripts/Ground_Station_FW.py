@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -23,13 +24,11 @@ from pydag.srv import *
 from UAV import UAV
 from Ground_Station_SM import Ground_Station_SM
 
-# from FwQgc import FwQgc
-
+from FwQgc import FwQgc
 class Ground_Station(object):
 
     ### Initialiations ###
     def __init__(self,ID):
-
         self.ID = int(ID)
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
@@ -48,23 +47,24 @@ class Ground_Station(object):
 
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
+        # Publishers initialisation
+        self.pose_pub = rospy.Publisher('/uav_{}/ual/go_to_waypoint'.format(self.ID), PoseStamped, queue_size=1)
+        self.velocity_pub= rospy.Publisher('/uav_{}/ual/set_velocity'.format(self.ID), TwistStamped, queue_size=1)
 
         # # Creation of a list with every UAVs' home frame
         # self.uav_frame_list = []
         # for n_uav in np.arange(self.N_uav):
         #     self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
 
-        # Wait time to let Gazebo's Real Time recover from model spawns
-        time.sleep(10 * self.N_uav)
-        time.sleep((self.ID-1) * 8)
-
         # Assiignation of an ICAO number for every UAV. Used if ADSB communications are active
         ICAO_IDs = {1: "40621D", 2:"40621D", 3: "40621D"}
-        self.state = "landed"       # Initially the UAV is soposed to be landed
         self.collision = False       # Initially there has not been collisions
         self.die_command = False        # Flag later activate from ANSP to finish simulation
 
-        rospy.init_node('ground_station_{}'.format(self.ID), anonymous=True)        # Start the node
+        if self.uav_models[self.ID-1] != "plane":
+            rospy.init_node('ground_station_{}'.format(self.ID), anonymous=True)        # Start the node
+        else:
+            self.fw_qgc = FwQgc(self.ID,ual_use = True)
 
         # Creation of a list within objects of UAV class. They deal with the information of every UAV in the simu.
         # Own ID is given for the object to know if is treating any other UAV or the one dedicated for this GroundStation
@@ -72,12 +72,16 @@ class Ground_Station(object):
         for n_uav in range(1,self.N_uav+1):
             self.uavs_list.append(UAV(n_uav,self.ID,ICAO_IDs[n_uav]))
 
-        self.GroundStationListener()        # Start listening
+        # Wait time to let Gazebo's Real Time recover from model spawns
+        if self.uav_models[self.ID-1] != "plane":
+            while self.uavs_list[self.ID-1].ual_state == 0:
+                time.sleep(0.5)
+                # print(self.uavs_list[self.ID-1].ual_state)
+        # time.sleep(10 * self.N_uav)
+        # time.sleep((self.ID-1) * 8)
+        if self.uav_models[self.ID-1] != "plane":
+            self.GroundStationListener()        # Start listening
         print "ground station",ID,"ready and listening"
-
-        if self.uav_models[self.ID-1] == "plane":
-            self.fw_qgc = FwQgc()
-            self.fw_qgc.ual_use = True
 
         gs_sm = Ground_Station_SM(self)     # Create Ground Station State Machine
         outcome = gs_sm.gs_sm.execute()     # Execute State Machine
@@ -101,8 +105,7 @@ class Ground_Station(object):
 
         return True
 
-    #### Publisher functions #####
-
+    #### Publisher functions ###
     # Funtion to publish TFs of the actual goal
     def GoalStaticBroadcaster(self):
         broadcaster = tf2_ros.StaticTransformBroadcaster()      # Creation of the message to broadcast
@@ -131,86 +134,54 @@ class Ground_Station(object):
 
     ### Commander functions ###
 
-    # Function to deal with UAL server Land
-    def LandCommand(self,blocking):
-
-        if self.uav_models[self.ID-1] == "plane":
-            self.LandCommand_FW(blocking)
-            return
-
-        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-        try:
-            ual_land = rospy.ServiceProxy('/uav_{}/ual/land'.format(self.ID), Land)
-            ual_land(blocking)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in go_to_waypoint"
-
-    def LandCommand_FW(self, blocking, land_point):
-
-        actual_position = self.uavs_list[self.ID-1].position.pose.position
-        self.fw_qgc.MoveCommand("land",[[actual_position.x,actual_position.y,10.0],
-                                   [actual_position.x,actual_position.y + 100.0,0.0]]
-                                   ,0)
-
     # Function to deal with UAL server Go To Way Point
     def GoToWPCommand(self,blocking,goal_WP_pose):
-        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-        try:
-            ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
-            h = std_msgs.msg.Header()
-            ual_go_to_waypoint(PoseStamped(h,goal_WP_pose),blocking)
-            while self.DistanceToGoal() > 0.2:
-                time.sleep(0.1)
-            time.sleep(1)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+
+        h = std_msgs.msg.Header()
+        self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
+        while self.DistanceToGoal() > 0.2:
+            time.sleep(0.1)
+        time.sleep(1)
+        return
 
     # Function to deal with UAL server Set Velocity
     def SetVelocityCommand(self,hover):
-        rospy.wait_for_service('/uav_{}/ual/set_velocity'.format(self.ID))
-        try:
-            ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
 
-            # Check if hover deactivated
-            if hover== False:
+        # Check if hover deactivated
+        if hover== False:
 
-                # Ask the Brain to decide the velocity
-                self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal)
+            # Ask the Brain to decide the velocity
+            self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal)
 
-                time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
+            time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
-                main_role = self.role.split("_")[0]     # Parse the main role of the drone
+            main_role = self.role.split("_")[0]     # Parse the main role of the drone
 
-                # Control if data must be stored depending on role, time elapsed from last save and actual state
-                if ((main_role == "path" and self.state.split(" ")[0] == "to")
-                    or main_role == "uav_ad" or main_role == "uav_ap"
-                   ) and time_condition >= 1 and self.save_flag:
-                    self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
-                    self.last_saved_time == time.time()     # Restart time since last save
+            # Control if data must be stored depending on role, time elapsed from last save and actual state
+            if ((main_role == "path" and self.state.split(" ")[0] == "to")
+                or main_role == "uav_ad" or main_role == "uav_ap"
+                ) and time_condition >= 1 and self.save_flag:
+                self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
+                self.last_saved_time == time.time()     # Restart time since last save
 
-            # Check if hover activated
-            elif hover == True:
+        # Check if hover activated
+        elif hover == True:
 
-                # Ask the Brain to give a zero velocity
-                self.new_velocity_twist = self.brain.Hover()
-                pass
+            # Ask the Brain to give a zero velocity
+            self.new_velocity_twist = self.brain.Hover()
+            pass
 
-            h = std_msgs.msg.Header()       # Create an empty header
+        h = std_msgs.msg.Header()       # Create an empty header
 
-            # self.finish = time.time()       # Save time elapsed since last calculation of the velocity. To control time of computation
-            # print self.finish - self.start
-            # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
+        # self.finish = time.time()       # Save time elapsed since last calculation of the velocity. To control time of computation
+        # print self.finish - self.start
+        # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
 
-            ual_set_velocity(TwistStamped(h,self.new_velocity_twist))
+        self.velocity_pub.publish(TwistStamped(h,self.new_velocity_twist))
 
-            #print "veclocity move done"
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in set_velocity"
+        # time.sleep(1)
+
+        return
 
     # Function to deal with UAL server Take Off
     def TakeOffCommand(self,heigth, blocking):
@@ -219,6 +190,7 @@ class Ground_Station(object):
             self.TakeOffCommand_FW(heigth, blocking)
             return
 
+        time.sleep(10)
         rospy.wait_for_service('/uav_{}/ual/take_off'.format(self.ID))
         try:
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/take_off'.format(self.ID), TakeOff)
@@ -230,8 +202,32 @@ class Ground_Station(object):
 
     def TakeOffCommand_FW(self,heigth, blocking):
 
-        actual_position = self.uavs_list[self.ID-1].position.pose.position
-        self.fw_qgc.MoveCommand("takeoff",[actual_position.x,actual_position.y,actual_position.z + heigth],0)
+        takeoff_pose = copy.deepcopy(self.uavs_list[self.ID-1].position.pose)
+        takeoff_pose.position = Point(takeoff_pose.position.x,takeoff_pose.position.y,takeoff_pose.position.z + heigth)
+        self.fw_qgc.MoveCommand("takeoff",[takeoff_pose],0,{"type":"by_angle","height": 10.0,"distance":200})
+
+    # Function to deal with UAL server Land
+    def LandCommand(self,blocking):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.LandCommand_FW()
+            return
+
+        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
+        try:
+            ual_land = rospy.ServiceProxy('/uav_{}/ual/land'.format(self.ID), Land)
+            ual_land(blocking)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in go_to_waypoint"
+
+    def LandCommand_FW(self, land_point = []):
+
+        # actual_position = self.uavs_list[self.ID-1].position.pose.position
+        takeoff_pose = copy.deepcopy(self.uavs_list[self.ID-1].position.pose)
+        land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,0))
+        self.fw_qgc.MoveCommand("land",[land_pose],0,{"loiter_to_alt":{"type":"by_angle","height": 10.0,"distance":200}})
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
@@ -246,8 +242,60 @@ class Ground_Station(object):
 
     ### Role functions ###
 
+    # Function to model the target of role follow static waypoint path
+    def PathFollower(self):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.PathFollower_FW()
+            return
+
+        # Control in every single component of the list
+        for i in np.arange(len(self.goal_path_poses_list)):
+
+            self.goal_WP_pose = self.goal_path_poses_list[i]        # Set actual goal from the path list
+            self.goal["pose"] = self.goal_WP_pose       # Actualize goal variable for later storage
+
+            self.GoalStaticBroadcaster()        # Broadcast TF of goal
+
+            # Actualize state and send it to ANSP
+            self.state = "to WP {}".format(i+1)
+            self.ANSPStateActualization()
+
+            # Control distance to goal
+            while self.DistanceToGoal() > self.accepted_target_radio:
+
+                self.Evaluator()          # Evaluate the situation
+                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                time.sleep(0.2)
+
+            self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
+            #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
+
+            # Actualize state and send it to ANSP
+            self.state = "in WP {}".format(i+1)
+            self.ANSPStateActualization()
+
+            time.sleep(0.2)
+
+            self.Evaluator()          # Evaluate the situation
+
+    def PathFollower_FW(self):
+        # goal_list = []
+        # for i in np.arange(len(self.goal_path_poses_list)):
+            # goal_WP_pose = self.goal_path_poses_list[i].position
+
+            # goal_list.append([goal_WP_pose.x,goal_WP_pose.y,goal_WP_pose.z])
+
+            # goal_list = [[200.0,0.0,10.0],[0.0,0.0,5.0],[-200.0,0.0,10.0],[0.0,0.0,5.0],[200.0,0.0,10.0]]
+
+        self.fw_qgc.MoveCommand("pass",self.goal_path_poses_list,0)
+
     # Function to model the target of role UAV Follower AD
     def UAVFollowerAtDistance(self,target_ID,distance):
+
+        if self.uav_models[self.ID-1] == "plane":
+            self.PathFollower_FW()
+            return
 
         self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
@@ -340,51 +388,6 @@ class Ground_Station(object):
                 self.SetVelocityCommand(True)       # If on goal, hover
 
             time.sleep(0.2)
-
-    # Function to model the target of role follow static waypoint path
-    def PathFollower(self):
-
-        if self.uav_models[self.ID-1] == "plane":
-            self.PathFollower_FW()
-            return
-
-        # Control in every single component of the list
-        for i in np.arange(len(self.goal_path_poses_list)):
-
-            self.goal_WP_pose = self.goal_path_poses_list[i]        # Set actual goal from the path list
-            self.goal["pose"] = self.goal_WP_pose       # Actualize goal variable for later storage
-
-            self.GoalStaticBroadcaster()        # Broadcast TF of goal
-
-            # Actualize state and send it to ANSP
-            self.state = "to WP {}".format(i+1)
-            self.ANSPStateActualization()
-
-            # Control distance to goal
-            while self.DistanceToGoal() > self.accepted_target_radio:
-
-                self.Evaluator()          # Evaluate the situation
-                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
-                time.sleep(0.2)
-
-            self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
-            #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
-
-            # Actualize state and send it to ANSP
-            self.state = "in WP {}".format(i+1)
-            self.ANSPStateActualization()
-
-            time.sleep(0.2)
-
-            self.Evaluator()          # Evaluate the situation
-
-    def PathFollower_FW(self):
-        goal_list = []
-        for i in np.arange(len(self.goal_path_poses_list)):
-            goal_WP_pose = self.goal_path_poses_list[i].pose
-
-            goal_list.append([goal_WP_pose.x,goal_WP_pose.y,goal_WP_pose.z])
-        self.fw_qgc.MoveCommand("pass",goal_list,0)
 
     # Function to model the target of role of single basic move
     def basic_move(self,move_type,dynamic,direction,value):
@@ -556,7 +559,7 @@ class Ground_Station(object):
 
         # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
         # This code fixes that divergence for later storing
-        if self.world_type == 3 or self.world_type == 4:
+        if self.world_type == 2:
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         else:
             N_obs_mixed = self.N_obs
@@ -638,3 +641,4 @@ def main():                #### No estoy seguro de toda esta estructura
 
 if __name__ == '__main__':
     main()
+

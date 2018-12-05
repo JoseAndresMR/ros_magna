@@ -3,12 +3,13 @@ import smach_ros
 import time
 from smach_ros import SimpleActionState
 import numpy as np
+import tf
 
 from Worlds import *
 from pydag.msg import *
 
 class ANSP_SM(object):
-    # At init, the State Machine receives as "heriage" the hole "self" of ANSP
+    # At init, the State Machine receives as "heritage" the hole "self" of ANSP
     def __init__(self,heritage):
         # Creation of State Machine and definition of its outcomes
         self.ansp_sm = StateMachine(outcomes=['completed', 'failed'])
@@ -79,8 +80,7 @@ class ANSP_SM(object):
                                     default_outcome = 'completed',
                                     outcome_map = outcome_map)
 
-            with self.all_take_off_ccr:     # Define inside of Concurrence SM
-
+            with self.all_take_off_ccr:     # Define inside of Concurrence S
                 for self.id in range(1,heritage.N_uav+1):       # Add an Action takeoff State for every AUV
                      Concurrence.add('{0}_take_off'.format(self.id),
                                 SimpleActionState('/pydag/ANSP_UAV_{}/take_off_command'.format(self.id),
@@ -255,7 +255,7 @@ class ANSP_SM(object):
                                             input_keys=['id'],
                                             output_keys=['id'],
                                             goal_cb_kwargs={'heritage':heritage,'id':self.id},
-                                            result_cb_kwargs={"heritage":heritage}),
+                                            result_cb_args={'heritage':heritage}),
                         remapping={'id':'id'})
 
                     # For the rest of UAVs, define a state to follow the previous UAV at distance
@@ -317,7 +317,7 @@ class ANSP_SM(object):
                                                 input_keys=[],
                                                 output_keys=[],
                                                 goal_cb_kwargs={'heritage':heritage,'id':self.id},
-                                                result_cb_kwargs={"heritage":heritage}),
+                                                result_cb_kwargs={'heritage':heritage}),
                             remapping={'id':'id','heritage':'heritage','preempt_others':'preempt_others'},
                             transitions = {'succeeded':'completed',
                                            'preempted':'completed',
@@ -404,7 +404,7 @@ class ANSP_SM(object):
     # State callback to wait one second. In future will fuse with next callback
     @cb_interface(outcomes=['completed','failed'])
     def wait_stcb(ud,heritage):
-        time.sleep(1)
+        time.sleep(100)
 
         return "completed"
 
@@ -420,15 +420,28 @@ class ANSP_SM(object):
     def spawn_uavs_stcb(ud,heritage):
 
         for i in range(heritage.N_uav):     # Do it for every UAV
-            uav_goal_path = heritage.world.PathGenerator()      # Ask world to generate a path
+            uav_goal_path = heritage.world.PathGenerator(heritage.uav_models[i])      # Ask world to generate a path
 
             heritage.path_length = len(uav_goal_path)       # Reset path length information
             heritage.uavs_goal_paths_list.append(uav_goal_path)     # Append the asked path to existing one
             first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
+
             # Change spawn features so it spawns under its first waypoint
-            heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0])
+            yaw = tf.transformations.euler_from_quaternion((first_pose.orientation.x,
+                                                           first_pose.orientation.y,
+                                                           first_pose.orientation.z,
+                                                           first_pose.orientation.w))[2]
+            heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
             heritage.UAVSpawner(i)      # Call service to spawn the UAV
-            time.sleep(5)
+
+            # Wait until the UAV is in ready state
+            while heritage.states_list[i] != "waiting for action command":
+                time.sleep(0.5)
+                # print(heritage.states_list[i])
+                # print("UAV {} with state".format(i+1), heritage.states_list[i])
+
+            print("uav {} is ready!".format(i))
+            # time.sleep(5)
         # time.sleep(20 * heritage.N_uav)
 
         return "completed"
@@ -438,10 +451,11 @@ class ANSP_SM(object):
     # Goal callback for takeoff state service
     def take_off_goal_cb(self, ud, goal):
         goal.heigth = 5     # Define takeoff height, in future will be received in ud or mission dictionary
+        # time.sleep(5*ud.id)
         return goal
 
     # Result callback for takeoff state service
-    def take_off_result_cb(self, ud, result, something):
+    def take_off_result_cb(self, ud, status, result):
         return "succeeded"
 
     # Goal callback for basic move service
@@ -451,7 +465,7 @@ class ANSP_SM(object):
         return goal
 
     # Result callback for basic move service
-    def basic_move_result_cb(self, ud, result, something):
+    def basic_move_result_cb(self, ud, status, result):
         return "succeeded"
 
     # Goal callback for follow path service
@@ -462,16 +476,22 @@ class ANSP_SM(object):
         return goal
 
     # Result callback for follow path service. In the future should be implemented out of SM
-    def follow_path_result_cb(self, ud, result, heritage):
-        rospy.wait_for_service('/pydag/ANSP/preemption_command_to_2')
-        try:
-            # print "path for uav {} command".format(ID)
-            PreemptCommander = rospy.ServiceProxy('/pydag/ANSP/preemption_command_to_2', StateActualization)
-            PreemptCommander(1,"preempt",False)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in state_actualization"
+    def follow_path_result_cb(self, ud, status, result):
+        ### CONSEGUIR METER HERITAGE
+        # print("ud",ud)
+        # print("status",status)
+        # print("result",result)
+        # print("heritage",heritage)
+        # for uav in range(1,heritage.N_uav):
+        #     rospy.wait_for_service('/pydag/ANSP/preemption_command_to_{}'.format(uav))
+        #     try:
+        #         # print "path for uav {} command".format(ID)
+        #         PreemptCommander = rospy.ServiceProxy('/pydag/ANSP/preemption_command_to_{}'.format(uav), StateActualization)
+        #         PreemptCommander(1,"preempt",False)
+        #         return
+        #     except rospy.ServiceException, e:
+        #         print "Service call failed: %s"%e
+        #         print "error in state_actualization"
         return "succeeded"
 
     # Goal callback for follow wp service
@@ -518,7 +538,7 @@ class ANSP_SM(object):
         return goal
 
     # Result callback for land service
-    def land_result_cb(self, ud, result, something):
+    def land_result_cb(self, ud, status,result):
         return "succeeded"
 
     # Goal callback for save csv service

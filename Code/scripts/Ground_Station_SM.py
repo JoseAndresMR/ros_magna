@@ -179,9 +179,7 @@ class Ground_Station_SM(object):
 
     @cb_interface(outcomes=['completed', 'failed'])
     def action_server_advertiser_stcb(ud, heritage, asw_dicc):
-
         heritage.SetVelocityCommand(True)       # Tell GS to hover whole no server request is received
-
         for key in asw_dicc.keys():     # Run every ASW stored
             asw_dicc[key].run_server()
 
@@ -212,7 +210,7 @@ class Ground_Station_SM(object):
 
         # Copy the goal path to follow into GS's variable
         heritage.goal_path_poses_list = ud.action_goal.goal_path_poses_list
-        heritage.PathFollower()     # Tell the GS to execute that node
+        heritage.PathFollower()     # Tell the GS to execute that function
 
         return 'completed'
 

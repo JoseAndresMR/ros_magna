@@ -83,21 +83,25 @@ class ANSP(object):
 
     # Function to set UAV's ROSparameters. Launched by State Machine
     def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
-        uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
+        # uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
+        uav_frame = {}
         uav_frame['translation'] = position
         if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
             yaw = yaw + np.pi
         uav_frame['gz_initial_yaw'] =  yaw # radians
         uav_frame['model'] = model      # Actualize on received param info
-        print uav_frame
         rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
+
+        rospy.set_param('uav_{}/ual/home_pose'.format(ID),position)
+        rospy.set_param('uav_{}/ual/pose_frame_id'.format(ID),"map")
+        time.sleep(1)
 
     # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
     def UAVSpawner(self,ID):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_JA_{2}.launch".\
+            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_{2}_JA.launch".\
             format(self.world_definition['px4_use'],self.home_path,ID+1)])
         self.uav_spawner_launch.start()
 
@@ -105,7 +109,7 @@ class ANSP(object):
     def CreatingSimulationDataStorage(self):
         # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
         # This code fixes that divergence for later storing
-        if self.world_type == 3 or self.world_type == 4:
+        if self.world_type == 2:
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         else:
             N_obs_mixed = self.N_obs

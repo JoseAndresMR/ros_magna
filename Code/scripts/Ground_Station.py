@@ -44,6 +44,10 @@ class Ground_Station(object):
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
         self.start_time_to_target = time.time()     # Counter to check elapsed time to achieve a goal
 
+        # Publishers initialisation
+        self.pose_pub = rospy.Publisher('/uav_{}/ual/go_to_waypoint'.format(self.ID), PoseStamped, queue_size=1)
+        self.velocity_pub= rospy.Publisher('/uav_{}/ual/set_velocity'.format(self.ID), TwistStamped, queue_size=1)
+
         # Creation of a list with every UAVs' home frame
         self.uav_frame_list = []
         for n_uav in np.arange(self.N_uav):
@@ -136,64 +140,55 @@ class Ground_Station(object):
 
     # Function to deal with UAL server Go To Way Point
     def GoToWPCommand(self,blocking,goal_WP_pose):
-        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-        try:
-            ual_go_to_waypoint = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
-            h = std_msgs.msg.Header()
-            ual_go_to_waypoint(PoseStamped(h,goal_WP_pose),blocking)
-            while self.DistanceToGoal() > 0.2:
-                time.sleep(0.1)
-            time.sleep(1)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+
+        h = std_msgs.msg.Header()
+        self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
+        while self.DistanceToGoal() > 0.2:
+            time.sleep(0.1)
+        time.sleep(1)
+        return
 
     # Function to deal with UAL server Set Velocity
     def SetVelocityCommand(self,hover):
-        rospy.wait_for_service('/uav_{}/ual/set_velocity'.format(self.ID))
-        try:
-            ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
 
-            # Check if hover deactivated
-            if hover== False:
+        # Check if hover deactivated
+        if hover== False:
 
-                # Ask the Brain to decide the velocity
-                self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal)
+            # Ask the Brain to decide the velocity
+            self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal)
 
-                time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
+            time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
-                main_role = self.role.split("_")[0]     # Parse the main role of the drone
+            main_role = self.role.split("_")[0]     # Parse the main role of the drone
 
-                # Control if data must be stored depending on role, time elapsed from last save and actual state
-                if ((main_role == "path" and self.state.split(" ")[0] == "to")
-                    or main_role == "uav_ad" or main_role == "uav_ap"
-                   ) and time_condition >= 1 and self.save_flag:
-                    self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
-                    self.last_saved_time == time.time()     # Restart time since last save
+            # Control if data must be stored depending on role, time elapsed from last save and actual state
+            if ((main_role == "path" and self.state.split(" ")[0] == "to")
+                or main_role == "uav_ad" or main_role == "uav_ap"
+                ) and time_condition >= 1 and self.save_flag:
+                self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
+                self.last_saved_time == time.time()     # Restart time since last save
 
-            # Check if hover activated
-            elif hover == True:
+        # Check if hover activated
+        elif hover == True:
 
-                # Ask the Brain to give a zero velocity
-                self.new_velocity_twist = self.brain.Hover()
-                pass
+            # Ask the Brain to give a zero velocity
+            self.new_velocity_twist = self.brain.Hover()
+            pass
 
-            h = std_msgs.msg.Header()       # Create an empty header
+        h = std_msgs.msg.Header()       # Create an empty header
 
-            # self.finish = time.time()       # Save time elapsed since last calculation of the velocity. To control time of computation
-            # print self.finish - self.start
-            # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
+        # self.finish = time.time()       # Save time elapsed since last calculation of the velocity. To control time of computation
+        # print self.finish - self.start
+        # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
 
-            ual_set_velocity(TwistStamped(h,self.new_velocity_twist))
+        print("setting vel")
+        self.velocity_pub.publish(TwistStamped(h,self.new_velocity_twist))
 
-            #print "veclocity move done"
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in set_velocity"
+        return
 
     # Function to deal with UAL server Take Off
     def TakeOffCommand(self,heigth, blocking):
+        time.sleep(10)
         rospy.wait_for_service('/uav_{}/ual/take_off'.format(self.ID))
         try:
             ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/take_off'.format(self.ID), TakeOff)

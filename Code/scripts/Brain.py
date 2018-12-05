@@ -19,7 +19,7 @@ import time
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
-# import tensorflow as tflow
+import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
 class Brain(object):
@@ -136,7 +136,7 @@ class Brain(object):
                     inputs.append(self.obs_pose_list[n_obs][1]-main_uav_pos.y)
                     inputs.append(self.obs_pose_list[n_obs][2]-main_uav_pos.z)
 
-        # Reshape the inputs to a single file
+        # Reshape the inputs to a single row
         inputs_trans = np.asarray(inputs)
         inputs_trans = inputs_trans.reshape((1, inputs_trans.shape[0]))
 
@@ -213,7 +213,7 @@ class Brain(object):
         new_velocity_twist.linear.y = selected_velocity[1]
         new_velocity_twist.linear.z = selected_velocity[2]
 
-        # If head use selected, decide it by direct by simple algorithm
+        # If head use selected, decide it by direct by simple algorithm. In future, put lower threshold.
         if self.heading_use == True:
             new_velocity_twist.angular.z = prefered_velocity.angular.z
 
@@ -234,7 +234,7 @@ class Brain(object):
 
         distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
 
-        # If at a distance shorter than aproximation distance, reduce the velocity module
+        # If at the distance shorter than aproximation distance, reduce the velocity module
         if distance_norm < aprox_distance:
             desired_velocity_module = desired_velocity_module_at_goal - (desired_velocity_module - desired_velocity_module_at_goal)\
                                     + ((desired_velocity_module - desired_velocity_module_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
@@ -261,9 +261,9 @@ class Brain(object):
                                    relative_WP_pose_degrees.orientation.z-euler[2]))
 
         # Thresholds imposition
-        # new_velocity_twist.linear.x = self.UpperLowerThresholds(new_velocity_twist.linear.x,1.5)
-        # new_velocity_twist.linear.y = self.UpperLowerThresholds(new_velocity_twist.linear.y,1.5)
-        # new_velocity_twist.angular.z = self.UpperLowerThresholds(new_velocity_twist.angular.z,0.5)
+        # new_velocity_twist.linear.x = self.UpperLowerSaturation(new_velocity_twist.linear.x,1.5)
+        # new_velocity_twist.linear.y = self.UpperLowerSaturation(new_velocity_twist.linear.y,1.5)
+        # new_velocity_twist.angular.z = self.UpperLowerSaturation(new_velocity_twist.angular.z,0.5)
 
         return new_velocity_twist
 
@@ -326,7 +326,7 @@ class Brain(object):
         return new_velocity_twist
 
     # Function to saturate a value
-    def UpperLowerThresholds(self,value,threshold):
+    def UpperLowerSaturation(self,value,threshold):
         if value > threshold:
             value = threshold
         elif value < -threshold:

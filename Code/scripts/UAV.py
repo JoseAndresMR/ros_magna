@@ -3,13 +3,15 @@
 # import pyModeS as pms
 import numpy as np
 import rospy, time, tf, tf2_ros
+from copy import deepcopy
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from nav_msgs.msg import Path
+from uav_abstraction_layer.msg import State
 from pydag.srv import *
 from pydag.msg import *
-from ADSB import ADSB
+# from ADSB import ADSB
 from cv_bridge import CvBridge, CvBridgeError
 
 class UAV(object):
@@ -21,15 +23,15 @@ class UAV(object):
         self.ICAO = ICAO
         self.with_ref = with_ref
         self.pos_ref = pos_ref
-        self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
+#        self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
         self.preempt_flag = False
-
         self.Rviz_flag = True
+        self.ual_state = 0
 
         self.GettingWorldDefinition()
 
-        if self.depth_camera_use:      # Creation of a brain associated to this drone
+        if self.depth_camera_use:      # Creation of the CV bridge to deal with the depth camera
             self.cv_bridge = CvBridge()
 
         self.br = tf.TransformBroadcaster()
@@ -51,23 +53,25 @@ class UAV(object):
 
         # Subscribe to position and velocity of every UAV if comms are direct or is own UAV
         if self.main_uav == self.ID or (self.main_uav != self.ID and self.communications == "direct"):
-            rospy.Subscriber('/uav_{}/ual/pose'.format(self.ID), PoseStamped, self.uav_pose_callback)
-            rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback)
+            rospy.Subscriber('/uav_{}/ual/pose'.format(self.ID), PoseStamped, self.uav_pose_callback, queue_size=1)
+            rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback, queue_size=1)
+            rospy.Subscriber('/uav_{}/ual/state'.format(self.ID), State, self.ual_state_callback, queue_size=1)
+
 
         # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented
         elif self.main_uav != self.ID and self.communications == "ADSB":
-            rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback)
+            rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback, queue_size=1)
 
         # Subscribe to depth camera if its use flag is activated
         if self.depth_camera_use == True and self.main_uav == self.ID:
-            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback)
+            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback, queue_size=1)
 
         # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
         # In the future this will be implemented to wrap different roles and different IDs
         if self.ID == self.main_uav and  self.main_uav != 1: # and mission ==
             rospy.Service('/pydag/ANSP/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
 
-    # Callbacks
+    ## Callbacks
 
     # Function to deal with pose data
     def uav_pose_callback(self,data):
@@ -98,12 +102,19 @@ class UAV(object):
 
         time.sleep(0.1)
 
+    # Function to deal with velocity data
+    def ual_state_callback(self,data):
+
+        self.ual_state = data.state        # Store the received velocity into the position of the UAV
+
+        time.sleep(0.1)
+
     # Function to deal with depth image data
     def image_raw_callback(self,data):
         try:
             # Transform the received information eith the bridge and store it into its variable
             self.image_depth = np.array(self.cv_bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding).data)
-            print("IAMGE RECIEVEEEEEEEEED",len(data.data))
+            # print(self.image_depth.size)
         except CvBridgeError as e:
             print(e)
 

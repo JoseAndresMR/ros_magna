@@ -28,6 +28,7 @@ import utils
 
 class Master(object):
     def __init__(self):
+        # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
         'mission'            :              "follow_paths_sbys",              # Global mission that characterizes every UAV's role
@@ -35,16 +36,16 @@ class Master(object):
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
-        'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
-        'N_obs'              :                       1,                       # Number of obstacles placed onto some kind of scenarios
+        'uav_models'         :   ["plane", "plane", "plane"],   # Type of airborne of each vehicle
+        'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
-        'path_length'        :                       2,                      # Length of the path for roles that follow one
+        'path_length'        :                       1,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "orca3",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'px4_use'            :                    "complete",                 # Flag to decide if PX4 is used
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
-        'depth_camera_use'   :                     True,                     # Flag to decide if the info from depth camera is used
+        'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
         'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
         }
 
@@ -71,8 +72,8 @@ class Master(object):
         ansp_sm_def.append(step_2)
         step_3 = {"type":"all_take_off_ccr"}
         ansp_sm_def.append(step_3)
-        step_4 = {"type":"wait"}
-        ansp_sm_def.append(step_4)
+        # step_4 = {"type":"wait"}
+        # ansp_sm_def.append(step_4)
 
         # This mission part is customized for every type of mission
         step_5 = {"type":"{}_sm".format(self.world_definition['mission'])}
@@ -86,6 +87,8 @@ class Master(object):
         # Last part is common for every mission
         step_7 = {"type":"all_land_ccr"}
         ansp_sm_def.append(step_7)
+        step_4 = {"type":"wait"}
+        ansp_sm_def.append(step_4)
         self.world_definition['ansp_sm_def'] = ansp_sm_def
 
         ### Initializations
@@ -138,7 +141,7 @@ class Master(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{0}/catkin_ws/src/pydag/Code/launch/server_empty_JA.launch".format(self.world_definition["home_path"])])
+            "/home/{0}/catkin_ws/src/pydag/Code/launch/gazebo_spawner_JA.launch".format(self.world_definition["home_path"])])
 
         self.Gazebo_launch.start()
         time.sleep(0.5)

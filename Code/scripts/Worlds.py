@@ -43,10 +43,10 @@ class Worlds(object):
     def obstacleGenerator(self):
 
         # Definition of the dictionary with the paths where every type of obstacle is stores. In the future should be packed
-        product_xml_dict = {"cube":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cube",self.home_path),"r").read(),\
-                            "cylinder":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("cylinder",self.home_path),"r").read(),\
-                            "sphere":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("sphere",self.home_path),"r").read(),\
-                            "brick":open("/home/{1}/catkin_ws/src/Firmware/Tools/sitl_gazebo/models/JA_models/{0}.sdf".format("brick",self.home_path),"r").read(),\
+        product_xml_dict = {"cube":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("cube",self.home_path),"r").read(),\
+                            "cylinder":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("cylinder",self.home_path),"r").read(),\
+                            "sphere":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("sphere",self.home_path),"r").read(),\
+                            "brick":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("brick",self.home_path),"r").read(),\
                             }
 
         # Initialization of lists
@@ -63,7 +63,8 @@ class Worlds(object):
             # Set scenario parameters
             self.obs_zone_rad = 3 #4
             self.neutral_zone_width = 1 #2
-            self.uavs_zone_width = 1
+            self.rw_uavs_zone_width = 1
+            self.fw_uavs_zone_width = 150
             self.goal_uncertainty = np.pi/4
             self.obs_zone_lower_heigth = 1
             self.obs_zone_upper_heigth = 5
@@ -93,46 +94,11 @@ class Worlds(object):
                 # Add to the wholes poses list
                 self.obs_pose_list.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
 
-        # elif self.world_type == 2:
-
-        #     # Set scenario parameters
-        #     self.dbo=[8,1.5,1.5]
-        #     self.obstacle_density = 0.7
-        #     self.obstacles_raw_matrix = np.random.rand(2,3,3)
-        #     self.obstacles_positions = self.obstacles_raw_matrix<=self.obstacle_density
-        #     self.empty_positions = self.obstacles_raw_matrix>self.obstacle_density
-        #     self.poses_matrix = self.obstacles_raw_matrix.tolist()
-
-        #     # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
-        #     for i in np.arange(self.obstacles_raw_matrix.shape[0]):       ##### O AL MENOS PONER ESTO EN UNA SOLA LINEA
-        #         for k in np.arange(self.obstacles_raw_matrix.shape[2]):
-        #             for j in np.arange(self.obstacles_raw_matrix.shape[1]):
-        #                 if self.world_type == 1:
-        #                     obs_orientation = Quaternion(0,0,0,0)
-        #                 elif self.world_type == 2:
-        #                     obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
-
-        #                 self.poses_matrix[i][j][k]=Pose(Point(-10+self.dbo[0]*1.5+i*self.dbo[0],\
-        #                                                     -(self.dbo[1]*self.obstacles_raw_matrix.shape[1])/2.0+j*self.dbo[1],\
-        #                                                     1+k*self.dbo[2]),\
-        #                                                 obs_orientation)
-        #                 if self.obstacles_positions[i,j,k] == True:
-        #                     shape = self.randomizeShape()
-        #                     self.obs_shape_list.append(shape)
-        #                     self.obs_list.append(Obstacle(self.n_obs,\
-        #                                                         product_xml_dict[shape],\
-        #                                                         self.poses_matrix[i][j][k],\
-        #                                                         self.obs_transforms_list))
-        #                     # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
-        #                     self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
-        #                     self.n_obs=self.n_obs+1
-        #     self.world_definition["N_obs"] = self.n_obs
-
-        elif self.world_type == 3 or self.world_type == 4:
+        elif self.world_type == 2:
 
             # Set scenario parameters
             self.dbo=[10,3.5,3.5]       # Define the distance between objects of the tube of objects
-            self.obstacle_density = 0.5     # Defines the probability that in a point of the tube there is an obstacle or not
+            self.obstacle_density = 0.25     # Defines the probability that in a point of the tube there is an obstacle or not
 
             # Initializes a tensor with random values and shaped as the obstacle tube
             self.obstacles_raw_matrix = np.random.rand(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2])
@@ -153,9 +119,9 @@ class Worlds(object):
                     for j in np.arange(self.obstacles_raw_matrix.shape[1]):
 
                         # Randomize orientation or not
-                        if self.world_type == 3:
+                        if self.world_type == 2:
                             obs_orientation = Quaternion(0,0,0,0)
-                        elif self.world_type == 4:
+                        elif self.world_type == 4:      # Change
                             obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
 
                         # Create a matrix with the poses of the obstacles in the positions in which has been created one
@@ -168,9 +134,9 @@ class Worlds(object):
                         if self.obstacles_positions[i,j,k] == True:
 
                             # Randomize shape or not
-                            if self.world_type == 3:
+                            if self.world_type == 2:
                                 shape = "brick"
-                            elif self.world_type == 4:
+                            elif self.world_type == 4:  # Change
                                 shape = self.randomizeShape()
 
                             self.obs_shape_list.append(shape)       # Add its shape to the list
@@ -198,14 +164,14 @@ class Worlds(object):
         print "world", self.ID, "created"
 
     # Generate a new adequate path for each world
-    def PathGenerator(self):
+    def PathGenerator(self, uav_model):
 
         if self.world_type == 1:
 
             # Think on cylindric coordinates. The base circle is centered in [0,0,0]
             # Definition of a random radius, angle and height for the first waypoint
             uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                        self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
+                                        self.obs_zone_rad + self.neutral_zone_width+self.rw_uavs_zone_width,\
                                         1)
             uav_ang = np.random.uniform(0,2*np.pi,1)
             uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
@@ -215,42 +181,41 @@ class Worlds(object):
                                             np.asscalar(uav_rad*np.sin(uav_ang)),\
                                             np.asscalar(uav_heigth)),\
                                     Quaternion(0,0,0,0))]
+        
+            if uav_model == "plane":
+                initial_yaw_euler = math.atan2(self.path_poses_list[0].position.y,self.path_poses_list[0].position.x)
+                initial_yaw_quaternion = tf.transformations.quaternion_from_euler(0,0,initial_yaw_euler)
+                self.path_poses_list[0].orientation = Quaternion(initial_yaw_quaternion[0],initial_yaw_quaternion[1],initial_yaw_quaternion[2],initial_yaw_quaternion[3])
+
 
             # For next waypoints, define also random radius, angle and height.
             # But adding pi and some uncertainty to make the drone pass central part of the cylinder
             for n_WP in np.arange(self.path_length-1):
-                uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                        self.obs_zone_rad + self.neutral_zone_width+self.uavs_zone_width,\
-                                        1)
-                uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
-                uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-                self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
-                                                        uav_rad*np.sin(uav_ang),\
-                                                        uav_heigth),\
-                                                    Quaternion(0,0,0,0)))
 
-        # elif self.world_type == 2:
+                if uav_model == "typhoon_h480":
+                    uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
+                                            self.obs_zone_rad + self.neutral_zone_width+self.rw_uavs_zone_width,\
+                                            1)
+                    uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
+                    uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
+                    self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
+                                                            uav_rad*np.sin(uav_ang),\
+                                                            uav_heigth),\
+                                                        Quaternion(0,0,0,0)))
 
-        #     # Position a random point at the edge of the obstacles tube that is neares to [0,0,0]
-        #     self.path_poses_list=[Pose(Point(-10+self.dbo[0]*0.5,\
-        #                                     np.asscalar((np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1]),\
-        #                                     np.asscalar(1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2])),\
-        #                             Quaternion(0,0,0,0))]
+                elif uav_model == "plane":
+                    uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
+                                            self.obs_zone_rad + self.neutral_zone_width+self.fw_uavs_zone_width,\
+                                            1)
+                    uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
+                    uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
+                    self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
+                                                            uav_rad*np.sin(uav_ang),\
+                                                            uav_heigth),\
+                                                        Quaternion(0,0,0,0)))
 
-        #     # for the next waypoints, posision random points at one edge of the tube every each time
-        #     for n_WP in np.arange(self.path_length-1):
-        #         if n_WP % 2 == 1:
-        #             Point_x = -10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0]
-        #         elif n_WP % 2 == 0:
-        #             Point_x = -10+self.dbo[0]*0.5
 
-        #         new_pose = Pose(Point(Point_x,\
-        #                             (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
-        #                             1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),\
-        #                     Quaternion(0,0,0,0))
-        #         self.path_poses_list.append(new_pose)
-
-        elif self.world_type == 3 or self.world_type == 4:
+        elif self.world_type == 2:
 
 
             # for every waypoint, posision random points at one edge of the tube every each time
@@ -272,48 +237,6 @@ class Worlds(object):
                                 Quaternion(0, 0, 0, 0))
 
                 self.path_poses_list.append(new_pose)
-
-            # for i in np.arange(self.obstacles_raw_matrix.shape[0]):
-            #     max_distance = 10000
-            #     for j in np.arange(self.obstacles_raw_matrix.shape[1]):
-            #         for k in np.arange(self.obstacles_raw_matrix.shape[2]):
-            #             if self.empty_positions[i,j,k] == True:
-            #                 current_distance = DistanceBetweenPoses(self.path_poses_list[i],self.poses_matrix[i][j][k])\
-            #                                 +DistanceBetweenPoses(self.poses_matrix[i][j][k],goal_pose)
-            #                 if current_distance<max_distance:
-            #                     max_distance = current_distance
-            #                     selected_pose = self.poses_matrix[i][j][k]
-            #     self.path_poses_list.append(security_selected_pose_1)
-            #     self.path_poses_list.append(security_selected_pose_2)
-
-        # elif self.world_type == 4:
-        #     goal_pose = Pose(Point(-10+self.dbo[0]*3+self.obstacles_raw_matrix.shape[0]*self.dbo[0],\
-        #                            (np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1],\
-        #                            1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),\
-        #                      Quaternion(0,0,0,0))
-        #     self.path_poses_list=[Pose(Point(-10+self.dbo[0]*0.5,\
-        #                                      np.asscalar((np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[1]),\
-        #                                      np.asscalar(1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2])),\
-        #                                Quaternion(0,0,0,0))]
-        #     for i in np.arange(self.obstacles_raw_matrix.shape[0]):
-        #         max_distance = 10000
-        #         for j in np.arange(self.obstacles_raw_matrix.shape[1]):
-        #             for k in np.arange(self.obstacles_raw_matrix.shape[2]):
-        #                 if self.empty_positions[i,j,k] == True:
-        #                     current_distance = DistanceBetweenPoses(self.path_poses_list[i],self.poses_matrix[i][j][k])\
-        #                                     +DistanceBetweenPoses(self.poses_matrix[i][j][k],goal_pose)
-        #                     if current_distance<max_distance:
-        #                         max_distance = current_distance
-        #                         selected_pose = self.poses_matrix[i][j][k]
-
-        #         security_selected_pose_1 = copy.deepcopy(selected_pose)
-        #         security_selected_pose_2 = copy.deepcopy(selected_pose)
-        #         security_selected_pose_1.position.x = selected_pose.position.x - self.dbo[0]*1/3.0
-        #         security_selected_pose_2.position.x = selected_pose.position.x + self.dbo[0]*1/3.0
-        #         self.path_poses_list.append(security_selected_pose_1)
-        #         self.path_poses_list.append(security_selected_pose_2)
-
-        #     self.path_poses_list.append(goal_pose)
 
         return self.path_poses_list
 

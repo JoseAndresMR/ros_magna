@@ -5,6 +5,7 @@ import tf2_ros
 import tf
 import math
 import collections
+import copy
 from mavros_msgs.msg import *
 from mavros_msgs.srv import *
 from geometry_msgs.msg import *
@@ -15,23 +16,38 @@ from geographic_msgs.msg import GeoPoint
 from GeoLocalPose import GeoLocalPose
 
 class FwQgc(object):
-    def __init__(self,robot_id = 1, pose_frame_id = "", ns_prefix = "uav_",
+    def __init__(self,robot_id = 1,ual_use = False, pose_frame_id = "", ns_prefix = "uav_",
                  position_th_param = 0.33, orientation_th_param = 0.65):
 
-        self.ual_use = False
+        self.ual_use = ual_use
         if self.ual_use == True:
             self.ual_prefix = "/{0}{1}".format(ns_prefix,robot_id)
         else:
             self.ual_prefix = ""
-            rospy.init_node('fw_qgc', anonymous=True)
 
+        rospy.init_node('fw_qgc', anonymous=True)
         self.waypoint_reached = -1
 
         self.listener()
         time.sleep(1)
         self.InitializePublishers()
-
         self.missionStarter()
+
+        if self.ual_use == False:
+            # self.TrialMission()
+
+            raw_input("next")
+            self.MoveCommand("takeoff",[200.0,0.0,10.0],0,{"type":"by_angle","angle": 0,"height": 10.0,"distance":200})
+            raw_input("next")
+            # self.MoveCommand("loiter",[[200.0,200.0,10.0]],0)
+            # raw_input("next")
+            # self.MoveCommand("pass",[[200.0,0.0,10.0],
+            #                                     [500.0,300.0,10.0],
+            #                                     [0.0,300.0,10.0]],0)
+            # raw_input("next")
+            self.MoveCommand("land",[[0.0,0.0,0.0]],0,{"loiter_to_alt":{"type":"by_angle","angle": -math.pi/2,"height": 10.0,"distance":200}})
+
+            self.DisarmAtLand()
 
     '''
     Publishers
@@ -69,8 +85,8 @@ class FwQgc(object):
 
     def state_callback(self,data):
         self.mavros_state = data
-        print(data.mode)
-        print(data.armed)
+        # print("mode",data.mode)
+        # print("armed",data.armed)
 
     def extended_state_callback(self,data):
         self.mavros_extended_state = data
@@ -78,7 +94,7 @@ class FwQgc(object):
     def waypoint_reached_callback(self,data):
         if self.waypoint_reached != data.wp_seq:
             self.waypoint_reached = data.wp_seq
-            print("WP {} reached".format(self.waypoint_reached))
+            # print("WP {} reached".format(self.waypoint_reached))
 
     def current_mission_list_callback(self,data):
         self.current_mission = data
@@ -111,7 +127,7 @@ class FwQgc(object):
             ual_set_mode = rospy.ServiceProxy(
                 '{0}/mavros/set_mode'.format(self.ual_prefix), SetMode)
             response = ual_set_mode(request)
-            print(response)
+            # print("mode change response",response)
 
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -151,6 +167,7 @@ class FwQgc(object):
 
     def ClearMissionSrvCall(self):
         print("Trying to clear mission")
+        print(self.ual_prefix)
         rospy.wait_for_service(
             '{0}/mavros/mission/clear'.format(self.ual_prefix))
         try:
@@ -171,23 +188,6 @@ class FwQgc(object):
     Mission Actions
     '''
 
-    def addMissionSegment(self,wpList,segment_type):
-
-        if segment_type == 1:
-            wpList = self.addTakeOffWp(wpList,[200.0,0.0,10.0])
-            wpList = self.addLotierWps(wpList, [[200.0, 0.0, 10.0]])
-            wpList = self.addPassWps(wpList,[[200.0,0.0,10.0],
-                                            [500.0,300.0,10.0],
-                                            [0.0,300.0,10.0]])
-            wpList = self.addLandWps(wpList,[[100.0,0.0,10.0],[0.0,0.0,0.0]])
-
-        elif segment_type == 2:
-
-            wpList = self.addLandWps(wpList,[[100.0,0.0,10.0],[0.0,0.0,0.0]])
-
-        return wpList
-
-
     def addTakeOffWp(self, wpList, wp_mini = [], params={}):
         wp = Waypoint()
         wp.frame = 3
@@ -195,29 +195,38 @@ class FwQgc(object):
         wp.is_current = True
         wp.autocontinue = True
 
-
         if "minimum_pitch" not in params.keys():
             params["minimum_pitch"] = 15.0
         if "yaw" not in params.keys():
             params["yaw"] = float('nan')
+        if "type" not in params.keys():
+            params["type"] = "waypoint"
+   
+        if params["type"] == "by_waypoint" and wp_mini != []:
+            print(wp_mini)
+            wp.x_lat,wp.y_long,wp.z_alt = wp_mini[0][0],wp_mini[0][1],wp_mini[0][2]
 
+        elif params["type"] == "by_angle":
+            if "distance" not in params.keys():
+                params["distance"] = 200.0
+            if "angle" not in params.keys():
+                quaterions = self.cur_local_pose.pose.orientation
+                euler = tf.transformations.euler_from_quaternion([quaterions.x,quaterions.y,quaterions.z,quaterions.w])
+                params["angle"] = euler[2]
+                
+            if "height" not in params.keys():
+                params["height"] = 20.0
 
-        wp.param1 = params["minimum_pitch"]
-        wp.param4 = params["yaw"]
-
-        if wp_mini != []:
-            wp.x_lat,wp.y_long,wp.z_alt = wp_mini[0],wp_mini[1],wp_mini[2]
-        else:
-            quaterions = self.cur_local_pose.pose.orientation
-            euler = tf.transformations.euler_from_quaternions(quaterions.x,quaterions.y,quaterions.z,quaterions.w)
-            wp.x_lat = self.cur_local_pose.pose.postion.x + 150 * math.cos(euler[2])
-            wp.y_long = self.cur_local_pose.pose.postion.y + 150 * math.sin(euler[2])
-            wp.z_alt = 20
+            wp.x_lat = self.cur_local_pose.pose.position.x + params["distance"] * math.cos(params["angle"])
+            wp.y_long = self.cur_local_pose.pose.position.y + params["distance"] * math.sin(params["angle"])
+            print("flaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaag",wp.x_lat,wp.y_long)
+            wp.z_alt = params["height"]
+    
+        takeoff_mini_wp = copy.deepcopy([wp.x_lat,wp.y_long,wp.z_alt])
 
         wpList.waypoints.append(self.toGlobal(wp))
         # wpList.waypoints.append(wp)
-
-        return wpList
+        return wpList, takeoff_mini_wp
 
     def addPassWps(self, wpList, wp_mini_list, params={}):
         for i in range(len(wp_mini_list)):
@@ -228,7 +237,7 @@ class FwQgc(object):
             wp.autocontinue = True
 
             if "acceptance_radius" not in params.keys():
-                params["acceptance_radius"] = 50.0
+                params["acceptance_radius"] = 1.0
             if "orbit_distance" not in params.keys():
                 params["orbit_distance"] = 50.0
             if "yaw_angle" not in params.keys():
@@ -339,6 +348,8 @@ class FwQgc(object):
             params["loiter_to_alt"]["radius"] = 40.0                # Meters. Positive is clockwise
         if "forward_moving" not in params["loiter_to_alt"].keys():
             params["loiter_to_alt"]["forward_moving"] = 0        # 0:center, 1: exit location
+        if "type" not in params["loiter_to_alt"].keys():
+            params["loiter_to_alt"]["type"] = "waypoint"
 
 
         wp = Waypoint()
@@ -351,11 +362,25 @@ class FwQgc(object):
         wp.param2 = params["loiter_to_alt"]["radius"]
         wp.param4 = params["loiter_to_alt"]["forward_moving"]
 
-        if len(wp_mini) == 2:
+        if params["loiter_to_alt"]["type"] == "waypoint" and len(wp_mini_list) == 2:
             wp.x_lat,wp.y_long,wp.z_alt = wp_mini_list[0][0],wp_mini_list[0][1],wp_mini_list[0][2]
-        elif len(wp_mini) == 1:
-            pass
+        elif params["loiter_to_alt"]["type"] == "by_angle" and len(wp_mini_list) == 1:
+            if "distance" not in params["loiter_to_alt"].keys():
+                params["loiter_to_alt"]["distance"] = 500.0
+            if "angle" not in params.keys():
+                current_pos = copy.deepcopy(self.cur_local_pose.pose.position)
 
+                aux_vect = [current_pos.x-wp_mini_list[0][0],
+                            current_pos.y-wp_mini_list[0][1],
+                            current_pos.z-wp_mini_list[0][2]]
+
+                params["loiter_to_alt"]["angle"] = np.arctan2(aux_vect[1],aux_vect[0])
+            if "height" not in params.keys():
+                params["loiter_to_alt"]["height"] = 10.0
+
+            wp.x_lat = wp_mini_list[0][0] + params["loiter_to_alt"]["distance"] * math.cos(params["loiter_to_alt"]["angle"])
+            wp.y_long = wp_mini_list[0][1] + params["loiter_to_alt"]["distance"] * math.sin(params["loiter_to_alt"]["angle"])
+            wp.z_alt = params["loiter_to_alt"]["height"]
 
         wpList.waypoints.append(self.toGlobal(wp))
         # wpList.waypoints.append(wp)
@@ -365,11 +390,11 @@ class FwQgc(object):
         if "land" not in params.keys():
             params["land"] = {}
 
-        if "abort_alt" not in params["loiter_to_alt"].keys():
+        if "abort_alt" not in params["land"].keys():
             params["land"]["abort_alt"] = float('nan')
-        if "precision_mode" not in params["loiter_to_alt"].keys():
+        if "precision_mode" not in params["land"].keys():
             params["land"]["precision_mode"] = 0            # 0: normal, 1; oportunistic, 2: required
-        if "yaw" not in params["loiter_to_alt"].keys():
+        if "yaw" not in params["land"].keys():
             params["land"]["yaw"] = float('nan')
 
         wp = Waypoint()
@@ -382,7 +407,7 @@ class FwQgc(object):
         wp.param2 = params["land"]["precision_mode"]
         wp.param4 = params["land"]["yaw"]
 
-        wp.x_lat,wp.y_long,wp.z_alt = wp_mini_list[1][0],wp_mini_list[1][1],wp_mini_list[1][2]
+        wp.x_lat,wp.y_long,wp.z_alt = wp_mini_list[-1][0],wp_mini_list[-1][1],wp_mini_list[-1][2]
 
         wpList.waypoints.append(self.toGlobal(wp))
         # wpList.waypoints.append(wp)
@@ -394,57 +419,53 @@ class FwQgc(object):
     Commanders
     '''
 
-    def TrialMission(self):
+    def MoveCommand(self,move_type,poses_list,add_pos,params = {}):
 
-        self.missionStarter()
-        # rospy.set_param("/mavros/local_position/frame_id","fcu")
-        # print(rospy.get_param("/mavros/local_position/frame_id"))
-        self.WpListCommand(1)
-        self.setFlightMode("AUTO.MISSION")
-        time.sleep(60)
-        self.WpListCommand(2,False)
-        self.DisarmAtLand()
-        self.setArmed(False)
-        # time.sleep(100)
+        newWpList = []
+        for wp in poses_list:
+            print type(wp),wp
 
-    def WpListCommand(self,segment_type, add_pos = 0):
-
-        wpList = self.WpListMixer(add_pos)
-
-        wpList = self.addMissionSegment(wpList,segment_type)
-
-        self.WpListSrvCall(wpList)
-
-    def MoveCommand(self,move_type,poses_list,add_pos):
+            newWpList.append([wp.position.x,wp.position.y,wp.position.z])
+        # newWpList = poses_list
 
         wpList = self.WpListMixer(add_pos)
 
         if move_type == "takeoff":
-            wpList = self.addTakeOffWp(wpList,poses_list)
-            wpList = self.addLotierWps(wpList,[poses_list])
+            if self.ual_use:
+                self.missionStarter()
+            wpList, takeoff_mini_wp = self.addTakeOffWp(wpList,newWpList,params)
+            wpList = self.addLotierWps(wpList,[takeoff_mini_wp])
 
         elif move_type == "pass":
-            wpList = self.addPassWps(wpList,poses_list)
+            wpList = self.addPassWps(wpList,newWpList,params)
+            wpList = self.addLotierWps(wpList,[newWpList[-1]])
 
         elif move_type == "loiter":
-            wpList = self.addLotierWps(wpList,poses_list)
+            wpList = self.addLotierWps(wpList,newWpList,params)
 
         elif move_type == "land":
-            wpList = self.addLandWps(wpList,poses_list)
+            wpList = self.addLandWps(wpList,newWpList,params)
+            wpList = self.addPassWps(wpList,[newWpList[-1]],params)
 
-        if add_pos != 0:
+        if add_pos == 0:
+            wpList.waypoints[0].is_current = True
+        elif add_pos != 0:
             wpList.waypoints[wpList.start_index].is_current = True
 
         # print(wpList)
         # self.clearMission()
         # time.sleep(1)
+        print(wpList)
         self.WpListSrvCall(wpList)
         time.sleep(0.5)
-        self.setFlightMode("AUTO.MISSION")
         self.setArmed(True)
+        self.setFlightMode("AUTO.MISSION")
 
         while self.current_mission.current_seq + 1 != len(wpList.waypoints):
             time.sleep(1)
+
+        # if move_type == "land":
+        #     self.DisarmAtLand()
 
     def WpListMixer(self, add_pos = 2):
 
@@ -471,12 +492,13 @@ class FwQgc(object):
     def missionStarter(self):
 
         self.ClearMissionSrvCall()
+        self.setFlightMode("AUTO.LAND")
+        if self.ual_use:
+            self.setArmed(False)
         self.setArmed(True)
-        t = 0
-        while t<4:
-            self.setFCUParam('NAV_DLL_ACT',0)
-            time.sleep(1)
-            t = t+1
+    
+        self.setFCUParam('NAV_DLL_ACT',0)
+        # time.sleep(1)
         self.setHome()
 
     def setArmed(self,value = True):
@@ -489,7 +511,6 @@ class FwQgc(object):
 
         self.mavros_state = []
         while self.mavros_state == []:
-            print("on while")
             time.sleep(0.5)
 
         while (not self.mavros_state.armed == value) and (time.time() - last_request < 5):
@@ -536,7 +557,7 @@ class FwQgc(object):
                 print("{0} param set to {1}".format(param,value))
             else:
                 print("{} param could not be set".format(param))
-                print("response received:", response)
+                # print("response received:", response)
             return
 
         except rospy.ServiceException, e:
@@ -545,8 +566,8 @@ class FwQgc(object):
 
     def DisarmAtLand(self):
         while ((not self.mavros_extended_state.landed_state == 4) or
-               (not self.cur_local_pose.pose.position.z <= self.local_start_pos.pose.position.z + 0.1)):
-            print("Waiting to land. Actual altitude:",self.cur_global_pose.altitude + 0.01 - self.global_start_pos.altitude)
+               (not self.cur_local_pose.pose.position.z <= self.local_start_pos.pose.position.z + 0.2)):
+            print("Waiting to land. Actual altitude:",self.cur_global_pose.altitude - self.global_start_pos.altitude - 0.2)
             time.sleep(0.2)
         self.setArmed(False)
 
@@ -577,19 +598,7 @@ class FwQgc(object):
 
         return wp
 
-# backend_mavros = FwQgc()
+# FwQgc()
 
-# # backend_mavros.TrialMission()
-
-# raw_input("next")
-# backend_mavros.MoveCommand("takeoff",[200.0,0.0,10.0],0)
-# raw_input("next")
-# backend_mavros.MoveCommand("loiter",[[200.0,200.0,10.0]],0)
-# raw_input("next")
-# backend_mavros.MoveCommand("pass",[[200.0,0.0,10.0],
-#                                     [500.0,300.0,10.0],
-#                                     [0.0,300.0,10.0]],0)
-# raw_input("next")
-# backend_mavros.MoveCommand("land",[[100.0,0.0,10.0],[0.0,0.0,0.0]],0)
-
-# backend_mavros.DisarmAtLand()
+# make posix gazebo_plane
+# roslaunch mavros px4.launch fcu_url:=udp://:14550@localhost:14556

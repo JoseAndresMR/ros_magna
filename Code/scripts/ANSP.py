@@ -69,7 +69,8 @@ class ANSP(object):
         mission_to_role_dicc = {"follow_paths_sbys":["path","path","path"],
                                 "queue_of_followers_ad":["path","uav_ad","uav_ad"],
                                 "queue_of_followers_ap":["path","uav_ap","uav_ap"],
-                                "long_wait":["wait","wait","wait"],}
+                                "long_wait":["wait","wait","wait"],
+                                "only_world":["wait","wait","wait"],}
 
         # Actualize own world definition with role list
         self.world_definition["roles_list"] = mission_to_role_dicc[self.mission][:self.N_uav]
@@ -136,6 +137,12 @@ class ANSP(object):
         bag_folder_path = "/home/{6}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag"\
                                 .format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
+
+    #### Finisher functions ####
+    
+    def MakePath(self,path_def):
+
+        return [self.world.getFSPoseGlobal(path_def)]
 
 
     #### Finisher functions ####
@@ -214,6 +221,7 @@ class ANSP(object):
 
     # Function to update and local parameters of UAVs status
     def handle_uav_status(self,data):
+
         # Store UAV status into UAVs state list
         self.states_list[data.id-1] = data.state
 
@@ -256,7 +264,6 @@ class ANSP(object):
         self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']
-        self.ansp_sm_def = self.world_definition['ansp_sm_def']
         self.depth_camera_use = self.world_definition['depth_camera_use']
 
 def main():

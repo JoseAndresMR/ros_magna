@@ -18,6 +18,7 @@ from six.moves import cPickle as pickle
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
+from nav_msgs.msg import Path
 
 from Brain import *
 from pydag.srv import *
@@ -81,6 +82,7 @@ class Ground_Station(object):
         # time.sleep((self.ID-1) * 8)
         if self.uav_models[self.ID-1] != "plane":
             self.GroundStationListener()        # Start listening
+
         print "ground station",ID,"ready and listening"
 
         gs_sm = Ground_Station_SM(self)     # Create Ground Station State Machine
@@ -248,6 +250,25 @@ class Ground_Station(object):
         if self.uav_models[self.ID-1] == "plane":
             self.PathFollower_FW()
             return
+
+        self.goal_path = Path()
+        self.goal_path.header.stamp = rospy.Time.now()
+        self.goal_path.header.frame_id = "map"
+        self.changed_state = False
+        posestamped = PoseStamped()
+        posestamped.header.stamp = rospy.Time.now()
+        posestamped.header.frame_id = "map"
+        posestamped.pose = copy.deepcopy(self.uavs_list[self.ID-1].position.pose)
+        self.goal_path.poses = [posestamped]
+        for pose in copy.deepcopy(self.goal_path_poses_list):
+            posestamped = PoseStamped()
+            posestamped.header.stamp = rospy.Time.now()
+            posestamped.header.frame_id = "map"
+            posestamped.pose = pose
+            self.goal_path.poses.append(posestamped)
+
+        path_pub = rospy.Publisher('/pydag/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
+        response = path_pub.publish(self.goal_path)        
 
         # Control in every single component of the list
         for i in np.arange(len(self.goal_path_poses_list)):

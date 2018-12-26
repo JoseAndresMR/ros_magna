@@ -31,15 +31,15 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'mission'            :              "follow_paths_sbys",              # Global mission that characterizes every UAV's role
-        'type'               :                       1,                       # Type of the world or sceneario created
+        'mission'            :              "only_world",              # Global mission that characterizes every UAV's role
+        'type'               :                       3,                       # Type of the world or sceneario created
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
-        'uav_models'         :   ["plane", "plane", "plane"],   # Type of airborne of each vehicle
+        'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
+        'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
         'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
-        'path_length'        :                       1,                       # Length of the path for roles that follow one
+        'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "orca3",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'px4_use'            :                    "complete",                 # Flag to decide if PX4 is used
@@ -49,7 +49,7 @@ class Master(object):
         'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
         }
 
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
 
         # computer' path definition for each user
         user = "JA"
@@ -62,34 +62,6 @@ class Master(object):
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
-
-        ### Creation of the dictionary that defines the State Machine that composes the global mission
-        # First part of mission is common
-        ansp_sm_def=[]
-        step_1 = {"type":"new_world"}
-        ansp_sm_def.append(step_1)
-        step_2 = {"type":"spawn_uavs"}
-        ansp_sm_def.append(step_2)
-        step_3 = {"type":"all_take_off_ccr"}
-        ansp_sm_def.append(step_3)
-        # step_4 = {"type":"wait"}
-        # ansp_sm_def.append(step_4)
-
-        # This mission part is customized for every type of mission
-        step_5 = {"type":"{}_sm".format(self.world_definition['mission'])}
-        ansp_sm_def.append(step_5)
-
-        # This part of the mission is only introduced if save flag is active
-        if self.world_definition["save_flag"]:
-            step_6 = {"type":"all_save_csv_ccr"}
-            ansp_sm_def.append(step_6)
-
-        # Last part is common for every mission
-        step_7 = {"type":"all_land_ccr"}
-        ansp_sm_def.append(step_7)
-        step_4 = {"type":"wait"}
-        ansp_sm_def.append(step_4)
-        self.world_definition['ansp_sm_def'] = ansp_sm_def
 
         ### Initializations
         self.GazeboLauncher()    # Start Gazebo standalone

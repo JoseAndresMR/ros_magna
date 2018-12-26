@@ -219,7 +219,6 @@ class FwQgc(object):
 
             wp.x_lat = self.cur_local_pose.pose.position.x + params["distance"] * math.cos(params["angle"])
             wp.y_long = self.cur_local_pose.pose.position.y + params["distance"] * math.sin(params["angle"])
-            print("flaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaag",wp.x_lat,wp.y_long)
             wp.z_alt = params["height"]
     
         takeoff_mini_wp = copy.deepcopy([wp.x_lat,wp.y_long,wp.z_alt])

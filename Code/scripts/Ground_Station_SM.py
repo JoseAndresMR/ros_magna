@@ -44,6 +44,7 @@ class Ground_Station_SM(object):
 
                 StateMachine.add('take_off',
                                  CBState(self.take_off_stcb,
+                                         input_keys=['action_goal'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed'})
 
@@ -64,6 +65,7 @@ class Ground_Station_SM(object):
 
                 StateMachine.add('land',
                                  CBState(self.land_stcb,
+                                         input_keys=['action_goal'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed'})
 
@@ -106,6 +108,7 @@ class Ground_Station_SM(object):
 
                 StateMachine.add('save_csv',
                                  CBState(self.save_csv_stcb,
+                                         input_keys=['action_goal'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed'})
 
@@ -178,7 +181,7 @@ class Ground_Station_SM(object):
 
 
     @cb_interface(outcomes=['completed', 'failed'])
-    def action_server_advertiser_stcb(ud, heritage, asw_dicc):
+    def action_server_advertiser_stcb(self, heritage, asw_dicc):
         heritage.SetVelocityCommand(True)       # Tell GS to hover whole no server request is received
         for key in asw_dicc.keys():     # Run every ASW stored
             asw_dicc[key].run_server()
@@ -189,15 +192,18 @@ class Ground_Station_SM(object):
 
         time.sleep(0.2)
 
+        
+
         rospy.spin()
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def take_off_stcb(ud,heritage):
+    def take_off_stcb(self,heritage):
         print("TAKE OFF COMMAND")
 
-        heritage.TakeOffCommand(5,True)     # Tell GS to take off. In the future altitude will be received
+
+        heritage.TakeOffCommand(self.action_goal.height,True)     # Tell GS to take off
 
         # Function to inform ANSP about actual UAV's state
         heritage.state = "inizializating"
@@ -206,49 +212,49 @@ class Ground_Station_SM(object):
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def follow_path_stcb(ud,heritage):
+    def follow_path_stcb(self,heritage):
 
         # Copy the goal path to follow into GS's variable
-        heritage.goal_path_poses_list = ud.action_goal.goal_path_poses_list
+        heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
         heritage.PathFollower()     # Tell the GS to execute that function
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def follow_uav_ad_stcb(ud,heritage):
+    def follow_uav_ad_stcb(self,heritage):
 
         # Tell the GS the identity of its new target
-        heritage.state = "following UAV {0}".format(ud.action_goal.target_ID)
+        heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
 
         heritage.ANSPStateActualization()       # Function to inform ANSP about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAD role with at the required distance
-        heritage.UAVFollowerAtDistance(ud.action_goal.target_ID,ud.action_goal.distance)
+        heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance)
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def follow_uav_ap_stcb(ud,heritage):
+    def follow_uav_ap_stcb(self,heritage):
 
         # Tell the GS the identity of its new target
-        heritage.state = "following UAV {0}".format(ud.action_goal.target_ID)
+        heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
 
         heritage.ANSPStateActualization()       # Function to inform ANSP about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAP role with the required bias
-        heritage.UAVFollowerAtPosition(ud.action_goal.target_ID,ud.action_goal.pos)
+        heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos)
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def save_csv_stcb(ud,heritage):
+    def save_csv_stcb(self,heritage):
         heritage.StoreData()        # Tell the GS to store the data
 
         return "completed"
 
 
     @cb_interface(outcomes=['completed','failed'])
-    def land_stcb(ud,heritage):
+    def land_stcb(self,heritage):
         print "landing"
         heritage.LandCommand(True)        # Tell the GS to land
 
@@ -259,13 +265,13 @@ class Ground_Station_SM(object):
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed'])
-    def basic_move_stcb(ud,heritage):
+    def basic_move_stcb(self,heritage):
 
         # Parse received basic move information
-        move_type = ud.action_goal.move_type
-        dynamic = ud.action_goal.dynamic
-        direction = ud.action_goal.direction
-        value = ud.action_goal.value
+        move_type = self.action_goal.move_type
+        dynamic = self.action_goal.dynamic
+        direction = self.action_goal.direction
+        value = self.action_goal.value
 
         # Tell the GS to execute basic move role with parsed information
         heritage.basic_move(move_type,dynamic,direction,value)

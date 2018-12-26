@@ -42,6 +42,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <!-- Define the global map frame geo position and let the UAL estimate the relative home pose -->
         <!-- <rosparam param="map_origin_geo">[37.558542, -5.931074, 7.89]</rosparam> --><!-- [lat,lon,alt] -->
     </node>
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="tf_uav1_baselink" args="0 0 0 0 0 0 1 uav_1 base_link" /> -->
     
     <node pkg="pydag" type="Ground_Station_FW.py" name="ground_station_1" output="screen"
         args="-ID=1"/>

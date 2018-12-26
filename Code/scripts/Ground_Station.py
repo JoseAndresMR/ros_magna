@@ -28,7 +28,7 @@ class Ground_Station(object):
     def __init__(self,ID):
 
         self.ID = int(ID)
-
+        print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG")
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
 
         self.brain = Brain(self.ID,self.role)       # Creation of a brain associated to this drone
@@ -69,7 +69,7 @@ class Ground_Station(object):
         for n_uav in range(1,self.N_uav+1):
             self.uavs_list.append(UAV(n_uav,self.ID,ICAO_IDs[n_uav]))
 
-
+        print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG")
         self.state = "landed"       # Initially the UAV is soposed to be landed
         self.collision = False       # Initially there has not been collisions
         self.die_command = False        # Flag later activate from ANSP to finish simulation

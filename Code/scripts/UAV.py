@@ -44,6 +44,15 @@ class UAV(object):
             self.path_pub = rospy.Publisher('/pydag/uav_{}/path'.format(self.ID), Path, queue_size = 1)
             self.velocity_on_uav_pub = rospy.Publisher('/pydag/uav_{}/velocity_on_uav'.format(self.ID), TwistStamped, queue_size = 1)
 
+            # marker_def = {"shape" : "cylinder"}
+            # marker_def["origin"] = [[0,0,0],[0,0,0]]
+            # marker_def["parent_name"] = parent_name
+            # marker_def["name"] = "uav_{0}".format(self.ID)
+            # marker_def["id"] = 1
+            # marker_def["color"] = [255,0,0,0.5]
+
+            # self.marker = RvizMarker(marker_def)
+
         self.listener()     # Start listening to subcribed topics
 
     #### Listener functions ####
@@ -81,6 +90,8 @@ class UAV(object):
             if self.changed_state == True:
                 self.own_path.poses = []
                 self.changed_state = False
+
+                # self.marker.Actualize(self.position)
 
             self.own_path.poses.append(data)
             self.path_pub.publish(self.own_path)

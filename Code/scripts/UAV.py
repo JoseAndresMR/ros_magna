@@ -13,6 +13,7 @@ from pydag.srv import *
 from pydag.msg import *
 # from ADSB import ADSB
 from cv_bridge import CvBridge, CvBridgeError
+from Worlds import *
 
 class UAV(object):
     def __init__(self,ID,main_uav,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
@@ -29,6 +30,8 @@ class UAV(object):
         self.Rviz_flag = True
         self.ual_state = 0
 
+        self.main_uav_position = []
+
         self.GettingWorldDefinition()
 
         if self.depth_camera_use:      # Creation of the CV bridge to deal with the depth camera
@@ -40,18 +43,23 @@ class UAV(object):
             self.own_path = Path()
             self.own_path.header.stamp = rospy.Time.now()
             self.own_path.header.frame_id = "map"
-            self.changed_state = False
             self.path_pub = rospy.Publisher('/pydag/uav_{}/path'.format(self.ID), Path, queue_size = 1)
             self.velocity_on_uav_pub = rospy.Publisher('/pydag/uav_{}/velocity_on_uav'.format(self.ID), TwistStamped, queue_size = 1)
 
-            # marker_def = {"shape" : "cylinder"}
-            # marker_def["origin"] = [[0,0,0],[0,0,0]]
-            # marker_def["parent_name"] = parent_name
-            # marker_def["name"] = "uav_{0}".format(self.ID)
-            # marker_def["id"] = 1
-            # marker_def["color"] = [255,0,0,0.5]
+            marker_def = {"shape" : "cylinder"}
+            marker_def["origin"] = [[0,0,0],[0,0,0]]
+            marker_def["parent_name"] = "map"
+            marker_def["name"] = "uav_{0}".format(self.ID)
+            marker_def["id"] = 1
+            marker_def["scale"] = [1,1,0.7]
+            if self.ID == 1:
+                marker_def["color"] = [255,0,0,0.5]
+            elif self.ID == 2:
+                marker_def["color"] = [255,255,0,0.5]
+            elif self.ID == 3:
+                marker_def["color"] = [0,255,0,0.5]
 
-            # self.marker = RvizMarker(marker_def)
+            self.marker = RvizMarker(marker_def)
 
         self.listener()     # Start listening to subcribed topics
 
@@ -66,9 +74,11 @@ class UAV(object):
             rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback, queue_size=1)
             rospy.Subscriber('/uav_{}/ual/state'.format(self.ID), State, self.ual_state_callback, queue_size=1)
 
+        if self.main_uav != self.ID:
+            rospy.Subscriber('/uav_{}/ual/pose'.format(self.main_uav), PoseStamped, self.main_uav_pose_callback, queue_size=1)
 
         # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented
-        elif self.main_uav != self.ID and self.communications == "ADSB":
+        if self.main_uav != self.ID and self.communications == "ADSB":
             rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback, queue_size=1)
 
         # Subscribe to depth camera if its use flag is activated
@@ -87,11 +97,7 @@ class UAV(object):
         self.position = data        # Store the received position into the position of the UAV
         if self.Rviz_flag == True and self.ID == self.main_uav:
 
-            if self.changed_state == True:
-                self.own_path.poses = []
-                self.changed_state = False
-
-                # self.marker.Actualize(self.position)
+            self.marker.Actualize(self.position)        # NO FUNCTIONA AQUI
 
             self.own_path.poses.append(data)
             self.path_pub.publish(self.own_path)
@@ -100,7 +106,21 @@ class UAV(object):
         if self.main_uav != self.ID and self.communications == "ADSB":
             self.PoseBroadcast()
 
+        if self.main_uav != self.ID and self.main_uav_position !=[]:
+            self.position_rel2main = self.SubstractPoses(self.position.pose,self.main_uav_position.pose)
+            self.distance_rel2main = self.PoseModule(self.position_rel2main)
+
+        if self.main_uav == self.ID:
+            self.obs_poses_rel2main = []
+            self.obs_distances_rel2main = []
+            for obs_pose in self.obs_pose_list:
+                self.obs_poses_rel2main.append(Pose(Point(obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),Quaternion(obs_pose[1][0],obs_pose[1][1],obs_pose[1][2],obs_pose[1][3])))
+                self.obs_distances_rel2main.append(self.PoseModule(self.obs_poses_rel2main[-1]))
+                
         time.sleep(0.1)
+
+    def main_uav_pose_callback(self,data):
+        self.main_uav_position = data
 
     # Function to deal with velocity data
     def uav_vel_callback(self,data):
@@ -171,6 +191,18 @@ class UAV(object):
                         "map")
         time.sleep(0.1)
 
+    def SubstractPoses(self,pose_1,pose_2):         # TO UTILS
+        position_1, position_2, orientation_1, orientation_2 = pose_1.position, pose_2.position, pose_1.orientation, pose_2.orientation
+        difference = Pose(Point(position_1.x-position_2.x,position_1.y-position_2.y,position_1.z-position_2.z),
+                          Quaternion(orientation_1.x-orientation_2.x,orientation_1.y-orientation_2.y,orientation_1.z-orientation_2.z,orientation_1.w-orientation_2.w))
+        return difference
+
+    def PoseModule(self,pose):   # To UTILS
+        Distance = math.sqrt((pose.position.x)**2+(pose.position.y)**2+(pose.position.z)**2)
+        return Distance
+
+
+
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
@@ -186,6 +218,7 @@ class UAV(object):
         self.communications = self.world_definition['communications']
         self.home_path = self.world_definition['home_path']
         self.depth_camera_use = self.world_definition['depth_camera_use']
+        self.obs_pose_list = self.world_definition['obs_pose_list']
 
 if __name__ == '__main__':
     uav = UAV("485020",True,[0,0])

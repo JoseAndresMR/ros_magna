@@ -535,10 +535,6 @@ class ANSP_SM(object):
     def spawn_uavs_stcb(self,heritage):
 
         for i in range(heritage.N_uav):     # Do it for every UAV
-            uav_goal_path = heritage.world.PathGenerator(heritage.uav_models[i])      # Ask world to generate a path
-
-            heritage.path_length = len(uav_goal_path)       # Reset path length information
-            heritage.uavs_goal_paths_list.append(uav_goal_path)     # Append the asked path to existing one QUITAR
             # first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
             first_pose = heritage.world.getFSPoseGlobal(["Ground_Station","UAVs_take_off","matrix",[i,0,0]])
             # Change spawn features so it spawns under its first waypoint

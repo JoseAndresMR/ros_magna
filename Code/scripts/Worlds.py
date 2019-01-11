@@ -24,9 +24,10 @@ from xml.dom import minidom
 from gazebo_msgs.srv import DeleteModel,SpawnModel
 from visualization_msgs.msg import Marker
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray, Torus, TorusArray
+import xml.etree.ElementTree
 
-from Ground_Station import *
-from Brain import *
+
+# from Brain import *
 
 class Worlds(object):
     def __init__(self,ID):
@@ -50,8 +51,6 @@ class Worlds(object):
 
         self.obstacleGeneratorGeneric()        # Decide position and spawn the obstacles
 
-        # print self.getFSPoseGlobal("Ground_Station","UAVs_take_off",[0,0,0])
-
     def obstacleGeneratorGeneric(self): 
 
         self.scenario_def = self.world_def["scenario"]
@@ -71,10 +70,11 @@ class Worlds(object):
 
             self.volumes[volume_def["name"]] = Volume(volume_def,self.transforms_list)
             self.transforms_list = self.volumes[volume_def["name"]].getTransforms()
-
+            if self.volumes[volume_def["name"]].obs_pose_list != []:
+                [self.obs_pose_list.append(obs) for obs in self.volumes[volume_def["name"]].obs_pose_list]
 
         self.world_definition["obs_shape"] = []
-        self.world_definition["obs_pose_list"] = []
+        self.world_definition["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('world_definition', self.world_definition)      # Actualize the ROS param
 
     def getFSPoseGlobal(self,params):
@@ -86,238 +86,28 @@ class Worlds(object):
 
             return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromList()
 
-    # Decide the position and shape and spawn in Gazebo the obstacles
-    def obstacleGenerator(self):
-
-        # Initialization of lists
-        self.n_obs = 0
-        self.obs_list = []      # List with the objects that deal with an obstacle
-        self.obs_shape_list = []         # List with the shapes of the objects
-        self.obs_pose_list = []         # List with the poses of the objects
-        self.obs_transforms_list = []       # List of obstacles TF
-
-        ### Creation of obstacles depending on the world type
-
-        if self.world_type == 1:
-
-            # Set scenario parameters
-            self.obs_zone_rad = 3 #4
-            self.neutral_zone_width = 1 #2
-            self.rw_uavs_zone_width = 1
-            self.fw_uavs_zone_width = 150
-            self.goal_uncertainty = np.pi/4
-            self.obs_zone_lower_heigth = 1
-            self.obs_zone_upper_heigth = 5
-
-            # For every obstacle, choose randomly a position inside the determined zone
-            for self.n_obs in np.arange(self.N_obs):
-                # Set randomizer parameters
-                obs_mu = 0
-                obs_sigma = self.obs_zone_rad*0.5     #### AJUSTAR SIGMA
-
-                # Randomly define the pose
-                obs_pose = Pose(Point(np.random.normal(obs_mu,obs_sigma,1),\
-                                        np.random.normal(obs_mu,obs_sigma,1),\
-                                        np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)),\
-                                Quaternion(0,0,0,1))
-
-                shape = "sphere"        # Impose shpere as shape for first world type
-
-                self.obs_shape_list.append(shape)       # Add to the whole obstacles shape list
-
-                # Add to the whole obstacles object list as are also spawned on int initialization
-                self.obs_list.append(Obstacle(self.n_obs,\
-                                                    shape,\
-                                                    obs_pose,\
-                                                    self.obs_transforms_list))
-
-                # Add to the wholes poses list
-                self.obs_pose_list.append([float(obs_pose.position.x),float(obs_pose.position.y),float(obs_pose.position.z)])
-
-        elif self.world_type == 2:
-
-            # Set scenario parameters
-            self.dbo=[10,3.5,3.5]       # Define the distance between objects of the tube of objects
-            self.obstacle_density = 0.25     # Defines the probability that in a point of the tube there is an obstacle or not
-
-            # Initializes a tensor with random values and shaped as the obstacle tube
-            self.obstacles_raw_matrix = np.random.rand(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2])
-
-            # If the random value is lower than the density, set its obstacle tensor's position at True
-            self.obstacles_positions = self.obstacles_raw_matrix<=self.obstacle_density
-
-
-            # Create a list shaped as the obstacle tube
-            self.poses_matrix = self.obstacles_raw_matrix.tolist()
-
-            # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
-            # For every position in the three dimesions
-            for i in np.arange(self.obstacles_raw_matrix.shape[0]):       ##### O AL MENOS PONER ESTO EN UNA SOLA LINEA
-                for k in np.arange(self.obstacles_raw_matrix.shape[2]):
-                    for j in np.arange(self.obstacles_raw_matrix.shape[1]):
-
-                        # Randomize orientation or not
-                        if self.world_type == 2:
-                            obs_orientation = Quaternion(0,0,0,1)
-                        elif self.world_type == 4:      # Change
-                            obs_orientation = Quaternion(np.random.rand(1),np.random.rand(1),np.random.rand(1),np.random.rand(1))
-
-                        # Create a matrix with the poses of the obstacles in the positions in which has been created one
-                        self.poses_matrix[i][j][k]=Pose(Point(i*self.dbo[0],\
-                                                              -(-self.dbo[1]/2.0+self.dbo[1]*self.obstacles_raw_matrix.shape[1])/2.0+j*self.dbo[1],\
-                                                              (k+0.5)*self.dbo[2]),\
-                                                        obs_orientation)
-
-                        # For every obstacled that has been created
-                        if self.obstacles_positions[i,j,k] == True:
-
-                            # Randomize shape or not
-                            if self.world_type == 2:
-                                shape = "brick"
-                            elif self.world_type == 4:  # Change
-                                shape = self.randomizeShape()
-
-                            self.obs_shape_list.append(shape)       # Add its shape to the list
-
-                            # Add the obstacle object to the list of obstacles. During its initialization are already spawned
-                            self.obs_list.append(Obstacle(self.n_obs,\
-                                                                shape,\
-                                                                self.poses_matrix[i][j][k],\
-                                                                self.obs_transforms_list))
-
-                            # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
-
-                            # Add also its single list pose to the list of single list poses
-                            self.obs_pose_list.append([float(self.poses_matrix[i][j][k].position.x),float(self.poses_matrix[i][j][k].position.y),float(self.poses_matrix[i][j][k].position.z)])
-
-                            self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
-
-            self.world_definition["N_obs"] = self.n_obs     # Actualize the final number of obstacles to the world definition so it will be a ROS param
-
-        # Actualize new obstacles information to the world definition so it will be a ROS param
-        self.world_definition["obs_shape"] = self.obs_shape_list
-        self.world_definition["obs_pose_list"] = self.obs_pose_list
-        rospy.set_param('world_definition', self.world_definition)      # Actualize the ROS param
-
-        print "world", self.ID, "created"
-
-    # Generate a new adequate path for each world
-    def PathGenerator(self, uav_model):
-
-        if self.world_type == 1:
-
-            # Think on cylindric coordinates. The base circle is centered in [0,0,0]
-            # Definition of a random radius, angle and height for the first waypoint
-            uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                        self.obs_zone_rad + self.neutral_zone_width+self.rw_uavs_zone_width,\
-                                        1)
-            uav_ang = np.random.uniform(0,2*np.pi,1)
-            uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-
-            # Transformation on it into a pose
-            self.path_poses_list=[Pose(Point(np.asscalar(uav_rad*np.cos(uav_ang)),\
-                                            np.asscalar(uav_rad*np.sin(uav_ang)),\
-                                            np.asscalar(uav_heigth)),\
-                                    Quaternion(0,0,0,1))]
-        
-            if uav_model == "plane":
-                initial_yaw_euler = math.atan2(self.path_poses_list[0].position.y,self.path_poses_list[0].position.x)
-                initial_yaw_quaternion = tf.transformations.quaternion_from_euler(0,0,initial_yaw_euler)
-                self.path_poses_list[0].orientation = Quaternion(initial_yaw_quaternion[0],initial_yaw_quaternion[1],initial_yaw_quaternion[2],initial_yaw_quaternion[3])
-
-
-            # For next waypoints, define also random radius, angle and height.
-            # But adding pi and some uncertainty to make the drone pass central part of the cylinder
-            for n_WP in np.arange(self.path_length-1):
-
-                if uav_model == "typhoon_h480":
-                    uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                            self.obs_zone_rad + self.neutral_zone_width+self.rw_uavs_zone_width,\
-                                            1)
-                    uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
-                    uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-                    self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
-                                                            uav_rad*np.sin(uav_ang),\
-                                                            uav_heigth),\
-                                                        Quaternion(0,0,0,0)))
-
-                elif uav_model == "plane":
-                    uav_rad = np.random.uniform(self.obs_zone_rad + self.neutral_zone_width,\
-                                            self.obs_zone_rad + self.neutral_zone_width+self.fw_uavs_zone_width,\
-                                            1)
-                    uav_ang = uav_ang + np.pi + np.random.uniform(-self.goal_uncertainty/2,self.goal_uncertainty/2,1)
-                    uav_heigth = np.random.uniform(self.obs_zone_lower_heigth,self.obs_zone_upper_heigth,1)
-                    self.path_poses_list.append(Pose(Point(uav_rad*np.cos(uav_ang),\
-                                                            uav_rad*np.sin(uav_ang),\
-                                                            uav_heigth),\
-                                                        Quaternion(0,0,0,0)))
-
-
-        elif self.world_type == 2:
-
-
-            # for every waypoint, posision random points at one edge of the tube every each time
-            self.path_poses_list = []
-            for n_WP in np.arange(self.path_length):
-                if n_WP % 2 == 1:
-                    Point_x = -10 + self.obstacles_raw_matrix.shape[0]*self.dbo[0] + 10
-                elif n_WP % 2 == 0:
-                    Point_x = -10
-
-                # new_pose = Pose(Point(Point_x,
-                #                       float((np.random.rand(1)-0.5) * self.obstacles_raw_matrix.shape[1]),
-                #                       1+self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2.0+(np.random.rand(1)-0.5)*self.obstacles_raw_matrix.shape[2]),
-                #                 Quaternion(0, 0, 0, 0))
-
-                new_pose = Pose(Point(Point_x,
-                                      0,
-                                      self.dbo[2]*self.obstacles_raw_matrix.shape[2]/2),
-                                Quaternion(0, 0, 0, 0))
-
-                self.path_poses_list.append(new_pose)
-
-        elif self.world_type == 3:
-
-            self.path_poses_list = [Pose(Point(1,1,1),
-                                Quaternion(0, 0, 0, 0))]
-
-
-        return self.path_poses_list
-
-
-    # Function to all every saved obstacle and call its erase method
-    def eraseAllObstacles(self):
-        for obs in self.obs_list:
-            obs.Erase()
+        elif params[2] == "path":
+            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromPath()
     
-    def eraseAllMarkers(self):
-        for marker in self.markers_list:
-            marker.Erase()
-
-    # Function to randomize shapes over an equal normal probability
-    def randomizeShape(self):
-
-        data=np.random.rand(1)
-        if 0<=data and data<=1.0/3:
-            shape ="sphere"
-        elif 1.0/3<data and data<=2.0/3:
-            shape ="cylinder"
-        else:
-            shape ="cube"
-
-        return shape
-
-    # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.mission = self.world_definition['mission']
         self.world_type = self.world_definition['type']
-        self.home_path = self.world_definition['home_path']
+        self.n_simulation = self.world_definition['n_simulation']
+        self.N_uav = self.world_definition['N_uav']
+        self.N_obs = self.world_definition['N_obs']
         self.obs_tube = self.world_definition['obs_tube']
+        self.n_dataset = self.world_definition['n_dataset']
+        self.uav_models = self.world_definition['uav_models']
+        self.path_length = self.world_definition['path_length']
+        self.home_path = self.world_definition['home_path']
+        self.solver_algorithm = self.world_definition['solver_algorithm']
+        self.smach_view = self.world_definition['smach_view']
+        self.depth_camera_use = self.world_definition['depth_camera_use']
 
 # Class to deal with one single obstacle
 class Obstacle(object):
-    def __init__(self,ID,shape,pose,parent_name,parent_prefix,transforms_list):
+    def __init__(self,ID,shape,dimensions,pose,parent_name,parent_prefix,transforms_list):
 
         # Save params from args
         self.ID = ID
@@ -326,16 +116,36 @@ class Obstacle(object):
         self.pose = pose
         self.home_path = rospy.get_param('world_definition/home_path')
 
-
-        # Definition of the dictionary with the paths where every type of obstacle is stores. In the future should be packed
-        product_xml_dict = {"cube":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("cube",self.home_path),"r").read(),\
-                            "cylinder":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("cylinder",self.home_path),"r").read(),\
-                            "sphere":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("sphere",self.home_path),"r").read(),\
-                            "brick":open("/home/{1}/catkin_ws/src/pydag/Code/gz_models/{0}.sdf".format("brick",self.home_path),"r").read(),\
+        basic_path = "/home/{0}/catkin_ws/src/pydag/Code/gz_models/".format(self.home_path)
+        product_xml_path_dict = {"cube":basic_path + "{0}.sdf".format("cube"),\
+                            "cylinder":basic_path + "{0}.sdf".format("cylinder"),\
+                            "sphere":basic_path + "{0}.sdf".format("sphere"),\
+                            "brick":basic_path + "{0}.sdf".format("brick"),\
                             }
 
-        self.product_xml = product_xml_dict[shape]
-                            
+        et = xml.etree.ElementTree.parse(product_xml_path_dict[shape])
+        root = et.getroot()
+
+        if shape == "cube":
+            root[0][1][0][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
+            root[0][1][1][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
+
+        et.write(product_xml_path_dict[shape])
+
+        # Definition of the dictionary with the paths where every type of obstacle is stores. In the future should be packed
+        self.product_xml = open(product_xml_path_dict[shape],"r").read()
+
+        self.marker_def = {"shape" : shape}
+        self.marker_def["origin"] = [[0,0,0],[0,0,0]]
+        self.marker_def["parent_name"] = str(self.name)
+        self.marker_def["name"] = self.name
+        self.marker_def["id"] = 1
+        self.marker_def["scale"] = dimensions
+
+        color = [0,0,0]
+        color.append(0)
+        self.marker_def["color"] = [0,0,0,1]
+           
         # Get ROS params
         self.world_definition = rospy.get_param('world_definition')
         self.N_obs = self.world_definition['N_obs']
@@ -357,6 +167,8 @@ class Obstacle(object):
         self.global_pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
 
         self.Spawner()      # Spawn obstacle with defined data
+
+        self.MakeMarker()
 
 
     # Function to query the service to spawn an obstacle
@@ -388,6 +200,10 @@ class Obstacle(object):
 
     def getGlobalPose(self):
         return self.global_pose
+
+    def MakeMarker(self):
+
+        self.marker = RvizMarker(self.marker_def)
 
 class FreeSpacePose(object):
     def __init__(self,ID,pose,parent_name,parent_prefix,transforms_list):
@@ -467,8 +283,9 @@ class RvizMarker(object):
 
         self.marker_pub.publish(self.marker)
 
-    def Actualize(self,pose):
-        self.marker.pose = pose
+    def Actualize(self,posestamped):
+        self.marker.header.stamp = rospy.Time.now()
+        self.marker.pose = posestamped.pose
         self.marker_pub.publish(self.marker)
 
 class Volume(object):
@@ -480,6 +297,7 @@ class Volume(object):
         self.origin = volume_def["origin"]
 
         self.transforms_list = transforms_list
+        self.obs_pose_list = []
 
         tfbroadcaster = TfBroadcaster(self.name,"map",self.origin,self.transforms_list)
         tfbroadcaster.Broadcast()
@@ -495,6 +313,9 @@ class Volume(object):
             self.geometries[geometry_def["name"]] = self.geometry_classes[geometry_def["shape"]](geometry_def,self.name,self.prefix,self.transforms_list)
             self.transforms_list = self.geometries[geometry_def["name"]].getTransforms()
 
+            if self.geometries[geometry_def["name"]].obs_pose_list != []:
+                [self.obs_pose_list.append(obs) for obs in self.geometries[geometry_def["name"]].obs_pose_list]
+                
     def getTransforms(self):
 
         return self.transforms_list
@@ -567,6 +388,14 @@ class GenericGeometry:
 
         return self.poses[0].global_pose
 
+    def getFPGlobalPosefromPath(self):
+
+        global_path = []
+        for pose in self.path:
+            global_path.append(pose.global_pose)
+
+        return global_path
+
     def RawDensityMatrix(self,obstacles_def):
 
         # Initializes a tensor with random values and shaped as the obstacle tube
@@ -577,7 +406,7 @@ class GenericGeometry:
 
         return selected_positions_matrix
 
-    def GenerateObstacleFromDensityMatrix(self,selected_positions_matrix,poses_matrix,shapes):
+    def GenerateObstacleFromDensityMatrix(self,selected_positions_matrix,poses_matrix,shapes,dimensions):
 
         obs_list = copy.deepcopy(selected_positions_matrix.tolist())
 
@@ -594,6 +423,7 @@ class GenericGeometry:
                         # Add the obstacle object to the list of obstacles. During its initialization are already spawned
                         obs_list[i][j][k] = Obstacle('{0}_{1}_{2}'.format(i,j,k),\
                                                             shape,\
+                                                            dimensions,\
                                                             poses_matrix[i][j][k],\
                                                             self.name,\
                                                             self.prefix,\
@@ -604,13 +434,13 @@ class GenericGeometry:
                         # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
                         # Add also its single list pose to the list of single list poses
-                        self.obs_pose_list.append([float(poses_matrix[i][j][k].position.x),float(poses_matrix[i][j][k].position.y),float(poses_matrix[i][j][k].position.z)])
+                        self.obs_pose_list.append([[float(obs_list[i][j][k].global_pose.position.x),float(obs_list[i][j][k].global_pose.position.y),float(obs_list[i][j][k].global_pose.position.z)],[0,0,0,0]])
 
                         self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
 
         return obs_list
 
-    def GenerateObstacleFromPosesList(self,selected_positions,shapes):
+    def GenerateObstacleFromPosesList(self,selected_positions,shapes,dimensions):
 
         obs_list = []
 
@@ -621,11 +451,12 @@ class GenericGeometry:
             # Add the obstacle object to the list of obstacles. During its initialization are already spawned
             obs_list.append(Obstacle(str(i),\
                                     shape,\
+                                    dimensions,\
                                     pose,\
                                     self.name,\
                                     self.prefix,\
                                     self.transforms_list))
-            self.obs_pose_list.append([float(pose.position.x),float(pose.position.y),float(pose.position.z)])
+            self.obs_pose_list.append([[float(obs_list[-1].global_pose.position.x),float(obs_list[-1].global_pose.position.y),float(obs_list[-1].global_pose.position.z)],[0,0,0,0]])
 
             self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
 
@@ -675,7 +506,7 @@ class GenericGeometry:
 
         if obstacles_def["use"] == "obstacles":
 
-            self.obstacles = self.GenerateObstacleFromDensityMatrix(selected_positions_matrix,poses_matrix,obstacles_def["obstacles_shape"])
+            self.obstacles = self.GenerateObstacleFromDensityMatrix(selected_positions_matrix,poses_matrix,obstacles_def["obstacles_shape"],obstacles_def["obstacles_dimensions"])
 
         elif obstacles_def["use"] == "poses":
 
@@ -690,7 +521,7 @@ class GenericGeometry:
 
         if obstacles_def["use"] == "obstacles":
 
-            self.obstacles = self.GenerateObstacleFromPosesList(random_poses,obstacles_def["obstacles_shape"])
+            self.obstacles = self.GenerateObstacleFromPosesList(random_poses,obstacles_def["obstacles_shape"],obstacles_def["obstacles_dimensions"])
 
         elif obstacles_def["use"] == "poses":
 
@@ -706,7 +537,30 @@ class GenericGeometry:
 
         return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
 
+    def GenerateZigZag(self,obstacles_def):
 
+        matrix_definition = {"type" : "matrix", "use" : "poses",
+                            "dimensions": obstacles_def["dimensions"], "density": 1,
+                            "orientation": obstacles_def["orientation"]}
+
+        self.GenerateDivisionMatrix(matrix_definition)
+
+        zigzag_path = []
+
+        for i in np.arange(matrix_definition["dimensions"][0]):
+            for j in np.arange(matrix_definition["dimensions"][1]):
+                for k in np.arange(matrix_definition["dimensions"][2]):
+
+                    if i%2 == 1:
+
+                        J = matrix_definition["dimensions"][1]-1 - j
+
+                    else:
+                        J=j
+
+                    zigzag_path.append(self.poses[i][J][k])
+
+        self.path = zigzag_path
 
 class Cube(GenericGeometry):
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
@@ -725,6 +579,9 @@ class Cube(GenericGeometry):
 
                 elif obstacles_def["type"] == "random":
                     self.GenerateRandomPoses(obstacles_def)
+
+                elif obstacles_def["type"] == "path":
+                    self.GenerateZigZag(obstacles_def)
 
     def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
 
@@ -788,6 +645,9 @@ class Sphere(GenericGeometry):
 
                 elif obstacles_def["type"] == "random":
                     self.GenerateRandomPoses(obstacles_def)
+
+                elif obstacles_def["type"] == "path":
+                    self.GenerateZigZag(obstacles_def)
 
     def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
 
@@ -854,6 +714,9 @@ class Cylinder(GenericGeometry):
 
                 elif obstacles_def["type"] == "random":
                     self.GenerateRandomPoses(obstacles_def)
+
+                elif obstacles_def["type"] == "path":
+                    self.GenerateZigZag(obstacles_def)
 
     def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
 

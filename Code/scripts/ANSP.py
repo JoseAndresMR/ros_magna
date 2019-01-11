@@ -70,7 +70,8 @@ class ANSP(object):
                                 "queue_of_followers_ad":["path","uav_ad","uav_ad"],
                                 "queue_of_followers_ap":["path","uav_ap","uav_ap"],
                                 "long_wait":["wait","wait","wait"],
-                                "only_world":["wait","wait","wait"],}
+                                "inspector":["wait","wait","wait"],
+                                "pruebas":["path","path","wait"],}
 
         # Actualize own world definition with role list
         self.world_definition["roles_list"] = mission_to_role_dicc[self.mission][:self.N_uav]
@@ -152,7 +153,7 @@ class ANSP(object):
         self.SavingWorldDefinition()        # Update ROS params
         self.UAVKiller()        # Terminate UAVs nodes
         self.GazeboModelsKiller()       # Delete robot models from Gazebo
-        self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
+        # self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
         self.SimulationTerminationCommand()     # Send to Master message of simulation ended
         rospy.signal_shutdown("end of experiment")      # Finish ANSP process
 

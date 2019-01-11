@@ -31,13 +31,13 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'mission'            :              "only_world",              # Global mission that characterizes every UAV's role
-        'type'               :                       3,                       # Type of the world or sceneario created
+        'mission'            :                        "pruebas",              # Global mission that characterizes every UAV's role
+        'type'               :                       1,                       # Type of the world or sceneario created
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
         'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
-        'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
+        'N_obs'              :                       2,                       # Number of obstacles placed onto some kind of scenarios
         'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "orca3",                    # Algorithm for path-avoiding
@@ -49,7 +49,7 @@ class Master(object):
         'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
         }
 
-        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
 
         # computer' path definition for each user
         user = "JA"

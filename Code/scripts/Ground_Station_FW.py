@@ -51,6 +51,7 @@ class Ground_Station(object):
         # Publishers initialisation
         self.pose_pub = rospy.Publisher('/uav_{}/ual/go_to_waypoint'.format(self.ID), PoseStamped, queue_size=1)
         self.velocity_pub= rospy.Publisher('/uav_{}/ual/set_velocity'.format(self.ID), TwistStamped, queue_size=1)
+        self.path_pub = rospy.Publisher('/pydag/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
 
         # # Creation of a list with every UAVs' home frame
         # self.uav_frame_list = []
@@ -148,7 +149,6 @@ class Ground_Station(object):
 
     # Function to deal with UAL server Set Velocity
     def SetVelocityCommand(self,hover):
-
         # Check if hover deactivated
         if hover== False:
 
@@ -267,8 +267,11 @@ class Ground_Station(object):
             posestamped.pose = pose
             self.goal_path.poses.append(posestamped)
 
-        path_pub = rospy.Publisher('/pydag/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
-        response = path_pub.publish(self.goal_path)        
+        print(self.goal_path)
+
+        self.path_pub.publish(self.goal_path)
+
+        self.uavs_list[self.ID-1].own_path.poses = []
 
         # Control in every single component of the list
         for i in np.arange(len(self.goal_path_poses_list)):
@@ -281,7 +284,7 @@ class Ground_Station(object):
             # Actualize state and send it to ANSP
             self.state = "to WP {}".format(i+1)
             self.ANSPStateActualization()
-
+            # time.sleep(1111111111)
             # Control distance to goal
             while self.DistanceToGoal() > self.accepted_target_radio:
 
@@ -482,7 +485,7 @@ class Ground_Station(object):
         # Fulfill a list within distances between itself and static obstacles
         obs_distances_list = []
         for n_obs in np.arange(self.N_obs):
-            obs_distances_list.append(self.DistanceToObs(self.uavs_list[self.ID-1].position.pose,self.obs_pose_list[n_obs]))
+            obs_distances_list.append(self.DistanceToObs(self.uavs_list[self.ID-1].position.pose,self.obs_pose_list[n_obs][0]))
 
         # Turn to True the local collision flag if distance threshold has been raised for UAVs or obstacles
         collision_uav = [x for x in uav_distances_list if x <= min_distance_uav]
@@ -510,15 +513,31 @@ class Ground_Station(object):
 
         # Create a single frame for every instant information storage.
         # It will be initialized with information of all UASs seen from this one and the applied velocity
-        single_frame = {"selected_velocity" : [self.parse_4CSV(self.new_velocity_twist,"Twist")],
-                        "uavs_list": [self.parse_4CSV(self.uavs_list,"uavs_list")]}
+        single_frame = {"main_uav" : [{"Pose" : self.parse_4CSV(self.uavs_list[self.ID-1].position.pose,"pose"),
+                                      "Twist" : self.parse_4CSV(self.uavs_list[self.ID-1].velocity.twist,"twist")}],
+                        "selected_velocity" : [self.parse_4CSV(self.new_velocity_twist,"twist")]}
+
+        uav_near_neighbors_sorted, obs_near_neighbors_sorted = self.brain.uav_near_neighbors_sorted, self.brain.obs_near_neighbors_sorted
+
+        if self.N_uav > 1:
+            uavs_list = []
+            for uav_neighbor in uav_near_neighbors_sorted:
+                uavs_list.append({"Pose" : self.parse_4CSV(self.uavs_list[uav_neighbor].position_rel2main,"pose"),
+                                  "Twist" : self.parse_4CSV(self.uavs_list[uav_neighbor].velocity.twist,"twist")})
+            single_frame["uavs_neigh"] = [uavs_list]
+
+        if self.N_obs > 0:
+            obs_list = []
+            for obs_neighbor in obs_near_neighbors_sorted:
+                obs_list.append(self.parse_4CSV(self.uavs_list[self.ID-1].obs_poses_rel2main[obs_neighbor],"pose"))
+            single_frame["obs_neigh"] = [obs_list]
 
         main_role = self.role.split("_")[0]     # Parse of main role
 
         # Addition of information into single frame depending on role.
         # In the future, this will be defined in a separate document and a for loop will add each member
         if main_role == "path":
-            single_frame["goal"] = [[{"Pose" : self.parse_4CSV(self.goal_WP_pose,"Pose")}]]
+            single_frame["goal"] = [[{"Pose" : self.parse_4CSV(self.SubstractPoses(self.goal_WP_pose,self.uavs_list[self.ID-1].position.pose),"pose")}]]
             single_frame["goal"][0][0]["Twist"] = [[0,0,0],[0,0,0]]
 
         elif main_role == "uav_ad":
@@ -528,6 +547,8 @@ class Ground_Station(object):
         elif main_role == "uav_ap":
             single_frame["goal"] = [[self.parse_4CSV([self.uavs_list[self.ID - 2]],"uavs_list")[0]]]
             single_frame["goal"][0][0]["Pose"][0] = list(np.array(single_frame["goal"][0][0]["Pose"][0]) + np.array(self.queue_of_followers_ap_pos))
+
+        single_frame["role"] = [self.role]
 
         # single_frame["evaluation"] = self.evaluation      # Addition of evaluation dictionary
 
@@ -551,16 +572,24 @@ class Ground_Station(object):
     def parse_4CSV(self,data,data_type):
 
         # For pose object, parse by position and orientation and each by member
-        if data_type == "Pose":
+        if data_type == "pose":
             position = data.position
             orientation = data.orientation
+
             parsed = [[position.x,position.y,position.z],[orientation.x,orientation.y,orientation.z,orientation.w]]
 
         # For twist object, parse by linear and anuglar and each by member
-        elif data_type == "Twist":
+        elif data_type == "twist":
             linear = data.linear
             angular = data.angular
             parsed = [[linear.x,linear.y,linear.z],[angular.x,angular.y,angular.z]]
+
+        elif data_type == "obs_pose":
+            main_position = self.uavs_list[self.ID-1].position
+            main_orientation = self.uavs_list[self.ID-1].orientation
+            main_parsed = [[position.x,position.y,position.z],[orientation.x,orientation.y,orientation.z,orientation.w]]
+
+            parsed = [list(np.array(data)-np.array(main_parsed[0])),main_parsed[1]] ### AÑADIR ORIENTACION DE OBSTACULOS
 
         # For a list of UAVs, for every UAV, separate into pose and twist and recursively parse both
         elif data_type == "uavs_list":
@@ -568,8 +597,8 @@ class Ground_Station(object):
             for i in range(len(data)):
                 position = data[i].position.pose
                 velocity = data[i].velocity.twist
-                dicc = {"Pose":self.parse_4CSV(position,"Pose"),
-                        "Twist":self.parse_4CSV(velocity,"Twist")}
+                dicc = {"Pose":self.parse_4CSV(self.SubstractPoses(position,self.uavs_list[self.ID-1].position.pose),"pose"),
+                        "Twist":self.parse_4CSV(velocity,"twist")}
                 parsed.append(dicc)
 
         return parsed
@@ -620,6 +649,12 @@ class Ground_Station(object):
     def DistanceBetweenPoses(self,pose_1,pose_2):
         Distance = math.sqrt((pose_1.position.x-pose_2.position.x)**2+(pose_1.position.y-pose_2.position.y)**2+(pose_1.position.z-pose_2.position.z)**2)
         return Distance
+
+    def SubstractPoses(self,pose_1,pose_2):
+        position_1, position_2, orientation_1, orientation_2 = pose_1.position, pose_2.position, pose_1.orientation, pose_2.orientation
+        difference = Pose(Point(position_1.x-position_2.x,position_1.y-position_2.y,position_1.z-position_2.z),
+                          Quaternion(orientation_1.x-orientation_2.x,orientation_1.y-orientation_2.y,orientation_1.z-orientation_2.z,orientation_1.w-orientation_2.w))
+        return difference
 
     # Function to calculate the distance from actual position to an obstacle position
     def DistanceToObs(self,pose_1,vector):

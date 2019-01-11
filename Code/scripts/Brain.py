@@ -55,6 +55,8 @@ class Brain(object):
         self.uavs_list = uavs_list
         self.goal = goal
 
+        self.NeighborSelector()
+
         # print "loop time", time.time() - self.timer_start
         # self.timer_start = time.time()
 
@@ -180,13 +182,12 @@ class Brain(object):
 
         # Select nearest UAVs and Neighbors
         agent_list = []
-        uav_near_neighbors_sorted, obs_near_neighbors_sorted = self.NeighborSelector()
 
         prefered_velocity = self.SimpleGuidance() # Select a velocity directly to goal as if there weren't exist neighbors
 
         # Add to orca3 and to own list every agent created by own params
         agent_list = []
-        for n_uas in uav_near_neighbors_sorted:
+        for n_uas in self.uav_near_neighbors_sorted:
             agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y,self.uavs_list[n_uas].position.pose.position.z),
             neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0)))
 
@@ -194,13 +195,13 @@ class Brain(object):
         sim.setAgentPrefVelocity(agent_list[0],(prefered_velocity.linear.x,prefered_velocity.linear.y,prefered_velocity.linear.z))
 
         # Set the preferred velocity of the rest of UAVs as the actual
-        for n_uas in range(1,len(uav_near_neighbors_sorted)):
-            sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_list[uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_list[uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
+        for n_uas in range(1,len(self.uav_near_neighbors_sorted)):
+            sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
 
         # Add to orca3 and to own list every obstacle created by own params
-        for n_obs in obs_near_neighbors_sorted:
+        for n_obs in self.obs_near_neighbors_sorted:
             obs_pose = self.obs_pose_list[n_obs]
-            agent_list.append(sim.addAgent((obs_pose[0],obs_pose[1],obs_pose[2]),
+            agent_list.append(sim.addAgent((obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),
             neighborDist, maxNeighbors, timeHorizon, obs_radius, 0.0, (0, 0, 0)))
 
         sim.doStep()        # Perform a step of orca3
@@ -319,6 +320,7 @@ class Brain(object):
 
     #     return new_velocity_twist
 
+
     # Function to set hovering velocity equal to zeros
     def Hover(self):
         new_velocity_twist = Twist(Vector3(0,0,0),Vector3(0,0,0))
@@ -334,22 +336,20 @@ class Brain(object):
         return value
 
     def NeighborSelector(self):
-        own_pose = self.uavs_list[self.ID-1].position.pose.position
         uav_distances = []
         for n_uav in range(self.N_uav):
-            agent_pose = self.uavs_list[n_uav].position.pose.position
-            Distance = math.sqrt((agent_pose.x-own_pose.x)**2+(agent_pose.y-own_pose.y)**2+(agent_pose.z-own_pose.z)**2)
-            uav_distances.append(Distance)
-        uav_distances_sorted = list(np.argsort(uav_distances))[:self.N_uav]
+            if n_uav != self.ID-1:
+                uav_distances.append(self.uavs_list[n_uav].distance_rel2main)
+            else:
+                uav_distances.append(0)
+        uav_near_neighbors_sorted = list(np.argsort(uav_distances))[1:self.N_uav]
 
-        obs_distances = []
-        for n_obs in range(self.N_obs):
-            obs_pos = self.obs_pose_list[n_obs]
-            Distance = math.sqrt((obs_pos[0]-own_pose.x)**2+(obs_pos[1]-own_pose.y)**2+(obs_pos[2]-own_pose.z)**2)
-            obs_distances.append(Distance)
-        obs_distances_sorted = list(np.argsort(obs_distances))[:self.N_obs]
+        obs_near_neighbors_sorted = list(np.argsort(self.uavs_list[self.ID-1].obs_distances_rel2main))[:self.N_obs]
 
-        return uav_distances_sorted, obs_distances_sorted
+        self.uav_near_neighbors_sorted = uav_near_neighbors_sorted
+        self.obs_near_neighbors_sorted = obs_near_neighbors_sorted
+
+        return uav_near_neighbors_sorted, obs_near_neighbors_sorted
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):

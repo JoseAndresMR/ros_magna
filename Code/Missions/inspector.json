@@ -44,7 +44,7 @@
         "type": "CBState",
         "name": "wait",
         "parameters": {
-            "duration": 10
+            "duration": 1
         },
         "outcomes": {
             "completed": "1_initial_security_heights"
@@ -64,12 +64,6 @@
                     "path": [
                         {
                             "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
-                        },
-                        {
-                            "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
-                        },
-                        {
-                            "definition":["Panels_Zone_1","Inspection","matrix",[0,0,0]]
                         }
                     ]
                 }
@@ -157,7 +151,7 @@
                 "parameters": {
                     "path": [
                         {
-                            "definition":["Panels_Zone_1","Inspection","matrix",[0,0,0]]
+                            "definition":["Panels_Zone_1","Inspection","path"]
                         }
                     ]
                 }
@@ -170,9 +164,124 @@
                 "parameters": {
                     "path": [
                         {
-                            "definition":["Panels_Zone_2","Inspection","matrix",[0,0,0]]
+                            "definition":["Panels_Zone_2","Inspection","path"]
                         }
                     ]
+                }
+            }
+        ],
+        "occurrencies_outcome_map": {
+            "completed": {
+                "all": "succeeded"
+            },
+            "failed": {
+                "all": "aborted"
+            }
+        },
+        "outcomes": {
+            "completed": "1_security_heights_over_panels_back"
+        }
+    },    
+    {
+        "type": "Concurrence",
+        "name": "security_heights_over_panels_back",
+        "ids": 1,
+        "occurrencies": [
+            {
+                "type": "SimpleActionState",
+                "name": "follow_path",
+                "ids": 1,
+                "ids_var": "uav",
+                "parameters": {
+                    "path": [
+                        {
+                            "definition":["Panels_Zone_1","Aproximation","matrix",[4,6,0]]
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "SimpleActionState",
+                "name": "follow_path",
+                "ids": 2,
+                "ids_var": "uav",
+                "parameters": {
+                    "path": [
+                        {
+                            "definition":["Panels_Zone_2","Aproximation","matrix",[4,6,0]]
+                        }
+                    ]
+                }
+            }
+        ],
+        "occurrencies_outcome_map": {
+            "completed": {
+                "all": "succeeded"
+            },
+            "failed": {
+                "all": "aborted"
+            }
+        },
+        "outcomes": {
+            "completed": "1_initial_security_heights_back"
+        }
+    },
+    {
+        "type": "Concurrence",
+        "name": "initial_security_heights_back",
+        "ids": 1,
+        "occurrencies": [
+            {
+                "type": "SimpleActionState",
+                "name": "follow_path",
+                "ids": 1,
+                "ids_var": "uav",
+                "parameters": {
+                    "path": [
+                        {
+                            "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "SimpleActionState",
+                "name": "follow_path",
+                "ids": 2,
+                "ids_var": "uav",
+                "parameters": {
+                    "path": [
+                        {
+                            "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
+                        }
+                    ]
+                }
+            }
+        ],
+        "occurrencies_outcome_map": {
+            "completed": {
+                "all": "succeeded"
+            },
+            "failed": {
+                "all": "aborted"
+            }
+        },
+        "outcomes": {
+            "completed": "1_all_land"
+        }
+    },
+    {
+        "type": "Concurrence",
+        "name": "all_land",
+        "ids": 1,
+        "occurrencies": [
+            {
+                "type": "SimpleActionState",
+                "name": "land",
+                "ids": "all",
+                "ids_var": "uav",
+                "parameters": {
+                    "height": 2
                 }
             }
         ],

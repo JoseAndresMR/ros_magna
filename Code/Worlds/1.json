@@ -4,7 +4,7 @@
             {
                 "name": "Ground_Station",
                 "prefix": "GS",
-                "origin": [[-40.0,-15.0,0.0],[0,0,3.1416]],
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -95,47 +95,31 @@
                             {
                                 "type" : "matrix",
                                 "use" : "obstacles",
-                                "dimensions": [5,7,1],
+                                "dimensions": [1,1,1],
                                 "density": 1,
                                 "obstacles_shape": ["cube"],
                                 "obstacles_dimensions": [0.2, 6, 3.5],
                                 "orientation": [0,1.25,0]
                             }
                         ]
-                    },
-                    {
-                        "name": "Inspection",
-                        "prefix": "insp",
+                    },{
+                        "name": "Panelss",
+                        "prefix": "pann",
                         "shape": "cube",
                         "id": 0,
-                        "origin": [[0.0,0.0,10.0],[0,0,0]],
-                        "dimensions": [23.0,45.0,1.0],
-                        "color": [0,255,255],
-                        "alpha": 0.3,
-                        "divisions": [
-                            {
-                                "type" : "path",
-                                "dimensions": [5,7,1],
-                                "orientation": [0,0,0]
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Aproximation",
-                        "prefix": "apr",
-                        "shape": "cube",
-                        "id": 0,
-                        "origin": [[0.0,0.0,14.0],[0,0,0]],
-                        "dimensions": [23.0,45.0,1.0],
-                        "color": [255,0,0],
+                        "origin": [[0.0,6.0,1.0],[0,0,0]],
+                        "dimensions": [23.0,45.0,2.0],
+                        "color": [0,0,255],
                         "alpha": 0.3,
                         "divisions": [
                             {
                                 "type" : "matrix",
-                                "use" : "poses",
-                                "dimensions": [5,7,1],
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
                                 "density": 1,
-                                "orientation": [0,0,0]
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [0.2, 6, 3.5],
+                                "orientation": [0,1.25,0]
                             }
                         ]
                     }
@@ -144,7 +128,7 @@
             {
                 "name": "Panels_Zone_2",
                 "prefix": "pan2",
-                "origin": [[7.5,0.0,0.0],[0,0,0]],
+                "origin": [[20.0,0.0,0.0],[0,0,0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -152,7 +136,7 @@
                         "prefix": "pan",
                         "shape": "cube",
                         "id": 0,
-                        "origin": [[0.0,0.0,1],[0,0,0]],
+                        "origin": [[0.0,0.0,1.0],[0,0,0]],
                         "dimensions": [23.0,45.0,2.0],
                         "color": [0,0,255],
                         "alpha": 0.3,
@@ -160,47 +144,11 @@
                             {
                                 "type" : "matrix",
                                 "use" : "obstacles",
-                                "dimensions": [5,7,1],
+                                "dimensions": [1,1,1],
                                 "density": 1,
                                 "obstacles_shape": ["cube"],
                                 "obstacles_dimensions": [0.2, 6, 3.5],
                                 "orientation": [0,1.25,0]
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Inspection",
-                        "prefix": "insp",
-                        "shape": "cube",
-                        "id": 0,
-                        "origin": [[0.0,0.0,10.0],[0,0,0]],
-                        "dimensions": [23.0,45.0,1.0],
-                        "color": [0,255,255],
-                        "alpha": 0.3,
-                        "divisions": [
-                            {
-                                "type" : "path",
-                                "dimensions": [5,7,1],
-                                "orientation": [0,0,0]
-                            }
-                        ]
-                    },
-                    {
-                        "name": "Aproximation",
-                        "prefix": "apr",
-                        "shape": "cube",
-                        "id": 0,
-                        "origin": [[0.0,0.0,18.0],[0,0,0]],
-                        "dimensions": [23.0,45.0,1.0],
-                        "color": [255,255,0],
-                        "alpha": 0.3,
-                        "divisions": [
-                            {
-                                "type" : "matrix",
-                                "use" : "poses",
-                                "dimensions": [5,7,1],
-                                "density": 1,
-                                "orientation": [0,0,0]
                             }
                         ]
                     }

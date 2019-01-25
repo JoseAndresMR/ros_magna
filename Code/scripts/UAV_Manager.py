@@ -19,14 +19,16 @@ from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Path
+from std_msgs.msg import Int8
 
-from Brain import *
+from UAV_Brain import *
 from pydag.srv import *
-from UAV import UAV
-from Ground_Station_SM import Ground_Station_SM
+from UAV_Data import UAV_Data
+from UAV_Manager_SM import UAV_Manager_SM
+from uav_path_manager.srv import GeneratePath,GetGeneratedPath
 
 from FwQgc import FwQgc
-class Ground_Station(object):
+class UAV_Manager(object):
 
     ### Initialiations ###
     def __init__(self,ID):
@@ -34,7 +36,7 @@ class Ground_Station(object):
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
 
-        self.brain = Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
+        self.brain = UAV_Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
 
         # Local variables initialization
         self.global_data_frame = pd.DataFrame()     # Data frame where to store this UAV dynamical simulation data for future dump into a csv
@@ -42,6 +44,8 @@ class Ground_Station(object):
 
         self.distance_to_goal = 10000
         self.goal = {}      # Structure to store goal specifications
+        self.brain.goal = self.goal
+        self.smooth_path_mode = 0
         self.start_time_to_target = time.time()     # Counter to check elapsed time to achieve a goal
 
         self.accepted_target_radio = 0.5        # In the future, received on the world definition
@@ -52,6 +56,7 @@ class Ground_Station(object):
         self.pose_pub = rospy.Publisher('/uav_{}/ual/go_to_waypoint'.format(self.ID), PoseStamped, queue_size=1)
         self.velocity_pub= rospy.Publisher('/uav_{}/ual/set_velocity'.format(self.ID), TwistStamped, queue_size=1)
         self.path_pub = rospy.Publisher('/pydag/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
+        self.path_pub_smooth = rospy.Publisher('/pydag/uav_{}/goal_path_smooth'.format(self.ID), Path, queue_size = 1)
 
         # # Creation of a list with every UAVs' home frame
         # self.uav_frame_list = []
@@ -60,11 +65,11 @@ class Ground_Station(object):
 
         # Assiignation of an ICAO number for every UAV. Used if ADSB communications are active
         ICAO_IDs = {1: "40621D", 2:"40621D", 3: "40621D"}
-        self.collision = False       # Initially there has not been collisions
-        self.die_command = False        # Flag later activate from ANSP to finish simulation
+        self.critical_event = 'nothing'       # Initially there has not been collisions
+        self.die_command = False        # Flag later activate from Ground Station to finish simulation
 
         if self.uav_models[self.ID-1] != "plane":
-            rospy.init_node('ground_station_{}'.format(self.ID), anonymous=True)        # Start the node
+            rospy.init_node('uav_{}'.format(self.ID), anonymous=True)        # Start the node
         else:
             self.fw_qgc = FwQgc(self.ID,ual_use = True)
 
@@ -72,11 +77,13 @@ class Ground_Station(object):
         # Own ID is given for the object to know if is treating any other UAV or the one dedicated for this GroundStation
         self.uavs_list = []
         for n_uav in range(1,self.N_uav+1):
-            self.uavs_list.append(UAV(n_uav,self.ID,ICAO_IDs[n_uav]))
+            self.uavs_list.append(UAV_Data(n_uav,self.ID,ICAO_IDs[n_uav]))
+
+        self.brain.uavs_list = self.uavs_list
 
         # Wait time to let Gazebo's Real Time recover from model spawns
         if self.uav_models[self.ID-1] != "plane":
-            while self.uavs_list[self.ID-1].ual_state == 0:
+            while not rospy.is_shutdown() and self.uavs_list[self.ID-1].ual_state == 0:
                 time.sleep(0.5)
                 # print(self.uavs_list[self.ID-1].ual_state)
         # time.sleep(10 * self.N_uav)
@@ -86,8 +93,8 @@ class Ground_Station(object):
 
         print "ground station",ID,"ready and listening"
 
-        gs_sm = Ground_Station_SM(self)     # Create Ground Station State Machine
-        outcome = gs_sm.gs_sm.execute()     # Execute State Machine
+        uav_sm = UAV_Manager_SM(self)     # Create Ground Station State Machine
+        outcome = uav_sm.uav_sm.execute()     # Execute State Machine
 
         # rospy.spin()
 
@@ -98,8 +105,8 @@ class Ground_Station(object):
     # Function to create and the listeners ard serers
     def GroundStationListener(self):
 
-        # Service to listen to the ANSP if demands termination
-        rospy.Service('/pydag/ANSP_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
+        # Service to listen to the Ground Station if demands termination
+        rospy.Service('/pydag/GS_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
     # Function to accomplish end of this node
     def handle_die(self,req):
@@ -142,7 +149,7 @@ class Ground_Station(object):
 
         h = std_msgs.msg.Header()
         self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
-        while self.DistanceToGoal() > 0.2:
+        while not rospy.is_shutdown() and self.DistanceToGoal() > 0.2:
             time.sleep(0.1)
         time.sleep(1)
         return
@@ -153,7 +160,7 @@ class Ground_Station(object):
         if hover== False:
 
             # Ask the Brain to decide the velocity
-            self.new_velocity_twist = self.brain.Guidance(self.uavs_list,self.goal)
+            self.new_velocity_twist = self.brain.Guidance()
 
             time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
@@ -242,6 +249,35 @@ class Ground_Station(object):
             print "Service call failed: %s"%e
             print "error in set_home"
 
+        # Function to send termination instruction to each UAV
+    def SmoothPath(self,raw_path):
+        rospy.wait_for_service('/uav_path_manager/generator/generate_path')
+        try:
+            instruction_command = rospy.ServiceProxy('/uav_path_manager/generator/generate_path', GeneratePath)
+            raw_path.poses.append(raw_path.poses[-1])
+            response = instruction_command(raw_path,Int8(self.smooth_path_mode))
+            return response.generated_path
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in simulation_termination"
+
+    def sendSmoothPath(self,smooth_path):
+        rospy.wait_for_service('/uav_path_manager/generator/generate_path')
+        try:
+            instruction_command = rospy.ServiceProxy('/uav_path_manager/follower/uav_{0}/generated_path'.format(self.ID), GetGeneratedPath)
+            response = instruction_command(smooth_path)
+
+            # if response != True:
+            #     print("Unable to contact to uav_path_manager.")
+
+            return response
+
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in simulation_termination"
+
+
     ### Role functions ###
 
     # Function to model the target of role follow static waypoint path
@@ -267,9 +303,18 @@ class Ground_Station(object):
             posestamped.pose = pose
             self.goal_path.poses.append(posestamped)
 
-        print(self.goal_path)
-
         self.path_pub.publish(self.goal_path)
+
+        self.brain.smooth_path_mode = self.smooth_path_mode
+        self.uavs_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
+        if self.smooth_path_mode != 0:
+            self.goal_path_smooth = self.SmoothPath(self.goal_path)
+            self.path_pub_smooth.publish(self.goal_path_smooth)
+            smooth_server_response = self.sendSmoothPath(self.goal_path_smooth)
+
+            # if smooth_server_response != True:
+            #     return
+
 
         self.uavs_list[self.ID-1].own_path.poses = []
 
@@ -281,27 +326,33 @@ class Ground_Station(object):
 
             self.GoalStaticBroadcaster()        # Broadcast TF of goal
 
-            # Actualize state and send it to ANSP
+            # Actualize state and send it to Ground Station
             self.state = "to WP {}".format(i+1)
-            self.ANSPStateActualization()
-            # time.sleep(1111111111)
+            self.GSStateActualization()
+            
             # Control distance to goal
-            while self.DistanceToGoal() > self.accepted_target_radio:
+            while not rospy.is_shutdown() and self.DistanceToGoal() > self.accepted_target_radio:
 
-                self.Evaluator()          # Evaluate the situation
+                if self.critical_event != 'nothing':
+                    return self.critical_event
+
                 self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                self.Evaluator()          # Evaluate the situation
+                    
                 time.sleep(0.2)
 
             self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
 
-            # Actualize state and send it to ANSP
+            # Actualize state and send it to Ground Station
             self.state = "in WP {}".format(i+1)
-            self.ANSPStateActualization()
+            self.GSStateActualization()
 
             time.sleep(0.2)
 
             self.Evaluator()          # Evaluate the situation
+
+        return 'completed'
 
     def PathFollower_FW(self):
         # goal_list = []
@@ -323,12 +374,12 @@ class Ground_Station(object):
 
         self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
-        # Actualize the state and send it to ANSP
+        # Actualize the state and send it to Ground Station
         self.state = "following UAV {} at distance".format(target_ID)
-        self.ANSPStateActualization()
+        self.GSStateActualization()
 
-        # Execute while ANSP doesn't send another instruction
-        while self.uavs_list[1].preempt_flag == False:
+        # Execute while Ground Station doesn't send another instruction
+        while not rospy.is_shutdown() and self.uavs_list[1].preempt_flag == False:
 
             # Create an independent copy of the position of the UAV to follow
             self.goal_WP_pose = copy.deepcopy(self.uavs_list[target_ID-1].position.pose)
@@ -368,12 +419,12 @@ class Ground_Station(object):
 
         self.queue_of_followers_ap_pos = pos        # Save the position requiered
 
-        # Actualize the state and send it to ANSP
+        # Actualize the state and send it to Ground Station
         self.state = "following UAV {} at position".format(target_ID)
-        self.ANSPStateActualization()
+        self.GSStateActualization()
 
-        # Execute while ANSP doesn't send another instruction
-        while self.uavs_list[1].preempt_flag == False:
+        # Execute while Ground Station doesn't send another instruction
+        while not rospy.is_shutdown() and self.uavs_list[1].preempt_flag == False:
 
             # Create an independent copy of the position of the UAV to follow
             self.goal_WP_pose = copy.deepcopy(self.uavs_list[target_ID-1].position.pose)
@@ -476,26 +527,38 @@ class Ground_Station(object):
         collision_uav = False
         collision_obs = False
 
-        # Fulfill a list within distances between itself and the rest of agents
-        uav_distances_list = []
-        for n_uav in np.arange(self.N_uav):
-            if n_uav+1 != self.ID:
-                uav_distances_list.append(self.DistanceBetweenPoses(self.uavs_list[self.ID-1].position.pose,self.uavs_list[n_uav].position.pose))
-
-        # Fulfill a list within distances between itself and static obstacles
-        obs_distances_list = []
-        for n_obs in np.arange(self.N_obs):
-            obs_distances_list.append(self.DistanceToObs(self.uavs_list[self.ID-1].position.pose,self.obs_pose_list[n_obs][0]))
-
+        self.brain.NeighborSelector()
         # Turn to True the local collision flag if distance threshold has been raised for UAVs or obstacles
-        collision_uav = [x for x in uav_distances_list if x <= min_distance_uav]
-        if self.N_obs>0:
-            collision_obs = [x for x in obs_distances_list if x <= min_distance_obs]
+        if self.N_uav > 1:
+            collision_uav = [x for x in self.brain.uav_near_neighbors_sorted_distances if x <= min_distance_uav]
+
+        if self.N_obs > 0:
+            collision_obs = [x for x in self.brain.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
+
+        world_boundaries = [[-50,50],[-50,50],[-1,50]]
+
+        checks = self.CheckFloatsArrayIntoBoundary([self.uavs_list[self.ID-1].position.pose.position.x,
+                                                    self.uavs_list[self.ID-1].position.pose.position.y,
+                                                    self.uavs_list[self.ID-1].position.pose.position.z],
+                                                    world_boundaries)
+
+        collision_world_boundaries = not(all(checks))
 
         # If confliction detected, raise the global collision flag for later storage
-        if collision_uav or collision_obs:
-            self.collision = True
-            print self.ID,"COLLISION!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        if collision_uav or collision_obs or collision_world_boundaries:
+            self.critical_event = "collision"
+
+            if collision_uav:
+                print self.ID,"COLLISIONED WITH ANOTHER UAV!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            elif collision_obs:
+                print self.ID,"COLLISIONED WITH AN OBSTACLE!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            elif collision_world_boundaries:
+                print self.ID,"OUT OF WORLD BOUNDARIES!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+        if self.uavs_list[self.ID-1].battery_percentage < 0.2:
+            self.critical_event = "low_battery"
+
+            print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         # Check if time to target must be reset and save it anyways
         if self.DistanceToGoal() < self.accepted_target_radio:
@@ -503,8 +566,7 @@ class Ground_Station(object):
         elapsed_time_to_target = time.time() - self.start_time_to_target
 
         # Create an evaluation dictionary with al evaluated terms. In the future should have neighbour distances implemented
-        self.evaluation = {'collision_uav': collision_uav,
-                           'collision_obs': collision_obs,
+        self.evaluation = {'critical_event': self.critical_event,
                            'time_to_target': elapsed_time_to_target,
                            'distance_to_target': self.distance_to_goal}
 
@@ -625,17 +687,17 @@ class Ground_Station(object):
             with open(folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
                 pickle.dump(self.global_frame_depth, f, pickle.HIGHEST_PROTOCOL)
 
-    # Function to inform ANSP about actual UAV's state
-    def ANSPStateActualization(self):
+    # Function to inform Ground Station about actual UAV's state
+    def GSStateActualization(self):
         self.uavs_list[self.ID-1].changed_state = True       # Actualization of the state to the main UAV object
 
-        rospy.wait_for_service('/pydag/ANSP/state_actualization')
+        rospy.wait_for_service('/pydag/GS/state_actualization')
         try:
             # print "path for uav {} command".format(ID)
-            ANSP_state_actualization = rospy.ServiceProxy(
-                '/pydag/ANSP/state_actualization', StateActualization)
-            ANSP_state_actualization(self.ID, self.state, self.collision)
+            GS_state_actualization = rospy.ServiceProxy('/pydag/GS/state_actualization', StateActualization)
+            GS_state_actualization(self.ID, self.state, self.critical_event)
             return
+            
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             print "error in state_actualization"
@@ -666,6 +728,17 @@ class Ground_Station(object):
         Module = np.sqrt(twist.linear.x**2+twist.linear.y**2+twist.linear.z**2)
         return Module
 
+    def CheckFloatsArrayIntoBoundary(self,number_array,boundaries):
+        if len(number_array) == 1:
+            number_array = [number_array]
+            boundaries = [boundaries]
+
+        checks = [False for i in range(len(number_array))]
+        for i,num in enumerate(number_array):
+            if num > boundaries[i][0] and num < boundaries[i][1]:
+                checks[i] = True 
+
+        return checks
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -691,7 +764,7 @@ def main():                #### No estoy seguro de toda esta estructura
     parser = argparse.ArgumentParser(description='Spawn robot in Gazebo for SITL')
     parser.add_argument('-ID', type=str, default="1", help='')
     args, unknown = parser.parse_known_args()
-    Ground_Station(args.ID)
+    UAV_Manager(args.ID)
 
     return
 

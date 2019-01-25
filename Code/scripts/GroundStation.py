@@ -6,7 +6,7 @@ Created on Mon Feb 21 2018
 @author: josmilrom
 """
 
-import sys
+import sys, os
 import rospy, tf, tf2_ros
 import std_msgs.msg
 import time
@@ -17,6 +17,7 @@ import csv
 import rosbag
 import subprocess
 import signal
+import xml.etree.ElementTree
 from std_msgs.msg import Int32, String
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
@@ -25,12 +26,11 @@ from gazebo_msgs.srv import DeleteModel
 from tf2_msgs.msg import *
 
 import utils
-from Ground_Station import *
 from Worlds import *
 from pydag.srv import *
-from ANSP_SM import ANSP_SM
+from GroundStation_SM import GroundStation_SM
 
-class ANSP(object):
+class GroundStation(object):
     def __init__(self):
         # Global parameters inizialization.
         self.GettingWorldDefinition()
@@ -46,16 +46,16 @@ class ANSP(object):
             self.states_list.append("landed")
 
         # Start by not collisioned the the list within all UAVs
-        self.collisioned_list = []
+        self.critical_events_list = []
         for i in np.arange(self.N_uav):
-            self.collisioned_list.append(False)
+            self.critical_events_list.append('nothing')
 
-        rospy.init_node('ansp', anonymous=True)     # Start node
+        rospy.init_node('ground_station', anonymous=True)     # Start node
 
-        self.ANSPListener()     # Start subscribers
+        self.GSListener()     # Start subscribers
 
-        self.ansp_sm = ANSP_SM(self)        # Create ANSP State Machine
-        outcome = self.ansp_sm.ansp_sm.execute()        # Execute State Machine
+        self.gs_sm = GroundStation_SM(self)        # Create Ground Station State Machine
+        outcome = self.gs_sm.gs_sm.execute()        # Execute State Machine
 
         self.Die()      # Once out of the State Machine, execute al commands of closig
         self.bag.close()        # Close the rosbag that stores the simulation
@@ -71,7 +71,8 @@ class ANSP(object):
                                 "queue_of_followers_ap":["path","uav_ap","uav_ap"],
                                 "long_wait":["wait","wait","wait"],
                                 "inspector":["wait","wait","wait"],
-                                "pruebas":["path","path","wait"],}
+                                "smooth_path":["path","path","wait"],
+                                "safety":["path","path","wait"]}
 
         # Actualize own world definition with role list
         self.world_definition["roles_list"] = mission_to_role_dicc[self.mission][:self.N_uav]
@@ -102,9 +103,29 @@ class ANSP(object):
     def UAVSpawner(self,ID):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{1}/catkin_ws/src/pydag/Code/launch/{0}_spawner_{2}_JA.launch".\
-            format(self.world_definition['px4_use'],self.home_path,ID+1)])
+
+        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/{1}_spawner_JA.launch".format(self.home_path,self.world_definition['px4_use'])
+
+        et = xml.etree.ElementTree.parse(launch_path)
+        root = et.getroot()
+
+        root[7].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[7][0].attrib["value"] = str(ID+1)
+        root[8].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[8][0].attrib["value"] = str(ID+1)
+        root[9].attrib["name"] = 'uav_{}'.format(ID+1)
+        root[9].attrib["args"] = '-ID={}'.format(ID+1)
+        root[10].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
+        root[10][0].attrib["value"] = str(ID+1)
+
+        if ID+1 == 1:
+            root[11].attrib["if"] = "true"
+        else:
+            root[11].attrib["if"] = "false"
+
+        et.write(launch_path)
+
+        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
         self.uav_spawner_launch.start()
 
     # Function to create folders and file to store simulations data
@@ -139,8 +160,7 @@ class ANSP(object):
                                 .format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
-    #### Finisher functions ####
-    
+
     def MakePath(self,path_def):
 
         return [self.world.getFSPoseGlobal(path_def)]
@@ -155,13 +175,13 @@ class ANSP(object):
         self.GazeboModelsKiller()       # Delete robot models from Gazebo
         # self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
         self.SimulationTerminationCommand()     # Send to Master message of simulation ended
-        rospy.signal_shutdown("end of experiment")      # Finish ANSP process
+        rospy.signal_shutdown("end of experiment")      # Finish Ground Station process
 
 
     # Function to update ROS parameters about simulation performance and store them
     def SavingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.world_definition['collisioned_list'] = self.collisioned_list
+        self.world_definition['criticals_event_list'] = self.critical_events_list
         self.world_definition['simulation_succeed'] = self.simulation_succeed
         rospy.set_param('world_definition',self.world_definition)
         file_path = self.third_folder_path + '/world_definition.csv'
@@ -172,9 +192,9 @@ class ANSP(object):
     # Function to close UAV Ground Station process.In the furure would be done by GS
     def UAVKiller(self):
         for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1))
+            rospy.wait_for_service('/pydag/GS_UAV_{}/die_command'.format(n_uav+1))
             try:
-                die_command = rospy.ServiceProxy('/pydag/ANSP_UAV_{}/die_command'.format(n_uav+1), DieCommand)
+                die_command = rospy.ServiceProxy('/pydag/GS_UAV_{}/die_command'.format(n_uav+1), DieCommand)
                 die_command(True)
                 time.sleep(0.1)
             except rospy.ServiceException, e:
@@ -198,9 +218,9 @@ class ANSP(object):
 
     # Function to send termination instruction to each UAV
     def SimulationTerminationCommand(self):
-        rospy.wait_for_service('/pydag/ANSP/simulation_termination')
+        rospy.wait_for_service('/pydag/GS/simulation_termination')
         try:
-            instruction_command = rospy.ServiceProxy('/pydag/ANSP/simulation_termination', DieCommand)
+            instruction_command = rospy.ServiceProxy('/pydag/GS/simulation_termination', DieCommand)
             instruction_command(True)
             return
 
@@ -211,10 +231,10 @@ class ANSP(object):
     #### listener functions ####
 
     # Function to start subscribing and offering
-    def ANSPListener(self):
+    def GSListener(self):
 
         # Start service for UAVs to actualize its state
-        rospy.Service('/pydag/ANSP/state_actualization', StateActualization, self.handle_uav_status)
+        rospy.Service('/pydag/GS/state_actualization', StateActualization, self.handle_uav_status)
 
         # Start listening to TFs topics
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
@@ -227,9 +247,9 @@ class ANSP(object):
         self.states_list[data.id-1] = data.state
 
         # Check collisions to update it UAVs collision list
-        if data.collision == True:
-            if self.collisioned_list[data.id-1] == False:
-                self.collisioned_list[data.id-1] == True
+        if data.critical_event != 'nothing':
+            if self.critical_events_list[data.id-1] != data.critical_event:
+                self.critical_events_list[data.id-1] == data.critical_event
             # Change succeed information if a collision has been reported
             self.simulation_succeed = False
             rospy.loginfo_throttle(0,"Simulation not succeded, UAV {} collisioned".format(data.id))
@@ -268,7 +288,7 @@ class ANSP(object):
         self.depth_camera_use = self.world_definition['depth_camera_use']
 
 def main():
-    ANSP()
+    GroundStation()
 
 if __name__ == '__main__':
     main()

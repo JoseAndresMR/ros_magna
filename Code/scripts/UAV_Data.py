@@ -5,7 +5,7 @@ import numpy as np
 import rospy, time, tf, tf2_ros
 from copy import deepcopy
 from geometry_msgs.msg import *
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, BatteryState
 from std_msgs.msg import String
 from nav_msgs.msg import Path
 from uav_abstraction_layer.msg import State
@@ -15,7 +15,7 @@ from pydag.msg import *
 from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
 
-class UAV(object):
+class UAV_Data(object):
     def __init__(self,ID,main_uav,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
         # Local parameters inizialization
         self.ID = ID
@@ -29,6 +29,7 @@ class UAV(object):
         self.preempt_flag = False
         self.Rviz_flag = True
         self.ual_state = 0
+        self.battery_percentage = 1
 
         self.main_uav_position = []
 
@@ -38,6 +39,8 @@ class UAV(object):
             self.cv_bridge = CvBridge()
 
         self.br = tf.TransformBroadcaster()
+        self.smooth_path_mode = 0
+        self.smooth_velocity = Twist(Vector3(0,0,0),Vector3(0,0,0))
 
         if self.Rviz_flag == True and self.ID == self.main_uav:
             self.own_path = Path()
@@ -73,22 +76,25 @@ class UAV(object):
             rospy.Subscriber('/uav_{}/ual/pose'.format(self.ID), PoseStamped, self.uav_pose_callback, queue_size=1)
             rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback, queue_size=1)
             rospy.Subscriber('/uav_{}/ual/state'.format(self.ID), State, self.ual_state_callback, queue_size=1)
+            rospy.Subscriber('/uav_{}/mavros/battery'.format(self.ID), BatteryState, self.battery_callback, queue_size=1)
+            rospy.Subscriber('/uav_path_manager/follower/uav_{}/output_vel'.format(self.ID), TwistStamped, self.smooth_path_vel_callback, queue_size=1)
+
+            # Subscribe to depth camera if its use flag is activated
+            if self.depth_camera_use == True:
+                rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback, queue_size=1)
+
 
         if self.main_uav != self.ID:
             rospy.Subscriber('/uav_{}/ual/pose'.format(self.main_uav), PoseStamped, self.main_uav_pose_callback, queue_size=1)
 
-        # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented
-        if self.main_uav != self.ID and self.communications == "ADSB":
-            rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback, queue_size=1)
-
-        # Subscribe to depth camera if its use flag is activated
-        if self.depth_camera_use == True and self.main_uav == self.ID:
-            rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback, queue_size=1)
-
+            # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented
+            if self.communications == "ADSB":
+                rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback, queue_size=1)
+            
         # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
         # In the future this will be implemented to wrap different roles and different IDs
         if self.ID == self.main_uav and  self.main_uav != 1: # and mission ==
-            rospy.Service('/pydag/ANSP/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
+            rospy.Service('/pydag/GS/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
 
     ## Callbacks
 
@@ -114,7 +120,9 @@ class UAV(object):
             self.obs_poses_rel2main = []
             self.obs_distances_rel2main = []
             for obs_pose in self.obs_pose_list:
-                self.obs_poses_rel2main.append(Pose(Point(obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),Quaternion(obs_pose[1][0],obs_pose[1][1],obs_pose[1][2],obs_pose[1][3])))
+                self.obs_poses_rel2main.append(self.SubstractPoses(Pose(Point(obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),
+                                                                        Quaternion(obs_pose[1][0],obs_pose[1][1],obs_pose[1][2],obs_pose[1][3])),
+                                                                   self.position.pose))
                 self.obs_distances_rel2main.append(self.PoseModule(self.obs_poses_rel2main[-1]))
                 
         time.sleep(0.1)
@@ -140,6 +148,11 @@ class UAV(object):
 
         time.sleep(0.1)
 
+    def battery_callback(self,data):
+
+        self.battery_percentage = data.percentage
+        time.sleep(0.1)
+
     # Function to deal with depth image data
     def image_raw_callback(self,data):
         try:
@@ -152,7 +165,10 @@ class UAV(object):
         time.sleep(0.5)
         return
 
-    # Function to deal with a preemption command from ANSP
+    def smooth_path_vel_callback(self,data):
+        self.smooth_velocity = data.twist
+
+    # Function to deal with a preemption command from Ground Station
     def handle_preemption_command(self,data):
         # print("preempted flag",self.preempt_flag)
         self.preempt_flag = True        # Set the variable

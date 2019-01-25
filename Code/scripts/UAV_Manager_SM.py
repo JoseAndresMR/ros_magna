@@ -5,13 +5,13 @@ from smach_ros import ActionServerWrapper
 
 from pydag.msg import *
 
-class Ground_Station_SM(object):
+class UAV_Manager_SM(object):
     # At init, the State Machine receives as "heriage" the hole "self" of the Ground Station
     def __init__(self,heritage):
         # Creation of State Machine and definition of its outcomes
-        self.gs_sm = StateMachine(outcomes=['completed', 'failed'])
+        self.uav_sm = StateMachine(outcomes=['completed', 'failed'])
 
-        with self.gs_sm:
+        with self.uav_sm:
             # Initialization of the dictionary containing every Action Service Wrapper
             self.asw_dicc = {}
 
@@ -33,7 +33,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['take_off'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/take_off_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/take_off_command'.format(heritage.ID),
                         TakeOffAction,
                         self.take_off_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -54,7 +54,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['land'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/land_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/land_command'.format(heritage.ID),
                         LandAction,
                         self.land_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -72,14 +72,14 @@ class Ground_Station_SM(object):
 
             ### BASIC MOVE STATE MACHINE & WRAPPER ###
 
-            self.basic_move_sm = StateMachine(outcomes=['completed', 'failed'],
-                                         input_keys=['action_goal'])
+            self.basic_move_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery'],
+                                         input_keys=['action_goal','action_result'])
 
             self.asw_dicc['basic_move'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/basic_move_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/basic_move_command'.format(heritage.ID),
                         BasicMoveAction,
                         self.basic_move_sm,
-                        ['completed'], ['failed'], ['preempted'],
+                        ['completed'], ['failed'],['collision','low_battery'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
@@ -87,9 +87,11 @@ class Ground_Station_SM(object):
 
                 StateMachine.add('basic_move',
                                  CBState(self.basic_move_stcb,
-                                         input_keys=['action_goal'],
+                                         input_keys=['action_goal','action_result'],
                                          cb_kwargs={'heritage':heritage}),
-                                 {'completed':'completed'})
+                                 {'completed':'completed',
+                                  'collision':'collision',
+                                  'low_battery':'low_battery'})
 
             ### SAVE CVS STATE MACHINE & WRAPPER ###
 
@@ -97,7 +99,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['save_csv'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/save_csv_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/save_csv_command'.format(heritage.ID),
                         SaveCSVAction,
                         self.save_csv_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -113,14 +115,14 @@ class Ground_Station_SM(object):
                                  {'completed':'completed'})
 
             ### FOLLOW PATH STATE MACHINE & WRAPPER ###
-            self.follow_path_sm = StateMachine(outcomes=['completed', 'failed'],
-                                         input_keys=['action_goal'])
+            self.follow_path_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery'],
+                                         input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_path'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/follow_path_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/follow_path_command'.format(heritage.ID),
                         FollowPathAction,
                         self.follow_path_sm,
-                        ['completed'], ['failed'], ['preempted'],
+                        ['completed'], ['failed'], ['collision','low_battery'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
@@ -128,9 +130,11 @@ class Ground_Station_SM(object):
 
                 StateMachine.add('follow_path',
                                  CBState(self.follow_path_stcb,
-                                         input_keys=['action_goal'],
+                                         input_keys=['action_goal','action_result'],
                                          cb_kwargs={'heritage':heritage}),
-                                 {'completed':'completed'})
+                                 {'completed':'completed',
+                                  'collision':'collision',
+                                  'low_battery':'low_battery'})
 
             # StateMachine.add('to_wp', self.follow_path_sm,
             #                         {'completed':'action_server_advertiser'})
@@ -140,7 +144,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['follow_uav_ad'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
                         FollowUAVADAction,
                         self.follow_uav_ad_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -160,7 +164,7 @@ class Ground_Station_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['follow_uav_ap'] = ActionServerWrapper(
-                        '/pydag/ANSP_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
+                        '/pydag/GS_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
                         FollowUAVAPAction,
                         self.follow_uav_ap_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -176,23 +180,21 @@ class Ground_Station_SM(object):
                                  {'completed':'completed'})
 
             if heritage.smach_view == True:
-                sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.gs_sm, '/UAV_{}'.format(heritage.ID))
+                sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
                 sis.start()
 
 
     @cb_interface(outcomes=['completed', 'failed'])
     def action_server_advertiser_stcb(self, heritage, asw_dicc):
-        heritage.SetVelocityCommand(True)       # Tell GS to hover whole no server request is received
+        heritage.SetVelocityCommand(True)       # Tell GS to hover while no server request is received
         for key in asw_dicc.keys():     # Run every ASW stored
             asw_dicc[key].run_server()
 
-        # Function to inform ANSP about actual UAV's state
+        # Function to inform Ground Station about actual UAV's state
         heritage.state = "waiting for action command"
-        heritage.ANSPStateActualization()
+        heritage.GSStateActualization()
 
         time.sleep(0.2)
-
-        
 
         rospy.spin()
 
@@ -205,18 +207,33 @@ class Ground_Station_SM(object):
 
         heritage.TakeOffCommand(self.action_goal.height,True)     # Tell GS to take off
 
-        # Function to inform ANSP about actual UAV's state
+        # Function to inform Ground Station about actual UAV's state
         heritage.state = "inizializating"
-        heritage.ANSPStateActualization()
+        heritage.GSStateActualization()
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery'])
     def follow_path_stcb(self,heritage):
 
         # Copy the goal path to follow into GS's variable
+        heritage.smooth_path_mode = self.action_goal.smooth_path_mode
         heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
-        heritage.PathFollower()     # Tell the GS to execute that function
+        output = heritage.PathFollower()     # Tell the GS to execute that function
+
+        # response = FollowPathActionResponse()
+        # response.output = output
+
+        # class Response(object):
+        #     def __init__(self):
+        #         self.output = ""
+        # response = Response()
+        # response.output = output
+
+        # return response
+        # self.as.set_succeeded = 'collision'
+
+        self.action_result.output = output
 
         return 'completed'
 
@@ -226,7 +243,7 @@ class Ground_Station_SM(object):
         # Tell the GS the identity of its new target
         heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
 
-        heritage.ANSPStateActualization()       # Function to inform ANSP about actual UAV's state
+        heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAD role with at the required distance
         heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance)
@@ -239,7 +256,7 @@ class Ground_Station_SM(object):
         # Tell the GS the identity of its new target
         heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
 
-        heritage.ANSPStateActualization()       # Function to inform ANSP about actual UAV's state
+        heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAP role with the required bias
         heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos)
@@ -258,13 +275,13 @@ class Ground_Station_SM(object):
         print "landing"
         heritage.LandCommand(True)        # Tell the GS to land
 
-        # Function to inform ANSP about actual UAV's state
+        # Function to inform Ground Station about actual UAV's state
         heritage.state = "landed"
-        heritage.ANSPStateActualization()
+        heritage.GSStateActualization()
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery'])
     def basic_move_stcb(self,heritage):
 
         # Parse received basic move information
@@ -274,7 +291,8 @@ class Ground_Station_SM(object):
         value = self.action_goal.value
 
         # Tell the GS to execute basic move role with parsed information
-        heritage.basic_move(move_type,dynamic,direction,value)
+        output = heritage.basic_move(move_type,dynamic,direction,value)
 
+        self.action_result.output = output
 
         return 'completed'

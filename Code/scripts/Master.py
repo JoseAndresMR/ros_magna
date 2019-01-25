@@ -31,25 +31,25 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'mission'            :                        "pruebas",              # Global mission that characterizes every UAV's role
-        'type'               :                       1,                       # Type of the world or sceneario created
+        'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
+        'type'               :                   "safety",                    # Type of the world or sceneario created
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
         'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
-        'N_obs'              :                       2,                       # Number of obstacles placed onto some kind of scenarios
+        'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
-        'solver_algorithm'   :                    "orca3",                    # Algorithm for path-avoiding
+        'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'px4_use'            :                    "complete",                 # Flag to decide if PX4 is used
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                     # Flag to decide if smach introspector is actived
         }
 
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
 
         # computer' path definition for each user
         user = "JA"
@@ -80,7 +80,7 @@ class Master(object):
                     rospy.set_param('world_definition/n_simulation', n_simulation)
                     print('n_simulation',n_simulation)
 
-                    self.ANSPSpawner()   # Start ANSP node. It will be in charge of this particuar mission
+                    self.GSSpawner()   # Start Ground Station node. It will be in charge of this particuar mission
 
                     # Initialize flag to finish simulation. Will be activated later
                     self.simulation_finished = False
@@ -90,11 +90,11 @@ class Master(object):
 
                     ### Process to finish simulation when time exceeded
                     # Wait until simulation finishes, it is when flag is raised or master breaks
-                    while (self.simulation_finished == False) and not rospy.is_shutdown():
+                    while not rospy.is_shutdown() and (self.simulation_finished == False):
                         time.sleep(2)
                         # Control of exceeded simulation duration
                         if (time.time() - timer_start) > self.world_definition["path_length"]*600:
-                            self.ANSP_launch.shutdown()     # Terminate ANSP
+                            self.GS_launch.shutdown()     # Terminate Ground Station
                             self.simulation_finished = True    # Activate end flag
                 except:
                     self.processess_killer(2)       # Kill unwanted processess
@@ -118,14 +118,14 @@ class Master(object):
         self.Gazebo_launch.start()
         time.sleep(0.5)
 
-    # Launching ANSP node
-    def ANSPSpawner(self):
+    # Launching Ground Station node
+    def GSSpawner(self):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
-        self.ANSP_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
-            "/home/{0}/catkin_ws/src/pydag/Code/launch/ANSP_spawner_JA.launch".format(self.world_definition["home_path"])])
+        self.GS_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
+            "/home/{0}/catkin_ws/src/pydag/Code/launch/GS_spawner_JA.launch".format(self.world_definition["home_path"])])
 
-        self.ANSP_launch.start()
+        self.GS_launch.start()
 
     # Control if defined new dataset already exists
     def DatasetExistanceChecker(self):
@@ -219,9 +219,9 @@ class Master(object):
             [os.system("pkill -9 {}".format(proc)) for proc in ["server","python","python2"]]
 
     #### listener functions ####
-    # Master only listens to ANSP for the end of simulation message
+    # Master only listens to Ground Station for the end of simulation message
     def MasterListener(self):
-        rospy.Service('/pydag/ANSP/simulation_termination', DieCommand, self.handle_simulation_termination)
+        rospy.Service('/pydag/GS/simulation_termination', DieCommand, self.handle_simulation_termination)
 
     def handle_simulation_termination(self,data):
         self.simulation_finished = True

@@ -272,7 +272,7 @@ class RvizMarker(object):
         
         self.marker = marker
         t = 0
-        while t < 10:
+        while not rospy.is_shutdown() and t < 10:
             self.marker_pub.publish(self.marker)
             t = t+1
             time.sleep(0.1)
@@ -434,7 +434,7 @@ class GenericGeometry:
                         # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
                         # Add also its single list pose to the list of single list poses
-                        self.obs_pose_list.append([[float(obs_list[i][j][k].global_pose.position.x),float(obs_list[i][j][k].global_pose.position.y),float(obs_list[i][j][k].global_pose.position.z)],[0,0,0,0]])
+                        self.obs_pose_list.append([[float(obs_list[i][j][k].global_pose.position.x),float(obs_list[i][j][k].global_pose.position.y),float(obs_list[i][j][k].global_pose.position.z)],[0,0,0,1]])
 
                         self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
 
@@ -456,7 +456,7 @@ class GenericGeometry:
                                     self.name,\
                                     self.prefix,\
                                     self.transforms_list))
-            self.obs_pose_list.append([[float(obs_list[-1].global_pose.position.x),float(obs_list[-1].global_pose.position.y),float(obs_list[-1].global_pose.position.z)],[0,0,0,0]])
+            self.obs_pose_list.append([[float(obs_list[-1].global_pose.position.x),float(obs_list[-1].global_pose.position.y),float(obs_list[-1].global_pose.position.z)],[0,0,0,1]])
 
             self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
 
@@ -588,7 +588,7 @@ class Cube(GenericGeometry):
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
-        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
+        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
         for i in np.arange(obstacles_def["dimensions"][0]):
             for j in np.arange(obstacles_def["dimensions"][1]):
@@ -654,7 +654,7 @@ class Sphere(GenericGeometry):
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
-        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
+        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
         for i in np.arange(obstacles_def["dimensions"][0]):
             for j in np.arange(obstacles_def["dimensions"][1]):
@@ -723,7 +723,7 @@ class Cylinder(GenericGeometry):
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
-        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,0])            SIMPLIFICAR ASÏ
+        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
         for i in np.arange(obstacles_def["dimensions"][0]):
             for j in np.arange(obstacles_def["dimensions"][1]):

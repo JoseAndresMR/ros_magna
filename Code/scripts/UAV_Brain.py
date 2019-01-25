@@ -22,11 +22,13 @@ from sensor_msgs.msg import *
 import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
-class Brain(object):
+class UAV_Brain(object):
     def __init__(self,ID,role):
         # Local parameters inizialization from arguments
         self.ID = ID
         self.role = role
+
+        self.smooth_path_mode = 0
 
         self.GettingWorldDefinition()    # Global ROS parameters inizialization
         # self.timer_start = time.time()
@@ -51,9 +53,7 @@ class Brain(object):
 
 
     # Function to decide which algorithm is used for new velocity depending on parameters
-    def Guidance(self,uavs_list, goal):
-        self.uavs_list = uavs_list
-        self.goal = goal
+    def Guidance(self):
 
         self.NeighborSelector()
 
@@ -66,8 +66,8 @@ class Brain(object):
         elif self.solver_algorithm == "neural_network":
             return self.NeuralNetwork()
 
-        elif self.solver_algorithm == "orca":
-            return self.ORCA()
+        # elif self.solver_algorithm == "orca":
+        #     return self.ORCA()
 
         elif self.solver_algorithm == "orca3":
             return self.ORCA3()
@@ -176,6 +176,7 @@ class Brain(object):
             obs_radius = 0.5
         elif self.world_type == 3:
             obs_radius = 2.5
+        obs_radius = 2
 
         # Create an object of orca3 solver class and give the above defined parameters
         sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, velocity)
@@ -186,14 +187,15 @@ class Brain(object):
         prefered_velocity = self.SimpleGuidance() # Select a velocity directly to goal as if there weren't exist neighbors
 
         # Add to orca3 and to own list every agent created by own params
-        agent_list = []
+        agent_list = [sim.addAgent((self.uavs_list[self.ID-1].position.pose.position.x, self.uavs_list[self.ID-1].position.pose.position.y,self.uavs_list[self.ID-1].position.pose.position.z),
+            neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0))]
         for n_uas in self.uav_near_neighbors_sorted:
             agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y,self.uavs_list[n_uas].position.pose.position.z),
             neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0)))
 
         # Set the preferred velocity of own UAV as decided avobe
         sim.setAgentPrefVelocity(agent_list[0],(prefered_velocity.linear.x,prefered_velocity.linear.y,prefered_velocity.linear.z))
-
+        
         # Set the preferred velocity of the rest of UAVs as the actual
         for n_uas in range(1,len(self.uav_near_neighbors_sorted)):
             sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
@@ -222,6 +224,9 @@ class Brain(object):
 
     # Function to set velocity directly to goal
     def SimpleGuidance(self):
+        
+        if self.smooth_path_mode != 0:
+            return self.uavs_list[self.ID-1].smooth_velocity
 
         # Set algorithm params
         desired_velocity_module = 2
@@ -342,14 +347,15 @@ class Brain(object):
                 uav_distances.append(self.uavs_list[n_uav].distance_rel2main)
             else:
                 uav_distances.append(0)
-        uav_near_neighbors_sorted = list(np.argsort(uav_distances))[1:self.N_uav]
 
-        obs_near_neighbors_sorted = list(np.argsort(self.uavs_list[self.ID-1].obs_distances_rel2main))[:self.N_obs]
+        self.uav_near_neighbors_sorted_distances = sorted(uav_distances)[1:self.N_uav]
+        self.uav_near_neighbors_sorted = list(np.argsort(uav_distances))[1:self.N_uav]
 
-        self.uav_near_neighbors_sorted = uav_near_neighbors_sorted
-        self.obs_near_neighbors_sorted = obs_near_neighbors_sorted
+        obs_distances = self.uavs_list[self.ID-1].obs_distances_rel2main
+        self.obs_near_neighbors_sorted_distances = sorted(obs_distances)
+        self.obs_near_neighbors_sorted = list(np.argsort(obs_distances))[:self.N_obs]
 
-        return uav_near_neighbors_sorted, obs_near_neighbors_sorted
+        return self.uav_near_neighbors_sorted, self.obs_near_neighbors_sorted
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):

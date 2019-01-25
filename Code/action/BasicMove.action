@@ -5,7 +5,7 @@ string direction
 float32 value
 --- 
 # Define the result
-bool success
+string output
 ---
 # Define a feedback message
 float32 percent_complete

@@ -1,0 +1,43 @@
+<launch>
+
+    <arg default="false" name="multi" />
+    <arg default="uav_" name="ns_prefix" />
+    <arg default="sitl" name="mode" />
+    <arg default="map" name="pose_frame_id" />
+    <arg default="on" name="ual_server" />
+    <arg default="30.0" name="ual_pub_rate" />
+    <arg default="30.0" name="mavros_offboard_rate" />
+
+    
+    <include file="$(find px4_bringup)/launch/spawn_robot_JA.launch" ns="$(arg ns_prefix)2">
+        <arg name="id" value="2" />
+        <arg name="material" value="Orange" />
+        <arg name="mode" value="$(arg mode)" />
+        <arg name="x" value="0" />
+        <arg name="y" value="0" />
+        <arg name="z" value="0" />
+        <arg name="yaw" value="0" />
+    </include>
+
+    
+    <node name="ual" ns="$(arg ns_prefix)2" output="screen" pkg="uav_abstraction_layer" type="server">
+        <param name="uav_id" value="2" />
+        <param name="pose_frame_id" value="$(arg pose_frame_id)" />
+        <param name="ual_server" value="$(arg ual_server)" />
+        <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
+        <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
+        <param name="home_pose_parent_frame" value="map" /> 
+    </node>
+    
+    
+    <node args="-ID=2" name="uav_2" output="screen" pkg="pydag" type="UAV_Manager.py" />
+
+    <node name="path_follower_node_2" pkg="uav_path_manager" type="path_follower_node">
+        <param name="uav_id" value="2" />
+    </node>
+
+    <group if="false">
+        <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
+    </group>
+
+</launch>

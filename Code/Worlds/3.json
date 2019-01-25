@@ -73,6 +73,25 @@
                                 "orientation": [0,0,0]
                             }
                         ]
+                    },
+                    {
+                        "name": "security_height_3",
+                        "prefix": "secheight3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,5.0,22.0],[0,0,0]],
+                        "dimensions": [8.0,1.0,1.0],
+                        "color": [0,255,0],
+                        "alpha": 0.3,
+                        "divisions": [
+                            {
+                                "type" : "matrix",
+                                "use" : "poses",
+                                "dimensions": [3,1,1],
+                                "density": 1,
+                                "orientation": [0,0,0]
+                            }
+                        ]
                     }
                 ]
             },
@@ -115,7 +134,7 @@
                         "divisions": [
                             {
                                 "type" : "path",
-                                "dimensions": [5,7,1],
+                                "dimensions": [1,1,1],
                                 "orientation": [0,0,0]
                             }
                         ]
@@ -133,7 +152,7 @@
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
-                                "dimensions": [5,7,1],
+                                "dimensions": [1,1,1],
                                 "density": 1,
                                 "orientation": [0,0,0]
                             }
@@ -180,7 +199,7 @@
                         "divisions": [
                             {
                                 "type" : "path",
-                                "dimensions": [5,7,1],
+                                "dimensions": [1,1,1],
                                 "orientation": [0,0,0]
                             }
                         ]
@@ -198,7 +217,72 @@
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Panels_Zone_3",
+                "prefix": "pan3",
+                "origin": [[35.0,0.0,0.0],[0,0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Panels",
+                        "prefix": "pan",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.0],[0,0,0]],
+                        "dimensions": [23.0,45.0,2.0],
+                        "color": [0,0,255],
+                        "alpha": 0.3,
+                        "divisions": [
+                            {
+                                "type" : "matrix",
+                                "use" : "obstacles",
                                 "dimensions": [5,7,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [0.2, 6, 3.5],
+                                "orientation": [0,1.25,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Inspection",
+                        "prefix": "insp",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,10.0],[0,0,0]],
+                        "dimensions": [23.0,45.0,1.0],
+                        "color": [0,255,255],
+                        "alpha": 0.3,
+                        "divisions": [
+                            {
+                                "type" : "path",
+                                "dimensions": [1,1,1],
+                                "orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Aproximation",
+                        "prefix": "apr",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,22.0],[0,0,0]],
+                        "dimensions": [23.0,45.0,1.0],
+                        "color": [0,255,0],
+                        "alpha": 0.3,
+                        "divisions": [
+                            {
+                                "type" : "matrix",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
                                 "density": 1,
                                 "orientation": [0,0,0]
                             }

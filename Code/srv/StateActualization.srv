@@ -1,5 +1,5 @@
 int8 id
 string state
-bool collision
+string critical_event
 ---
 bool success

@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="pydag" type="GroundStation.py" name="ground_station" output="screen"/>
+</launch>

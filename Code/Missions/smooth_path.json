@@ -64,8 +64,18 @@
                     "path": [
                         {
                             "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
+                        },
+                        {
+                            "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
+                        },
+                        {
+                            "definition":["Panels_Zone_1","Inspection","path"]
+                        },
+                        {
+                            "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
                         }
-                    ]
+                    ],
+                    "smooth_path_mode": 2
                 }
             },
             {
@@ -77,8 +87,18 @@
                     "path": [
                         {
                             "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
+                        },
+                        {
+                            "definition":["Panels_Zone_2","Aproximation","matrix",[0,0,0]]
+                        },
+                        {
+                            "definition":["Panels_Zone_2","Inspection","path"]
+                        },
+                        {
+                            "definition":["Panels_Zone_2","Aproximation","matrix",[0,0,0]]
                         }
-                    ]
+                    ],
+                    "smooth_path_mode": 3
                 }
             }
         ],

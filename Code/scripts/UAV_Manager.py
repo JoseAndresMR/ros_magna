@@ -48,6 +48,8 @@ class UAV_Manager(object):
         self.smooth_path_mode = 0
         self.start_time_to_target = time.time()     # Counter to check elapsed time to achieve a goal
 
+        self.preemption_launched = False
+
         self.accepted_target_radio = 0.5        # In the future, received on the world definition
 
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
@@ -254,7 +256,6 @@ class UAV_Manager(object):
         rospy.wait_for_service('/uav_path_manager/generator/generate_path')
         try:
             instruction_command = rospy.ServiceProxy('/uav_path_manager/generator/generate_path', GeneratePath)
-            raw_path.poses.append(raw_path.poses[-1])
             response = instruction_command(raw_path,Int8(self.smooth_path_mode))
             return response.generated_path
 
@@ -333,8 +334,10 @@ class UAV_Manager(object):
             # Control distance to goal
             while not rospy.is_shutdown() and self.DistanceToGoal() > self.accepted_target_radio:
 
-                if self.critical_event != 'nothing':
+                if self.preemption_launched == False and self.critical_event != 'nothing':
+                    self.preemption_launched = True
                     return self.critical_event
+
 
                 self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
                 self.Evaluator()          # Evaluate the situation
@@ -467,6 +470,7 @@ class UAV_Manager(object):
     # Function to model the target of role of single basic move
     def basic_move(self,move_type,dynamic,direction,value):
 
+        outcome = 'completed'
         # Select function used depending on move type
         if move_type == "take off":
             self.TakeOffCommand(value,True)
@@ -497,7 +501,7 @@ class UAV_Manager(object):
                 goal_WP_pose.position.z += change_matrix[0][2]
                 # self.goal_WP_pose = goal_WP_pose
                 self.goal_path_poses_list = [goal_WP_pose]
-                self.PathFollower()
+                outcome = self.PathFollower()
         # for i in np.arange(len(self.goal_path_poses_list)):
                 # self.GoToWPCommand(True,goal_WP_pose)
 
@@ -512,7 +516,7 @@ class UAV_Manager(object):
                 goal_WP_vel.linear.z += change_matrix[0][2]
                 ual_set_velocity(TwistStamped(h,new_velocity_twist))
 
-        return "completed"
+        return outcome
 
     ### Utility functions ###
 
@@ -545,7 +549,7 @@ class UAV_Manager(object):
         collision_world_boundaries = not(all(checks))
 
         # If confliction detected, raise the global collision flag for later storage
-        if collision_uav or collision_obs or collision_world_boundaries:
+        if self.preemption_launched == False and (collision_uav or collision_obs or collision_world_boundaries):
             self.critical_event = "collision"
 
             if collision_uav:
@@ -555,10 +559,20 @@ class UAV_Manager(object):
             elif collision_world_boundaries:
                 print self.ID,"OUT OF WORLD BOUNDARIES!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-        if self.uavs_list[self.ID-1].battery_percentage < 0.2:
+            self.GSStateActualization()
+
+        elif self.preemption_launched == False and  self.uavs_list[self.ID-1].battery_percentage < 0.2:
             self.critical_event = "low_battery"
 
             print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            self.GSStateActualization()
+
+        elif self.preemption_launched == False and  self.uavs_list[self.ID-1].GS_notification == 'GS_critical_event':
+            print(self.ID, "GROUND STATION CRITICAL EVENT!!!!!!!!!!!!!!!!!!")
+            self.critical_event = self.uavs_list[self.ID-1].GS_notification
+
+            self.GSStateActualization()
+
 
         # Check if time to target must be reset and save it anyways
         if self.DistanceToGoal() < self.accepted_target_radio:

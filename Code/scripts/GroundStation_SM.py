@@ -20,6 +20,7 @@ class GroundStation_SM(object):
             # Initialization of id, number of waypoints and target
             self.DictionarizeCBStateCallbacks()
             self.DictionarizeSASCallbacks()
+            self.DictionarizeCCRCallbacks()
 
             mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/Missions/{1}.json"\
                             .format(heritage.home_path,heritage.mission)
@@ -78,7 +79,7 @@ class GroundStation_SM(object):
                                             output_keys=['id','n_wp'],
                                             goal_cb_kwargs={"params" : self.params},
                                             result_cb_kwargs={"heritage":heritage},
-                                            outcomes=['preempted','succeeded','aborted','collision','low_battery']),
+                                            outcomes=['preempted','succeeded','aborted','collision','low_battery','GS_critical_event']),
                         mission_part_def["outcomes"])
 
 
@@ -114,13 +115,24 @@ class GroundStation_SM(object):
                 # self.id = ids
 
                 params = self.UpdateLocalParameters(ids,mission_part_def,parent_params)
-                    
-      
+
+                if "child_termination_cb" not in mission_part_def.keys():
+                    child_termination_cb = None
+                else:
+                    child_termination_cb = self.CCR_CT_Dic[mission_part_def["child_termination_cb"]]
+
+                if "outcome_cb" not in mission_part_def.keys():
+                    outcome_cb = None
+                else:
+                    outcome_cb = self.CCR_O_Dic[mission_part_def["outcome_cb"]]
+
                 concurrence = Concurrence(outcomes=mission_part_def["occurrencies_outcome_map"].keys(),
                                         input_keys = [],
                                         output_keys = [],
                                         default_outcome = 'completed',
-                                        outcome_map = {})
+                                        outcome_map = {},
+                                        outcome_cb = outcome_cb,
+                                        child_termination_cb = child_termination_cb)
 
                 with concurrence:
                     for occurrence in mission_part_def["occurrencies"]:
@@ -195,10 +207,11 @@ class GroundStation_SM(object):
 
     # State callback to wait one second. In future will fuse with next callback
     @cb_interface(outcomes=['completed','failed'])
-    def wait_stcb(self,heritage,duration):
-        time.sleep(duration)
+    def wait_stcb(self,heritage,exit_type,duration = 0):
 
-        return "completed"
+        outcome = heritage.wait(exit_type,duration)
+
+        return outcome
 
     # State callback to spawn UAVs
     @cb_interface(outcomes=['completed','failed'])
@@ -348,6 +361,7 @@ class GroundStation_SM(object):
     def save_csv_result_cb(self, ud, result, something):
         return "succeeded"
 
+
     def DictionarizeSASCallbacks(self):
 
         self.SASGoalCBDic = {}
@@ -378,6 +392,35 @@ class GroundStation_SM(object):
         self.SASMsgTypeDic["save_csv"] = LandAction
 
 
+    #### CONCURRENCE OUTCOMES CALLBACKS ####
+
+    def preempt_all_at_one_collision_child_termination_cb(self,actual_outcomes_map):
+        # print(actual_outcomes_map)
+
+        for outcome in actual_outcomes_map.values():
+            if outcome == "collision":
+                return True
+
+        return False
+
+    def outcome_collision_if_any_collided_outcome_cb(self,final_outcomes_map):
+        if any("collision" in s for s in final_outcomes_map.values()):
+            return "collision"
+
+        else:
+            return None
+
+    def DictionarizeCCRCallbacks(self):
+
+        self.CCR_CT_Dic = {}
+        self.CCR_CT_Dic["all_at_one_collision"] = self.preempt_all_at_one_collision_child_termination_cb
+
+        self.CCR_O_Dic = {}
+        self.CCR_O_Dic["collision_if_any_collided"] = self.outcome_collision_if_any_collided_outcome_cb
+
+
+    #### Miscellaneous ####
+    #     
     def IdsExtractor(self,mission_part_def,heritage):
 
         if type(mission_part_def["ids"]) == int:

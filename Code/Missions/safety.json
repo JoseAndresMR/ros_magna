@@ -2,14 +2,14 @@
     {
         "type": "CBState",
         "state_type":"new_world",
-        "name": "NEWWORLD",
+        "name": "new world",
         "outcomes": {
             "completed": "spawn_UAVs"
         }
     },
     {
         "type": "CBState",
-        "state_type":"new_world",
+        "state_type":"spawn_uavs",
         "name": "spawn_UAVs",
         "outcomes": {
             "completed": "initial_wait"
@@ -20,8 +20,8 @@
         "state_type":"wait",
         "name": "initial_wait",
         "parameters": {
-            "exit_type": "all",
-            "duration": 10
+            "exit_type": "time",
+            "duration":1
         },
         "outcomes": {
             "completed": "1_take_off"
@@ -77,6 +77,9 @@
                         },
                         {
                             "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
+                        },
+                        {
+                            "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
                         }
                     ],
                     "smooth_path_mode": 2
@@ -100,12 +103,16 @@
                         },
                         {
                             "definition":["Panels_Zone_2","Aproximation","matrix",[0,0,0]]
+                        },
+                        {
+                            "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
                         }
                     ],
                     "smooth_path_mode": 2
                 }
             }
         ],
+        "outcome_cb":"collision_if_any_collided",
         "occurrencies_outcome_map": {
             "completed": {
                 "all": "succeeded"
@@ -115,12 +122,16 @@
             },
             "low_battery": {
                 "all": "low_battery"
+            },
+            "GS_critical_event": {
+                "all": "GS_critical_event"
             }
         },
         "outcomes": {
             "completed": "1_save_csv",
             "collision": "1_hovering",
-            "low_battery": "1_hovering"
+            "low_battery": "1_hovering",
+            "GS_critical_event": "1_hovering"
         }
     },
     {
@@ -175,7 +186,7 @@
         "state_type":"wait",
         "name": "safety_wait",
         "parameters": {
-            "exit_type": "all",
+            "exit_type": "time",
             "duration": 10
         },
         "outcomes": {

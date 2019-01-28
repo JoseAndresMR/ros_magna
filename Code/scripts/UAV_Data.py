@@ -26,7 +26,7 @@ class UAV_Data(object):
         self.pos_ref = pos_ref
 #        self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
-        self.preempt_flag = False
+        self.GS_notification = 'nothing'
         self.Rviz_flag = True
         self.ual_state = 0
         self.battery_percentage = 1
@@ -93,8 +93,8 @@ class UAV_Data(object):
             
         # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
         # In the future this will be implemented to wrap different roles and different IDs
-        if self.ID == self.main_uav and  self.main_uav != 1: # and mission ==
-            rospy.Service('/pydag/GS/preemption_command_to_{}'.format(self.main_uav), StateActualization, self.handle_preemption_command)
+        if self.ID == self.main_uav:
+            rospy.Service('/pydag/GS/notification_command_to_{}'.format(self.main_uav), StateActualization, self.handle_GS_notification_command)
 
     ## Callbacks
 
@@ -150,7 +150,7 @@ class UAV_Data(object):
 
     def battery_callback(self,data):
 
-        self.battery_percentage = data.percentage
+        # self.battery_percentage = data.percentage
         time.sleep(0.1)
 
     # Function to deal with depth image data
@@ -169,10 +169,9 @@ class UAV_Data(object):
         self.smooth_velocity = data.twist
 
     # Function to deal with a preemption command from Ground Station
-    def handle_preemption_command(self,data):
-        # print("preempted flag",self.preempt_flag)
-        self.preempt_flag = True        # Set the variable
-
+    def handle_GS_notification_command(self,data):
+        self.GS_state = data.state 
+        self.GS_notification = data.critical_event        # Set the variable
         return True
 
     #### Commander functions ####

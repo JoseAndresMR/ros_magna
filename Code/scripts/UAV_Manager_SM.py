@@ -72,14 +72,14 @@ class UAV_Manager_SM(object):
 
             ### BASIC MOVE STATE MACHINE & WRAPPER ###
 
-            self.basic_move_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery'],
+            self.basic_move_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['basic_move'] = ActionServerWrapper(
                         '/pydag/GS_UAV_{}/basic_move_command'.format(heritage.ID),
                         BasicMoveAction,
                         self.basic_move_sm,
-                        ['completed'], ['failed'],['collision','low_battery'],
+                        ['completed'], ['failed'],['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
@@ -91,7 +91,8 @@ class UAV_Manager_SM(object):
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed',
                                   'collision':'collision',
-                                  'low_battery':'low_battery'})
+                                  'low_battery':'low_battery',
+                                  'GS_critical_event':'GS_critical_event'})
 
             ### SAVE CVS STATE MACHINE & WRAPPER ###
 
@@ -115,26 +116,28 @@ class UAV_Manager_SM(object):
                                  {'completed':'completed'})
 
             ### FOLLOW PATH STATE MACHINE & WRAPPER ###
-            self.follow_path_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery'],
+            self.follow_path_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_path'] = ActionServerWrapper(
                         '/pydag/GS_UAV_{}/follow_path_command'.format(heritage.ID),
                         FollowPathAction,
                         self.follow_path_sm,
-                        ['completed'], ['failed'], ['collision','low_battery'],
+                        ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
-                        result_key = 'action_result' )
+                        result_key = 'action_result'
+                        )
 
             with self.follow_path_sm:
 
                 StateMachine.add('follow_path',
                                  CBState(self.follow_path_stcb,
-                                         input_keys=['action_goal','action_result'],
+                                         input_keys=['action_goal','action_result','_preempt_requested'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed',
                                   'collision':'collision',
-                                  'low_battery':'low_battery'})
+                                  'low_battery':'low_battery',
+                                  'GS_critical_event':'GS_critical_event'})
 
             # StateMachine.add('to_wp', self.follow_path_sm,
             #                         {'completed':'action_server_advertiser'})
@@ -183,6 +186,7 @@ class UAV_Manager_SM(object):
                 sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
                 sis.start()
 
+    #### STATE CALLBACKS ####
 
     @cb_interface(outcomes=['completed', 'failed'])
     def action_server_advertiser_stcb(self, heritage, asw_dicc):
@@ -213,9 +217,9 @@ class UAV_Manager_SM(object):
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed','collision','low_battery'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_path_stcb(self,heritage):
-
+        # print(self._preempt_requested)
         # Copy the goal path to follow into GS's variable
         heritage.smooth_path_mode = self.action_goal.smooth_path_mode
         heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
@@ -281,7 +285,7 @@ class UAV_Manager_SM(object):
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed','collision','low_battery'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def basic_move_stcb(self,heritage):
 
         # Parse received basic move information

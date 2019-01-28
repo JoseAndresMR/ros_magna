@@ -52,7 +52,7 @@ class GroundStation(object):
 
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
-        self.GSListener()     # Start subscribers
+        self.Listener()     # Start subscribers
 
         self.gs_sm = GroundStation_SM(self)        # Create Ground Station State Machine
         outcome = self.gs_sm.gs_sm.execute()        # Execute State Machine
@@ -83,6 +83,7 @@ class GroundStation(object):
                 self.world_definition["roles_list"][n_uav] = self.world_definition["roles_list"][n_uav] \
                                                             + "_depth"
         rospy.set_param('world_definition',self.world_definition)       # Set the ROS param
+
 
     # Function to set UAV's ROSparameters. Launched by State Machine
     def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
@@ -165,6 +166,14 @@ class GroundStation(object):
 
         return [self.world.getFSPoseGlobal(path_def)]
 
+    def wait(self,exit_type,duration=1):
+        if exit_type == "time":
+            time.sleep(duration)
+        elif exit_type == "button":
+            button = raw_input("Wait State asks for a button press")
+
+        return "completed" 
+
 
     #### Finisher functions ####
 
@@ -228,10 +237,27 @@ class GroundStation(object):
             print "Service call failed: %s"%e
             print "error in simulation_termination"
 
+    #### Commander functions ####
+
+    def sendNotificationsToUAVs(self,uavs_list,message):
+        if type(uavs_list) == int:
+            uavs_list = [uavs_list]
+        
+        for uav in uavs_list:
+            rospy.wait_for_service('/pydag/GS/notification_command_to_{}'.format(uav+1))
+            try:
+                instruction_command = rospy.ServiceProxy('/pydag/GS/notification_command_to_{}'.format(uav+1), StateActualization)
+                instruction_command(0,"tbd",message)
+                return
+
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                print "error in simulation_termination"
+
     #### listener functions ####
 
     # Function to start subscribing and offering
-    def GSListener(self):
+    def Listener(self):
 
         # Start service for UAVs to actualize its state
         rospy.Service('/pydag/GS/state_actualization', StateActualization, self.handle_uav_status)
@@ -248,11 +274,19 @@ class GroundStation(object):
 
         # Check collisions to update it UAVs collision list
         if data.critical_event != 'nothing':
+            
             if self.critical_events_list[data.id-1] != data.critical_event:
-                self.critical_events_list[data.id-1] == data.critical_event
-            # Change succeed information if a collision has been reported
-            self.simulation_succeed = False
-            rospy.loginfo_throttle(0,"Simulation not succeded, UAV {} collisioned".format(data.id))
+                self.critical_events_list[data.id-1] = data.critical_event
+                rospy.loginfo_throttle(0,"UAV {0} reported {1}".format(data.id,data.critical_event))
+            
+                if data.critical_event == "collision":
+                    uavs_to_inform = range(self.N_uav)
+                    uavs_to_inform = uavs_to_inform[:data.id-1] + uavs_to_inform[data.id:]
+
+                    # Change succeed information if a collision has been reported
+                    self.simulation_succeed = False
+
+                    self.sendNotificationsToUAVs(uavs_to_inform,"GS_critical_event")
 
         print self.states_list
         return True

@@ -33,7 +33,7 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
         'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
-        'type'               :                   "safety",                    # Type of the world or sceneario created
+        'world'              :                   "safety",                    # Type of the world or sceneario created
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations

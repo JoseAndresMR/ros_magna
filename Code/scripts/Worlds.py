@@ -36,7 +36,7 @@ class Worlds(object):
         self.GettingWorldDefinition()       # Global parameters inizialization.
         print "creating world",ID
 
-        world_def_path = "/home/{0}/catkin_ws/src/pydag/Code/Worlds/{1}.json"\
+        world_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Worlds/{1}.json"\
                             .format(self.home_path,self.world_type)
 
         with open(world_def_path) as f:

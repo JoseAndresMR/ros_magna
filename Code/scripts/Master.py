@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
 """
 Created on Mon Feb 21 2018
 
@@ -46,7 +47,7 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     True,                     # Flag to decide if smach introspector is actived
+        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
         }
 
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization

@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "/home/joseandresmr/catkin_ws/src"
+		},
+		{
+			"path": "/home/joseandresmr/Libraries/gml"
+		},
+		{
+			"path": "/home/joseandresmr/Documents/Reinforcement Learning"
+		},
+		{
+			"path": "/home/joseandresmr/Libraries/gyal"
+		}
+	],
+	"settings": {
+		"python.autoComplete.extraPaths": [
+			"/home/joseandresmr/catkin_ws/devel/lib/python2.7/dist-packages",
+			"/opt/ros/kinetic/lib/python2.7/dist-packages"
+		]
+	}
+}

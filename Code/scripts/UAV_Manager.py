@@ -355,7 +355,7 @@ class UAV_Manager(object):
 
             self.Evaluator()          # Evaluate the situation
 
-        return 'completed'
+        return 'succeeded'
 
     def PathFollower_FW(self):
         # goal_list = []
@@ -470,7 +470,7 @@ class UAV_Manager(object):
     # Function to model the target of role of single basic move
     def basic_move(self,move_type,dynamic,direction,value):
 
-        outcome = 'completed'
+        outcome = 'succeded'
         # Select function used depending on move type
         if move_type == "take off":
             self.TakeOffCommand(value,True)

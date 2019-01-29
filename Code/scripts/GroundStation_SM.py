@@ -22,7 +22,7 @@ class GroundStation_SM(object):
             self.DictionarizeSASCallbacks()
             self.DictionarizeCCRCallbacks()
 
-            mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/Missions/{1}.json"\
+            mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}.json"\
                             .format(heritage.home_path,heritage.mission)
             with open(mission_def_path) as f:
                 self.mission_def = json.load(f)
@@ -71,15 +71,15 @@ class GroundStation_SM(object):
                 self.params = params        ### AHORRARME SELF
 
                 sm.add('{0}_{1}'.format(ids,mission_part_def["name"]),
-                        SimpleActionState('/pydag/GS_UAV_{0}/{1}_command'.format(params["uav"],mission_part_def["name"]),
-                                            self.SASMsgTypeDic[mission_part_def["name"]],
-                                            goal_cb=self.SASGoalCBDic[mission_part_def["name"]],
-                                            result_cb=self.SASResultCBDic[mission_part_def["name"]],
+                        SimpleActionState('/pydag/GS_UAV_{0}/{1}_command'.format(params["uav"],mission_part_def["state_type"]),
+                                            self.SASMsgTypeDic[mission_part_def["state_type"]],
+                                            goal_cb=self.SASGoalCBDic[mission_part_def["state_type"]],
+                                            result_cb=self.SASResultCBDic[mission_part_def["state_type"]],
                                             input_keys=['params'],
                                             output_keys=['id','n_wp'],
                                             goal_cb_kwargs={"params" : self.params},
                                             result_cb_kwargs={"heritage":heritage},
-                                            outcomes=['preempted','succeeded','aborted','collision','low_battery','GS_critical_event']),
+                                            outcomes=['succeeded','collision','low_battery','GS_critical_event']),
                         mission_part_def["outcomes"])
 
 
@@ -92,18 +92,23 @@ class GroundStation_SM(object):
 
                 params = self.UpdateLocalParameters(ids,mission_part_def,parent_params)
 
-                new_sm = StateMachine(outcomes=mission_part_def["occurrencies_outcome_map"].keys(),
+                new_sm = StateMachine(outcomes=mission_part_def["outcomes"].keys(),
                                                         input_keys=[])
 
                 with new_sm:
 
                     for occurrence in mission_part_def["occurrencies"]:
 
-                        self.add_sm_from_CSV(new_sm,occurrence,heritage)
+                        self.add_sm_from_CSV(new_sm,occurrence,params,heritage)
 
-                sm.add(mission_part_def["name"],
-                                new_sm,
-                                transitions= mission_part_def["outcomes"])
+                # concurrence = Concurrence(input_keys = [],
+                #         output_keys = [],
+                #         default_outcome = 'completed',
+                #         outcome_map = {})
+
+
+                sm.add('{0}_{1}'.format(ids,mission_part_def["name"]), new_sm, mission_part_def["outcomes"])
+
 
 
 
@@ -126,7 +131,7 @@ class GroundStation_SM(object):
                 else:
                     outcome_cb = self.CCR_O_Dic[mission_part_def["outcome_cb"]]
 
-                concurrence = Concurrence(outcomes=mission_part_def["occurrencies_outcome_map"].keys(),
+                concurrence = Concurrence(outcomes=mission_part_def["outcomes"].keys(),
                                         input_keys = [],
                                         output_keys = [],
                                         default_outcome = 'completed',
@@ -179,7 +184,7 @@ class GroundStation_SM(object):
 
                 params = self.UpdateLocalParameters(ids,mission_part_def,parent_params)
 
-                sequence = Sequence(outcomes = mission_part_def["occurrencies_outcome_map"].keys(),
+                sequence = Sequence(outcomes = mission_part_def["outcomes"].keys(),
                                     connector_outcome = mission_part_def["connector_outcome"])
 
                 with sequence:

@@ -235,6 +235,6 @@ class UAV_Data(object):
         self.depth_camera_use = self.world_definition['depth_camera_use']
         self.obs_pose_list = self.world_definition['obs_pose_list']
 
-if __name__ == '__main__':
-    uav = UAV("485020",True,[0,0])
-    uav.incoming_ADSB_msg_callback("8D485020994409940838175B284F")
+# if __name__ == '__main__':
+#     uav = UAV("485020",True,[0,0])
+#     uav.incoming_ADSB_msg_callback("8D485020994409940838175B284F")

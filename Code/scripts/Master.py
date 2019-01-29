@@ -134,7 +134,7 @@ class Master(object):
     def DatasetExistanceChecker(self):
 
         # Build path from definition
-        self.first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{2}_Nobs{3}"\
+        self.first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
                                  .format(self.world_definition["home_path"],self.world_definition["world"],self.world_definition["subworld"],
                                  self.world_definition["mission"],self.world_definition["submission"],self.world_definition['N_uav'],
                                  self.world_definition['N_obs'])

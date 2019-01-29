@@ -139,7 +139,7 @@ class GroundStation(object):
             N_obs_mixed = self.N_obs
 
         # Definition of root path
-        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{2}_Nobs{3}"\
+        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
                                  .format(self.home_path,self.world_name,self.subworld_name,
                                  self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 

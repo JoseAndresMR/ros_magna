@@ -75,7 +75,7 @@ class GroundStation(object):
                                 "safety":["path","path","wait"]}
 
         # Actualize own world definition with role list
-        self.world_definition["roles_list"] = mission_to_role_dicc[self.mission][:self.N_uav]
+        self.world_definition["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
 
         # Add tag to role if depth camera is used
         if self.depth_camera_use == True:
@@ -133,14 +133,15 @@ class GroundStation(object):
     def CreatingSimulationDataStorage(self):
         # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
         # This code fixes that divergence for later storing
-        if self.world_type == 2:
+        if self.world_name == 2:
             N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
         else:
             N_obs_mixed = self.N_obs
 
         # Definition of root path
-        first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}"\
-                            .format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.home_path,self.solver_algorithm)
+        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{2}_Nobs{3}"\
+                                 .format(self.home_path,self.world_name,self.subworld_name,
+                                 self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 
         # Check existance of root path. Create in case
         if not os.path.exists(first_folder_path):
@@ -157,8 +158,8 @@ class GroundStation(object):
             os.makedirs(self.third_folder_path)
 
         # Create path for rosbag and create object to manage it
-        bag_folder_path = "/home/{6}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}/tf_bag.bag"\
-                                .format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
+        bag_folder_path = self.third_folder_path + "/tf_bag.bag"
+        
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
 
@@ -307,8 +308,10 @@ class GroundStation(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.mission = self.world_definition['mission']
-        self.world_type = self.world_definition['type']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']

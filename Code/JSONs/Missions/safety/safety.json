@@ -80,7 +80,7 @@
                                     "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
                                 }
                             ],
-                            "smooth_path_mode": 2
+                            "smooth_path_mode": 1
                         },
                         "outcomes":{
                             "succeeded": "1_inspection",
@@ -256,7 +256,7 @@
                             "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
                         }
                     ],
-                    "smooth_path_mode": 2,
+                    "smooth_path_mode": 1,
                     "outcomes":{
                         "succeeded": "completed",
                         "collision": "collision",

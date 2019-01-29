@@ -22,8 +22,8 @@ class GroundStation_SM(object):
             self.DictionarizeSASCallbacks()
             self.DictionarizeCCRCallbacks()
 
-            mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}.json"\
-                            .format(heritage.home_path,heritage.mission)
+            mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
+                            .format(heritage.home_path,heritage.mission_name,heritage.submission_name)
             with open(mission_def_path) as f:
                 self.mission_def = json.load(f)
 

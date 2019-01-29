@@ -33,7 +33,9 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
         'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "safety",
         'world'              :                   "safety",                    # Type of the world or sceneario created
+        'subworld'           :                   "safety",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
@@ -47,7 +49,7 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                     # Flag to decide if smach introspector is actived
         }
 
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
@@ -130,18 +132,13 @@ class Master(object):
 
     # Control if defined new dataset already exists
     def DatasetExistanceChecker(self):
-        # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
-        # This code fixes that divergence for later storing.
-        # In the future, this piece of code should be a common utility
-        if self.world_definition["type"] == 3 or self.world_definition["type"] == 4:
-            N_obs_mixed = int('{0}{1}{2}'.format(self.world_definition["obs_tube"][0],self.world_definition["obs_tube"][1],self.world_definition["obs_tube"][2]))
-        else:
-            N_obs_mixed = self.world_definition['N_obs']
 
         # Build path from definition
-        self.first_folder_path = "/home/{4}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{5}/type{1}_Nuav{2}_Nobs{3}"\
-                                 .format(self.world_definition["mission"],self.world_definition["type"],self.world_definition["N_uav"],
-                                 N_obs_mixed,self.world_definition["home_path"],self.world_definition["solver_algorithm"])
+        self.first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{2}_Nobs{3}"\
+                                 .format(self.world_definition["home_path"],self.world_definition["world"],self.world_definition["subworld"],
+                                 self.world_definition["mission"],self.world_definition["submission"],self.world_definition['N_uav'],
+                                 self.world_definition['N_obs'])
+
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
 
         # Ask user if the new simulation already exists

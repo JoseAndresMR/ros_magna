@@ -221,8 +221,10 @@ class UAV_Data(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.mission = self.world_definition['mission']
-        self.world_type = self.world_definition['type']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']

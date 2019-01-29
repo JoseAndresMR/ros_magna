@@ -683,17 +683,13 @@ class UAV_Manager(object):
     def StoreData(self):
         print "saving uav",self.ID,"mission data"
 
-        # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
-        # This code fixes that divergence for later storing
-        if self.world_type == 2:
-            N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
-        else:
-            N_obs_mixed = self.N_obs
+        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{2}_Nobs{3}"\
+                                 .format(self.home_path,self.world_name,self.wubworld_name,
+                                 self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 
-        # Create folderpath to store. In the future, the first part of this path should be got by ROS param
-        folder_path = "/home/{6}/catkin_ws/src/pydag/Data_Storage/Simulations/{0}/{7}/type{1}_Nuav{2}_Nobs{3}/dataset_{4}/simulation_{5}".format(self.mission,self.world_type,self.N_uav,N_obs_mixed,self.n_dataset,self.n_simulation,self.home_path,self.solver_algorithm)
+        third_folder_path = first_folder_path + "/dataset_{4}/simulation_{5}".format(self.n_dataset,self.n_simulation)
 
-        csv_file_path = folder_path + '/uav_{0}.csv'.format(self.ID)
+        csv_file_path = third_folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(csv_file_path, sep=',', mode='a') #,low_memory=False,     # Dump the global frame into
 
         # Dump the global depth camera frame into
@@ -757,8 +753,10 @@ class UAV_Manager(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.mission = self.world_definition['mission']
-        self.world_type = self.world_definition['type']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']

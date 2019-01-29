@@ -36,13 +36,13 @@ class Worlds(object):
         self.GettingWorldDefinition()       # Global parameters inizialization.
         print "creating world",ID
 
-        world_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Worlds/{1}.json"\
-                            .format(self.home_path,self.world_type)
+        world_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Worlds/{1}/{2}.json"\
+                            .format(self.home_path,self.world_name,self.subworld_name)
 
         with open(world_def_path) as f:
             self.world_def = json.load(f)
 
-        if self.mission != 'basic_movement':
+        if self.mission_name != 'basic_movement':
 
             # Save world definition params
             self.N_uav = self.world_definition['N_uav']
@@ -91,8 +91,10 @@ class Worlds(object):
     
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.mission = self.world_definition['mission']
-        self.world_type = self.world_definition['type']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']

@@ -39,11 +39,11 @@ class UAV_Brain(object):
 
             # Import the metagraph from specific path. In the future will be better path management
             new_saver = tflow.train.import_meta_graph("/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nuav{2}_Nobs{3}/model.meta"\
-                                                      .format(self.role,self.world_type,self.N_uav,self.N_obs))
+                                                      .format(self.role,self.world_name,self.N_uav,self.N_obs))
 
             # Restore to the last chechpoint
             new_saver.restore(self.session,tflow.train.latest_checkpoint('/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nuav{2}_Nobs{3}'\
-                                                                         .format(self.role,self.world_type,self.N_uav,self.N_obs)))
+                                                                         .format(self.role,self.world_name,self.N_uav,self.N_obs)))
 
             # Initialize inputs and outputs from graph
             self.graph_inputs = tflow.get_default_graph().get_tensor_by_name("single_input:0")
@@ -171,11 +171,6 @@ class UAV_Brain(object):
         maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
         velocity = (1, 1, 1)
 
-        # Select obstacle radius depending on world type
-        if self.world_type == 1:
-            obs_radius = 0.5
-        elif self.world_type == 3:
-            obs_radius = 2.5
         obs_radius = 2
 
         # Create an object of orca3 solver class and give the above defined parameters
@@ -360,8 +355,10 @@ class UAV_Brain(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.mission = self.world_definition['mission']
-        self.world_type = self.world_definition['type']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']

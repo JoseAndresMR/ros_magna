@@ -16,10 +16,11 @@ from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
 
 class UAV_Data(object):
-    def __init__(self,ID,main_uav,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
+    def __init__(self,ID,main_uav,uav_config,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
         # Local parameters inizialization
         self.ID = ID
         self.main_uav = main_uav
+        self.uav_config = uav_config
 
         self.ICAO = ICAO
         self.with_ref = with_ref
@@ -73,12 +74,12 @@ class UAV_Data(object):
 
         # Subscribe to position and velocity of every UAV if comms are direct or is own UAV
         if self.main_uav == self.ID or (self.main_uav != self.ID and self.communications == "direct"):
-            rospy.Subscriber('/uav_{}/ual/pose'.format(self.ID), PoseStamped, self.uav_pose_callback, queue_size=1)
-            rospy.Subscriber('/uav_{}/ual/velocity'.format(self.ID), TwistStamped, self.uav_vel_callback, queue_size=1)
-            rospy.Subscriber('/uav_{}/ual/state'.format(self.ID), State, self.ual_state_callback, queue_size=1)
-            rospy.Subscriber('/uav_{}/mavros/battery'.format(self.ID), BatteryState, self.battery_callback, queue_size=1)
+            rospy.Subscriber(self.uav_config.top_sub_addr['pose'], PoseStamped, self.uav_pose_callback, queue_size=1)
+            rospy.Subscriber(self.uav_config.top_sub_addr['velocity'], TwistStamped, self.uav_vel_callback, queue_size=1)
+            rospy.Subscriber(self.uav_config.top_sub_addr['state'], State, self.ual_state_callback, queue_size=1)
+            rospy.Subscriber(self.uav_config.top_sub_addr['battery_level'], BatteryState, self.battery_callback, queue_size=1)
             rospy.Subscriber('/uav_path_manager/follower/uav_{}/output_vel'.format(self.ID), TwistStamped, self.smooth_path_vel_callback, queue_size=1)
-
+            
             # Subscribe to depth camera if its use flag is activated
             if self.depth_camera_use == True:
                 rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback, queue_size=1)

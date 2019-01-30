@@ -90,8 +90,8 @@ class UAV_Brain(object):
 
         # Initialization of pos and vel that will be taken as inputs
         inputs = []
-        main_uav_pos = self.uavs_list[self.ID-1].position.pose.position
-        main_uav_vel = self.uavs_list[self.ID-1].velocity.twist.linear
+        main_uav_pos = self.uavs_data_list[self.ID-1].position.pose.position
+        main_uav_vel = self.uavs_data_list[self.ID-1].velocity.twist.linear
 
         # For every input in the dictionary, crate if needed and add it to inputs
         for n_input in input_dicc:
@@ -120,17 +120,17 @@ class UAV_Brain(object):
                 for n_uav in range(self.N_uav):
                     if n_uav+1 != self.ID:
                         #pos
-                        inputs.append(self.uavs_list[n_uav].position.pose.position.x-main_uav_pos.x)
-                        inputs.append(self.uavs_list[n_uav].position.pose.position.y-main_uav_pos.y)
-                        inputs.append(self.uavs_list[n_uav].position.pose.position.z-main_uav_pos.z)
+                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.x-main_uav_pos.x)
+                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.y-main_uav_pos.y)
+                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.z-main_uav_pos.z)
 
             elif n_input == "others_vel":
                 for n_uav in range(self.N_uav):
                     if n_uav+1 != self.ID:
                         #vel
-                        inputs.append(self.uavs_list[n_uav].velocity.twist.linear.x)
-                        inputs.append(self.uavs_list[n_uav].velocity.twist.linear.y)
-                        inputs.append(self.uavs_list[n_uav].velocity.twist.linear.z)
+                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.x)
+                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.y)
+                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.z)
 
             elif n_input == "obs_pos_rel":
                 for n_obs in range(self.N_obs):
@@ -182,10 +182,10 @@ class UAV_Brain(object):
         prefered_velocity = self.SimpleGuidance() # Select a velocity directly to goal as if there weren't exist neighbors
 
         # Add to orca3 and to own list every agent created by own params
-        agent_list = [sim.addAgent((self.uavs_list[self.ID-1].position.pose.position.x, self.uavs_list[self.ID-1].position.pose.position.y,self.uavs_list[self.ID-1].position.pose.position.z),
+        agent_list = [sim.addAgent((self.uavs_data_list[self.ID-1].position.pose.position.x, self.uavs_data_list[self.ID-1].position.pose.position.y,self.uavs_data_list[self.ID-1].position.pose.position.z),
             neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0))]
         for n_uas in self.uav_near_neighbors_sorted:
-            agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y,self.uavs_list[n_uas].position.pose.position.z),
+            agent_list.append(sim.addAgent((self.uavs_data_list[n_uas].position.pose.position.x, self.uavs_data_list[n_uas].position.pose.position.y,self.uavs_data_list[n_uas].position.pose.position.z),
             neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0)))
 
         # Set the preferred velocity of own UAV as decided avobe
@@ -193,7 +193,7 @@ class UAV_Brain(object):
         
         # Set the preferred velocity of the rest of UAVs as the actual
         for n_uas in range(1,len(self.uav_near_neighbors_sorted)):
-            sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
+            sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
 
         # Add to orca3 and to own list every obstacle created by own params
         for n_obs in self.obs_near_neighbors_sorted:
@@ -221,7 +221,7 @@ class UAV_Brain(object):
     def SimpleGuidance(self):
         
         if self.smooth_path_mode != 0:
-            return self.uavs_list[self.ID-1].smooth_velocity
+            return self.uavs_data_list[self.ID-1].smooth_velocity
 
         # Set algorithm params
         desired_velocity_module = 2
@@ -229,9 +229,9 @@ class UAV_Brain(object):
         aprox_distance = 3
 
         # Create a vector from actual position to goal position
-        relative_distance = np.asarray([self.goal["pose"].position.x-self.uavs_list[self.ID-1].position.pose.position.x,\
-                                self.goal["pose"].position.y-self.uavs_list[self.ID-1].position.pose.position.y,\
-                                self.goal["pose"].position.z-self.uavs_list[self.ID-1].position.pose.position.z])
+        relative_distance = np.asarray([self.goal["pose"].position.x-self.uavs_data_list[self.ID-1].position.pose.position.x,\
+                                self.goal["pose"].position.y-self.uavs_data_list[self.ID-1].position.pose.position.y,\
+                                self.goal["pose"].position.z-self.uavs_data_list[self.ID-1].position.pose.position.z])
 
         distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
 
@@ -252,7 +252,7 @@ class UAV_Brain(object):
                                 np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
 
         # Transform the orientation from Eurler angles to quaternions
-        orientation_list = [self.uavs_list[self.ID-1].position.pose.orientation.x, self.uavs_list[self.ID-1].position.pose.orientation.y, self.uavs_list[self.ID-1].position.pose.orientation.z, self.uavs_list[self.ID-1].position.pose.orientation.w]
+        orientation_list = [self.uavs_data_list[self.ID-1].position.pose.orientation.x, self.uavs_data_list[self.ID-1].position.pose.orientation.y, self.uavs_data_list[self.ID-1].position.pose.orientation.z, self.uavs_data_list[self.ID-1].position.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(orientation_list)
 
         # Create the velocity twist with calculated data
@@ -267,58 +267,6 @@ class UAV_Brain(object):
         # new_velocity_twist.angular.z = self.UpperLowerSaturation(new_velocity_twist.angular.z,0.5)
 
         return new_velocity_twist
-
-    # Function to set new velocity using ORCA on 2D
-    # def ORCA(self):
-
-    #     # start = time.time()
-    #     sim = rvo2.PyRVOSimulator(0.3,     # 1/60.  float   timeStep           The time step of the simulation. Must be positive.
-    #                             4.0,     # 1.5    float   neighborDist       The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
-    #                             4,       # 5      size_t  maxNeighbors       The maximal number of other agents the agent takes into account in the navigation
-    #                             2.5,     # 1.5    float   timeHorizon        The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
-    #                             2.5,     # 2      float   timeHorizonObst    The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to obstacles.
-    #                             0.5,     # 0.4    float   radius             The radius of the agent. Must be non-negative
-    #                             2.0)     # 2      float   maxSpeed           The maximum speed of the agent. Must be non-negative.
-
-    #     # antiguo para 1-2: 1/60. 3.0 4 1.5 2.5 0.5 2.0
-
-    #     agent_list = []
-    #     for n_uas in np.arange(self.N_uav):
-    #         agent_list.append(sim.addAgent((self.uavs_list[n_uas].position.pose.position.x, self.uavs_list[n_uas].position.pose.position.y)))
-    #         # tuple pos, neighborDist=None,
-    #         # maxNeighbors=None, timeHorizon=None,
-    #         # timeHorizonObst=None, radius=None, maxSpeed=None,
-    #         # velocity=None
-
-    #     # Obstacles
-    #     for n_obs in np.arange(self.N_obs):
-    #         obs_reduced_list = []
-    #         obs_raduis = 1
-    #         obs_pose = self.obs_pose_list[n_obs]
-    #         circle_division = 16
-    #         for n in np.arange(circle_division):
-    #             obs_reduced_list.append((obs_pose[0]+obs_raduis*np.cos(2*np.pi*n/circle_division),obs_pose[1]+obs_raduis*np.sin(2*np.pi*n/circle_division)))
-    #         sim.addObstacle(obs_reduced_list)
-
-    #     sim.processObstacles()
-
-    #     for n_uas in np.arange(self.N_uav):
-    #         if n_uas == self.ID-1:
-    #             prefered_velocity = self.SimpleGuidance()
-    #             sim.setAgentPrefVelocity(agent_list[n_uas],(prefered_velocity.linear.x,prefered_velocity.linear.y))
-    #         else:
-    #             sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_list[n_uas].velocity.twist.linear.x,self.uavs_list[n_uas].velocity.twist.linear.y))
-
-    #     sim.doStep()
-    #     selected_velocity = sim.getAgentVelocity(self.ID-1)
-    #     new_velocity_twist = Twist(Vector3(0,0,prefered_velocity.linear.z),Vector3(0,0,0))
-    #     new_velocity_twist.linear.x = selected_velocity[0]
-    #     new_velocity_twist.linear.y = selected_velocity[1]
-
-    #     # finish = time.time()
-    #     # print finish - start
-
-    #     return new_velocity_twist
 
 
     # Function to set hovering velocity equal to zeros
@@ -339,14 +287,14 @@ class UAV_Brain(object):
         uav_distances = []
         for n_uav in range(self.N_uav):
             if n_uav != self.ID-1:
-                uav_distances.append(self.uavs_list[n_uav].distance_rel2main)
+                uav_distances.append(self.uavs_data_list[n_uav].distance_rel2main)
             else:
                 uav_distances.append(0)
 
         self.uav_near_neighbors_sorted_distances = sorted(uav_distances)[1:self.N_uav]
         self.uav_near_neighbors_sorted = list(np.argsort(uav_distances))[1:self.N_uav]
 
-        obs_distances = self.uavs_list[self.ID-1].obs_distances_rel2main
+        obs_distances = self.uavs_data_list[self.ID-1].obs_distances_rel2main
         self.obs_near_neighbors_sorted_distances = sorted(obs_distances)
         self.obs_near_neighbors_sorted = list(np.argsort(obs_distances))[:self.N_obs]
 

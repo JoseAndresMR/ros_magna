@@ -49,10 +49,10 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     True,                     # Flag to decide if smach introspector is actived
+        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
         }
 
-        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
 
         # computer' path definition for each user
         user = "JA"

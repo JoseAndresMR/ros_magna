@@ -131,12 +131,6 @@ class GroundStation(object):
 
     # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
-        # Redefinition of number of obstacles. Obstacles in world types 1,2/3,4 are defined differently.
-        # This code fixes that divergence for later storing
-        if self.world_name == 2:
-            N_obs_mixed = int('{0}{1}{2}'.format(self.obs_tube[0],self.obs_tube[1],self.obs_tube[2]))
-        else:
-            N_obs_mixed = self.N_obs
 
         # Definition of root path
         first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
@@ -315,7 +309,6 @@ class GroundStation(object):
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']
-        self.obs_tube = self.world_definition['obs_tube']
         self.n_dataset = self.world_definition['n_dataset']
         self.uav_models = self.world_definition['uav_models']
         self.path_length = self.world_definition['path_length']

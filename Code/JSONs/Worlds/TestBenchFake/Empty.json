@@ -1,0 +1,61 @@
+{
+    "scenario": {
+        "volumes": [
+            {
+                "name": "World_limits",
+                "prefix": "WL",
+                "origin": [[1.75,2.75,1.15],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "World_limits",
+                        "prefix": "WL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "dimensions": [3.0,3.0,2.3],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    }
+                ]
+            },
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[1.75,2.75,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Control_zone",
+                        "prefix": "CZ",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[1.25,-2.0,1.0],[0,0,0]],
+                        "dimensions": [1.0,1.0,2.0],
+                        "color": [85,255,255],
+                        "alpha": 0.3
+                    },
+                    {
+                        "name": "UAVs_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [1.5,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "divisions": [
+                            {
+                                "type" : "matrix",
+                                "use" : "poses",
+                                "dimensions": [3,1,1],
+                                "density": 1,
+                                "orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -229,7 +229,6 @@ class UAV_Data(object):
         self.n_simulation = self.world_definition['n_simulation']
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']
-        self.obs_tube = self.world_definition['obs_tube']
         self.uav_models = self.world_definition['uav_models']
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']

@@ -34,14 +34,13 @@ class Master(object):
         self.world_definition = {
         'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
         'submission'         :                   "safety",
-        'world'              :                   "safety",                    # Type of the world or sceneario created
-        'subworld'           :                   "safety",
+        'world'              :                   "TestBenchFake",                    # Type of the world or sceneario created
+        'subworld'           :                   "Empty",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
-        'uav_models'         :   ["typhoon_h480", "typhoon_h480", "typhoon_h480"],   # Type of airborne of each vehicle
+        'uav_models'         :            ["iris", "iris", "iris"],           # Type of airborne of each vehicle
         'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
-        'obs_tube'           :                    [6,3,3],                    # Shape of the obstacle tube for some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset

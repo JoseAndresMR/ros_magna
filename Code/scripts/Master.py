@@ -18,6 +18,7 @@ import shutil
 import csv
 import subprocess
 import signal
+import xml.etree.ElementTree
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from std_srvs.srv import *
@@ -32,10 +33,10 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "safety",
-        'world'              :                   "TestBenchFake",                    # Type of the world or sceneario created
+        'world'              :                   "LPS",                    # Type of the world or sceneario created
         'subworld'           :                   "Empty",
+        'mission'            :                   "TestCrazyflieLPS",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "2UAVs_trivial",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
@@ -48,10 +49,11 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                     # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                     # Flag to decide if smach introspector is actived
         }
 
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        self.rviz_gui = True
 
         # computer' path definition for each user
         user = "JA"
@@ -124,9 +126,19 @@ class Master(object):
     def GSSpawner(self):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
-        self.GS_launch = roslaunch.parent.ROSLaunchParent(uuid1,[\
-            "/home/{0}/catkin_ws/src/pydag/Code/launch/GS_spawner_JA.launch".format(self.world_definition["home_path"])])
 
+        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/GS_spawner_JA.launch".format(self.world_definition['home_path'])
+
+        et = xml.etree.ElementTree.parse(launch_path)
+        root = et.getroot()
+        if self.rviz_gui == True:
+            root[1].attrib["if"] = "true"
+            root[1][0].attrib["args"] = "/home/{0}/catkin_ws/src/pydag/Code/Rviz_configs/{1}.rviz".format(self.world_definition['home_path'],self.world_definition["world"])
+        else:
+            root[1].attrib["if"] = "false"
+        et.write(launch_path)
+
+        self.GS_launch = roslaunch.parent.ROSLaunchParent(uuid1,[launch_path])
         self.GS_launch.start()
 
     # Control if defined new dataset already exists

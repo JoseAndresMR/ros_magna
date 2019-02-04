@@ -55,7 +55,7 @@ class UAV_Data(object):
             marker_def["parent_name"] = "map"
             marker_def["name"] = "uav_{0}".format(self.ID)
             marker_def["id"] = 1
-            marker_def["scale"] = [1,1,0.7]
+            marker_def["scale"] = [self.uav_config.security_radius,self.uav_config.security_radius,self.uav_config.security_radius*0.7]
             if self.ID == 1:
                 marker_def["color"] = [255,0,0,0.5]
             elif self.ID == 2:

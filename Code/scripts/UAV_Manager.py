@@ -26,7 +26,7 @@ from pydag.srv import *
 from UAV_Data import UAV_Data
 from UAV_Config import UAV_Config
 from UAV_Manager_SM import UAV_Manager_SM
-from uav_path_manager.srv import GeneratePath,GetGeneratedPath
+from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
 
 from FwQgc import FwQgc
 class UAV_Manager(object):
@@ -67,7 +67,7 @@ class UAV_Manager(object):
         self.uavs_data_list = []
         self.uavs_config_list = []
         for n_uav in range(1,self.N_uav+1):
-            self.uavs_config_list.append(UAV_Config(n_uav,"typhoon_h480","px4",True))
+            self.uavs_config_list.append(UAV_Config(n_uav,self.uav_models[n_uav-1],"px4",True))
             self.uavs_data_list.append(UAV_Data(n_uav,self.ID,self.uavs_config_list[n_uav-1]))
         
         # Publishers initialisation
@@ -267,11 +267,17 @@ class UAV_Manager(object):
             print "Service call failed: %s"%e
             print "error in simulation_termination"
 
-    def sendSmoothPath(self,smooth_path):
+    def sendSmoothPath(self,smooth_path,cruising_speed,look_ahead):
+
+        msg = GetGeneratedPathRequest()
+        msg.generated_path = smooth_path
+        msg.cruising_speed.data = cruising_speed
+        msg.look_ahead.data = look_ahead
+
         rospy.wait_for_service('/uav_path_manager/generator/generate_path')
         try:
             instruction_command = rospy.ServiceProxy('/uav_path_manager/follower/uav_{0}/generated_path'.format(self.ID), GetGeneratedPath)
-            response = instruction_command(smooth_path)
+            response = instruction_command(msg)
 
             # if response != True:
             #     print("Unable to contact to uav_path_manager.")
@@ -315,7 +321,7 @@ class UAV_Manager(object):
         if self.smooth_path_mode != 0:
             self.goal_path_smooth = self.SmoothPath(self.goal_path)
             self.path_pub_smooth.publish(self.goal_path_smooth)
-            smooth_server_response = self.sendSmoothPath(self.goal_path_smooth)
+            smooth_server_response = self.sendSmoothPath(self.goal_path_smooth,1.0,1.2)
 
             # if smooth_server_response != True:
             #     return
@@ -341,7 +347,6 @@ class UAV_Manager(object):
                 if self.preemption_launched == False and self.critical_event != 'nothing':
                     self.preemption_launched = True
                     return self.critical_event
-
 
                 self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
                 self.Evaluator()          # Evaluate the situation
@@ -529,8 +534,8 @@ class UAV_Manager(object):
     def Evaluator(self):
 
         # Thresholds of separation acceptance
-        min_distance_uav = 1
-        min_distance_obs = 1
+        min_distance_uav = self.uavs_config_list[self.ID-1].security_radius*3
+        min_distance_obs = self.uavs_config_list[self.ID-1].security_radius*3
 
         # Initialize collision as no occurred
         collision_uav = False
@@ -689,10 +694,10 @@ class UAV_Manager(object):
         print "saving uav",self.ID,"mission data"
 
         first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
-                                 .format(self.home_path,self.world_name,self.wubworld_name,
+                                 .format(self.home_path,self.world_name,self.subworld_name,
                                  self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 
-        third_folder_path = first_folder_path + "/dataset_{4}/simulation_{5}".format(self.n_dataset,self.n_simulation)
+        third_folder_path = first_folder_path + "/dataset_{0}/simulation_{1}".format(self.n_dataset,self.n_simulation)
 
         csv_file_path = third_folder_path + '/uav_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(csv_file_path, sep=',', mode='a') #,low_memory=False,     # Dump the global frame into

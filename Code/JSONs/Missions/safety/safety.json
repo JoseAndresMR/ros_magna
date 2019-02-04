@@ -80,7 +80,7 @@
                                     "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
                                 }
                             ],
-                            "smooth_path_mode": 1
+                            "smooth_path_mode": 2
                         },
                         "outcomes":{
                             "succeeded": "1_inspection",
@@ -103,7 +103,7 @@
                                     "definition":["Panels_Zone_1","Inspection","path"]
                                 }
                             ],
-                            "smooth_path_mode": 1
+                            "smooth_path_mode": 2
                         },
                         "outcomes":{
                             "succeeded": "1_to_home",
@@ -129,7 +129,7 @@
                                     "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
                                 }
                             ],
-                            "smooth_path_mode": 1
+                            "smooth_path_mode": 2
                         },
                         "outcomes":{
                             "succeeded": "completed",
@@ -160,7 +160,7 @@
                                             "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
                                         }
                                     ],
-                                    "smooth_path_mode": 1
+                                    "smooth_path_mode": 2
                                 },
                                 "outcomes":{
                                     "succeeded": "1_land",
@@ -256,7 +256,7 @@
                             "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
                         }
                     ],
-                    "smooth_path_mode": 1,
+                    "smooth_path_mode": 2,
                     "outcomes":{
                         "succeeded": "completed",
                         "collision": "collision",

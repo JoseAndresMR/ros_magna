@@ -13,6 +13,11 @@ class UAV_Config(object):
         self.autopilot = autopilot
         self.ual_use = ual_use
 
+        config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
+                            .format(self.home_path,self.model)
+        with open(mission_def_path) as f:
+            self.mission_def = json.load(f)
+
         self.top_sub_addr = {}
         self.top_pub_addr = {}
         self.ser_ser_addr = {}
@@ -29,6 +34,12 @@ class UAV_Config(object):
 
         if self.ual_use == True:
             self.ual()
+
+        if self.model == "iris":
+            self.model_iris()
+            
+        elif self.model == "crazyflie":
+            self.model_crazyflie()
 
     
     def autupilot_px4(self):
@@ -53,3 +64,17 @@ class UAV_Config(object):
         self.ser_cli_addr['take_off'] = '/uav_{}/ual/take_off'.format(self.ID)
         self.ser_cli_addr['land'] = '/uav_{}/ual/land'.format(self.ID)
         self.ser_cli_addr['set_home'] = '/uav_{}/ual/set_home'.format(self.ID)
+
+
+    def model_iris(self):
+        self.security_radius = 0.3
+
+    def model_crazyflie(self):
+        self.security_radius = 0.1
+
+
+    # Function to get Global ROS parameters
+    def GettingWorldDefinition(self):
+        self.world_definition = rospy.get_param('world_definition')
+        self.home_path = self.world_definition['home_path']
+

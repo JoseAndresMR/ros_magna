@@ -24,6 +24,8 @@ from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 from gazebo_msgs.srv import DeleteModel
 from tf2_msgs.msg import *
+from nav_msgs.msg import Path
+from visualization_msgs.msg import Marker
 
 import utils
 from Worlds import *
@@ -72,10 +74,11 @@ class GroundStation(object):
                                 "long_wait":["wait","wait","wait"],
                                 "inspector":["wait","wait","wait"],
                                 "smooth_path":["path","path","wait"],
-                                "safety":["path","path","wait"]}
+                                "safety":["path","path","wait"],
+                                "2UAVs_trivial":["path","path","wait"]}
 
         # Actualize own world definition with role list
-        self.world_definition["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
+        self.world_definition["roles_list"] = mission_to_role_dicc[self.submission_name][:self.N_uav]
 
         # Add tag to role if depth camera is used
         if self.depth_camera_use == True:
@@ -110,19 +113,31 @@ class GroundStation(object):
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
 
-        root[7].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[7][0].attrib["value"] = str(ID+1)
-        root[8].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[8][0].attrib["value"] = str(ID+1)
-        root[9].attrib["name"] = 'uav_{}'.format(ID+1)
-        root[9].attrib["args"] = '-ID={}'.format(ID+1)
-        root[10].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
-        root[10][0].attrib["value"] = str(ID+1)
+        if self.sitl == True:
+            root[2].attrib["default"] = "true"
+        else:
+            root[2].attrib["default"] = "false"
+
+        if self.ual_use == True:
+            root[7].attrib["default"] = "true"
+        else:
+            root[7].attrib["default"] = "false"
+
+        root[8].attrib["default"] = "px4"
 
         if ID+1 == 1:
-            root[11].attrib["if"] = "true"
+            root[9].attrib["default"] = "true"
         else:
-            root[11].attrib["if"] = "false"
+            root[9].attrib["default"] = "false"
+
+        root[10].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[10][0].attrib["value"] = str(ID+1)
+        root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[11][0].attrib["value"] = str(ID+1)
+        root[12].attrib["name"] = 'uav_{}'.format(ID+1)
+        root[12].attrib["args"] = '-ID={}'.format(ID+1)
+        root[13].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
+        root[13][0].attrib["value"] = str(ID+1)
 
         et.write(launch_path)
 
@@ -152,7 +167,7 @@ class GroundStation(object):
             os.makedirs(self.third_folder_path)
 
         # Create path for rosbag and create object to manage it
-        bag_folder_path = self.third_folder_path + "/tf_bag.bag"
+        bag_folder_path = self.third_folder_path + "/everything.bag"
         
         self.bag = rosbag.Bag(bag_folder_path, 'w')
 
@@ -257,9 +272,16 @@ class GroundStation(object):
         # Start service for UAVs to actualize its state
         rospy.Service('/pydag/GS/state_actualization', StateActualization, self.handle_uav_status)
 
-        # Start listening to TFs topics
+        # Start listening to topics stored on rosbag
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
+
+        for n_uav in range(self.N_uav):
+            rospy.Subscriber('/pydag/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/path'.format(n_uav+1))
+            rospy.Subscriber('/pydag/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path'.format(n_uav+1))
+            rospy.Subscriber('/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1))
+
+        rospy.Subscriber('/visualization_marker', Marker, self.visualization_marker_callback)
 
     # Function to update and local parameters of UAVs status
     def handle_uav_status(self,data):
@@ -298,6 +320,19 @@ class GroundStation(object):
             self.bag.write('/tf', data)
         except:
             print "The bag file does not exist"
+
+    def path_callback(self,data,topic):
+        try:
+            self.bag.write(topic, data)
+        except:
+            print "The bag file does not exist"
+
+    def visualization_marker_callback(self,data):
+        try:
+            self.bag.write('/visualization_marker', data)
+        except:
+            print "The bag file does not exist"
+            
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):

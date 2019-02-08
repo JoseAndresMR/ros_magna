@@ -1,0 +1,5 @@
+{
+    "autopilot" : "px4",
+    "ual_use": 1,
+    "security_radius": 0.3
+}

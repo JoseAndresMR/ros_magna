@@ -1,0 +1,34 @@
+{
+    "UAVs_Config": [
+        {
+            "ID":1,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": true
+        }
+
+    ],
+    "State_Machine": [
+        {
+            "type": "CBState",
+            "state_type":"new_world",
+            "name": "new world",
+            "outcomes": {
+                "completed": "initial_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "initial_wait",
+            "parameters": {
+                "exit_type": "button"
+            },
+            "outcomes": {
+                "completed": "completed"
+            }
+        }
+    ]
+}

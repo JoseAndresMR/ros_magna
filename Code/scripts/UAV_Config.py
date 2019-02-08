@@ -3,20 +3,35 @@
 # import pyModeS as pms
 import numpy as np
 import rospy, time, tf, tf2_ros
+import json
 from copy import deepcopy
 
 class UAV_Config(object):
-    def __init__(self,ID,model,autopilot,ual_use):
+    def __init__(self,ID,model,ual_use,sitl = True):
 
         self.ID = ID
         self.model = model
-        self.autopilot = autopilot
-        self.ual_use = ual_use
+
+        self.GettingWorldDefinition()
+
+        mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
+                            .format(self.home_path,self.mission_name,self.submission_name)
+        with open(mission_def_path) as f:
+            mission_def = json.load(f)
 
         config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
                             .format(self.home_path,self.model)
-        with open(mission_def_path) as f:
-            self.mission_def = json.load(f)
+        with open(config_def_path) as f:
+            self.config_def = json.load(f)
+
+        self.config_def.update(mission_def["UAVs_Config"][self.ID-1])
+
+        self.autopilot = self.config_def["autopilot"]
+        self.ual_use = bool(self.config_def["ual_use"])
+        self.security_radius = self.config_def["security_radius"]
+        self.model = self.config_def["model"]
+        self.mode = self.config_def["mode"]
+        self.marker_color = self.config_def["marker_color"]
 
         self.top_sub_addr = {}
         self.top_pub_addr = {}
@@ -67,14 +82,20 @@ class UAV_Config(object):
 
 
     def model_iris(self):
-        self.security_radius = 0.3
+        # self.security_radius = 0.3
+        pass
 
     def model_crazyflie(self):
-        self.security_radius = 0.1
+        # self.security_radius = 0.1
+        pass
 
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
         self.home_path = self.world_definition['home_path']
+        self.mission_name = self.world_definition['mission']
+        self.submission_name = self.world_definition['submission']
+        self.world_name = self.world_definition['world']
+        self.subworld_name = self.world_definition['subworld']
 

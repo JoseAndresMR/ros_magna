@@ -2,27 +2,9 @@
     "scenario": {
         "volumes": [
             {
-                "name": "World_limits",
-                "prefix": "WL",
-                "origin": [[1.75,2.75,1.15],[0.0,0.0,0.0]],
-                "permits": "geofence",
-                "geometries": [
-                    {
-                        "name": "World_limits",
-                        "prefix": "WL",
-                        "shape": "cube",
-                        "id": 0,
-                        "origin": [[0.0,0.0,0.0],[0,0,0]],
-                        "dimensions": [3.0,3.0,2.3],
-                        "color": [0,0,0],
-                        "alpha": 0.1
-                    }
-                ]
-            },
-            {
                 "name": "Ground_Station",
                 "prefix": "GS",
-                "origin": [[1.75,2.75,0.0],[0.0,0.0,0.0]],
+                "origin": [[10.0,0.0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -30,8 +12,8 @@
                         "prefix": "CZ",
                         "shape": "cube",
                         "id": 0,
-                        "origin": [[1.25,-2.0,1.0],[0,0,0]],
-                        "dimensions": [1.0,1.0,2.0],
+                        "origin": [[0.0,-5.0,1.5],[0,0,0]],
+                        "dimensions": [5.0,5.0,3.0],
                         "color": [85,255,255],
                         "alpha": 0.3
                     },
@@ -40,11 +22,11 @@
                         "prefix": "takeoff",
                         "shape": "cube",
                         "id": 0,
-                        "origin": [[0.0,0.0,0.05],[0,0,0]],
-                        "dimensions": [8.0,0.1,0.1],
+                        "origin": [[0.0,5.0,0.5],[0,0,0]],
+                        "dimensions": [8.0,1.0,1.0],
                         "color": [0,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -55,15 +37,15 @@
                         ]
                     },
                     {
-                        "name": "above_take_off",
-                        "prefix": "aTO",
+                        "name": "security_height_1",
+                        "prefix": "secheight1",
                         "shape": "cube",
                         "id": 0,
-                        "origin": [[0.0,0.0,3.0],[0,0,0]],
-                        "dimensions": [8.0,0.1,0.1],
-                        "color": [0,0,0],
+                        "origin": [[0.0,5.0,14.0],[0,0,0]],
+                        "dimensions": [8.0,1.0,1.0],
+                        "color": [255,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",

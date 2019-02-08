@@ -10,12 +10,13 @@
 
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
+    <arg default="true" name="uav_manager_on_gs" />
     <arg default="true" name="smooth_path" />
 
     <group if="$(eval mode == 'sitl')">
         <group if="$(eval autopilot == 'px4')">
-            <include file="$(find pydag)/launch/PX4_spawn_robot_JA.launch" ns="$(arg ns_prefix)2">
-                <arg name="id" value="2" />
+            <include file="$(find pydag)/launch/PX4_spawn_robot_JA.launch" ns="$(arg ns_prefix)1">
+                <arg name="id" value="1" />
                 <arg name="material" value="Orange" />
                 <arg name="mode" value="$(arg mode)" />
                 <arg name="x" value="0" />
@@ -26,38 +27,36 @@
         </group>
 
         <group if="$(eval autopilot == 'dji')">
-            <include file="$(find pydag)/launch/DJI_spawn_robot_JA.launch" ns="$(arg ns_prefix)2">
-                <!-- <arg name="id" value="2" />
-                <arg name="material" value="Orange" />
-                <arg name="mode" value="$(arg mode)" />
-                <arg name="x" value="0" />
-                <arg name="y" value="0" />
-                <arg name="z" value="0" />
-                <arg name="yaw" value="0" /> -->
-            </include>
+            <include file="$(find pydag)/launch/DJI_spawn_robot_JA.launch" ns="$(arg ns_prefix)1" />
+        </group>
+
+        <group if="$(eval autopilot == 'crazyflie')">
+            <include file="$(find lps-ros)/launch/loco_cpp.launch" ns="" />
         </group>
     </group>
 
-    <group if="$(eval ual_use == 'true')">
-        <node name="ual" ns="$(arg ns_prefix)2" output="screen" pkg="uav_abstraction_layer" type="server">
-            <param name="uav_id" value="2" />
+    <group if="$(arg ual_use)">
+        <node name="ual" ns="$(arg ns_prefix)1" output="screen" pkg="uav_abstraction_layer" type="server">
+            <param name="uav_id" value="1" />
             <param name="pose_frame_id" value="$(arg pose_frame_id)" />
             <param name="ual_server" value="$(arg ual_server)" />
             <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
             <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
-            <param name="home_pose_parent_frame" value="map" /> 
+            <param name="home_pose_parent_frame" value="map" />
+            <param name="backend" value="mavros" />
         </node>
     </group>
-    
-    
-    <node args="-ID=2" name="uav_2" output="screen" pkg="pydag" type="UAV_Manager.py" />
 
-    <node name="path_follower_node_2" pkg="uav_path_manager" type="path_follower_node">
-        <param name="uav_id" value="2" />
-    </node>
+    <group if="$(arg uav_manager_on_gs)">
+        <node args="-ID=1" name="uav_1" output="screen" pkg="pydag" type="UAV_Manager.py" />
 
-    <group if="$(eval smooth_path == 'true')">
-        <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
+        <node name="path_follower_node_1" pkg="uav_path_manager" type="path_follower_node">
+            <param name="uav_id" value="1" />
+        </node>
+
+        <group if="$(arg smooth_path)">
+            <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
+        </group>
     </group>
 
 </launch>

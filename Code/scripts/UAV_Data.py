@@ -25,7 +25,7 @@ class UAV_Data(object):
         self.ICAO = ICAO
         self.with_ref = with_ref
         self.pos_ref = pos_ref
-#        self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
+        # self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
         self.GS_notification = 'nothing'
         self.Rviz_flag = True
@@ -56,12 +56,7 @@ class UAV_Data(object):
             marker_def["name"] = "uav_{0}".format(self.ID)
             marker_def["id"] = 1
             marker_def["scale"] = [self.uav_config.security_radius,self.uav_config.security_radius,self.uav_config.security_radius*0.7]
-            if self.ID == 1:
-                marker_def["color"] = [255,0,0,0.5]
-            elif self.ID == 2:
-                marker_def["color"] = [255,255,0,0.5]
-            elif self.ID == 3:
-                marker_def["color"] = [0,255,0,0.5]
+            marker_def["color"] = self.uav_config.marker_color
 
             self.marker = RvizMarker(marker_def)
 

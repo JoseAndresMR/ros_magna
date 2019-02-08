@@ -44,7 +44,7 @@
                         "dimensions": [8.0,0.1,0.1],
                         "color": [0,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -63,7 +63,7 @@
                         "dimensions": [8.0,0.1,0.1],
                         "color": [0,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",

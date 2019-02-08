@@ -8,7 +8,6 @@ import std_msgs.msg
 import time
 import math
 import numpy as np
-import Brain
 import pandas as pd
 import argparse
 import tf, tf2_ros
@@ -67,7 +66,7 @@ class UAV_Manager(object):
         self.uavs_data_list = []
         self.uavs_config_list = []
         for n_uav in range(1,self.N_uav+1):
-            self.uavs_config_list.append(UAV_Config(n_uav,self.uav_models[n_uav-1],"px4",True))
+            self.uavs_config_list.append(UAV_Config(n_uav,self.uav_models[n_uav-1],True))
             self.uavs_data_list.append(UAV_Data(n_uav,self.ID,self.uavs_config_list[n_uav-1]))
         
         # Publishers initialisation
@@ -97,7 +96,7 @@ class UAV_Manager(object):
         if self.uav_models[self.ID-1] != "plane":
             self.GroundStationListener()        # Start listening
 
-        print "ground station",ID,"ready and listening"
+        print "UAV",ID,"ready and listening"
 
         uav_sm = UAV_Manager_SM(self)     # Create Ground Station State Machine
         outcome = uav_sm.uav_sm.execute()     # Execute State Machine
@@ -241,7 +240,7 @@ class UAV_Manager(object):
 
         # actual_position = self.uavs_data_list[self.ID-1].position.pose.position
         takeoff_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
-        land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,0))
+        land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,1))
         self.fw_qgc.MoveCommand("land",[land_pose],0,{"loiter_to_alt":{"type":"by_angle","height": 10.0,"distance":200}})
 
     # Function to deal with UAL server Set Home

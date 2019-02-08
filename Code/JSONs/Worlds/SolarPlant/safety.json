@@ -26,7 +26,7 @@
                         "dimensions": [8.0,1.0,1.0],
                         "color": [0,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -45,7 +45,7 @@
                         "dimensions": [8.0,1.0,1.0],
                         "color": [255,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -64,7 +64,7 @@
                         "dimensions": [8.0,1.0,1.0],
                         "color": [255,255,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -91,7 +91,7 @@
                         "dimensions": [23.0,45.0,2.0],
                         "color": [0,0,255],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "obstacles",
@@ -112,7 +112,7 @@
                         "dimensions": [23.0,45.0,1.0],
                         "color": [0,255,255],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "path",
                                 "dimensions": [2,2,1],
@@ -129,7 +129,7 @@
                         "dimensions": [23.0,45.0,1.0],
                         "color": [255,0,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",
@@ -156,7 +156,7 @@
                         "dimensions": [23.0,45.0,2.0],
                         "color": [0,0,255],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "obstacles",
@@ -177,7 +177,7 @@
                         "dimensions": [23.0,45.0,1.0],
                         "color": [0,255,255],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "path",
                                 "dimensions": [2,2,1],
@@ -194,7 +194,7 @@
                         "dimensions": [23.0,45.0,1.0],
                         "color": [255,255,0],
                         "alpha": 0.3,
-                        "divisions": [
+                        "poses_sets": [
                             {
                                 "type" : "matrix",
                                 "use" : "poses",

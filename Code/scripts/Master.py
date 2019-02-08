@@ -33,19 +33,18 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'world'              :                   "LPS",                    # Type of the world or sceneario created
-        'subworld'           :                   "Empty",
+        'world'              :                   "SolarPlant",                    # Type of the world or sceneario created
+        'subworld'           :                   "PrismaticPanelZones",
         'mission'            :                   "TestCrazyflieLPS",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "2UAVs_trivial",
+        'submission'         :                   "world_in_construction",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
+        'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
         'uav_models'         :            ["iris", "iris", "iris"],           # Type of airborne of each vehicle
         'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
-        'px4_use'            :                    "complete",                 # Flag to decide if PX4 is used
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used

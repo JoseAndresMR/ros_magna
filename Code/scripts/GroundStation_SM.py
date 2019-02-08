@@ -22,13 +22,8 @@ class GroundStation_SM(object):
             self.DictionarizeSASCallbacks()
             self.DictionarizeCCRCallbacks()
 
-            mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
-                            .format(heritage.home_path,heritage.mission_name,heritage.submission_name)
-            with open(mission_def_path) as f:
-                self.mission_def = json.load(f)
-
             # For every entity in sm defining steps list, call function to add the step to sm
-            for mission_part_def in self.mission_def:
+            for mission_part_def in heritage.mission_def["State_Machine"]:
                 self.add_sm_from_CSV(self.gs_sm,mission_part_def,{},heritage)
 
             # If flag to view the sm is arised, start the introspector
@@ -239,7 +234,7 @@ class GroundStation_SM(object):
                 # print(heritage.states_list[i])
                 # print("UAV {} with state".format(i+1), heritage.states_list[i])
 
-            print("uav {} is ready!".format(i))
+            print("Ground Station: uav {} is ready!".format(i))
             # time.sleep(5)
         # time.sleep(20 * heritage.N_uav)
 

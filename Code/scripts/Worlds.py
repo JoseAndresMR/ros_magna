@@ -23,7 +23,8 @@ from sensor_msgs.msg import *
 from xml.dom import minidom
 from gazebo_msgs.srv import DeleteModel,SpawnModel
 from visualization_msgs.msg import Marker
-from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray, Torus, TorusArray
+from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray, Torus, TorusArray,PolygonArray
+from sympy import Point3D, Line3D, Segment3D
 import xml.etree.ElementTree
 
 
@@ -88,6 +89,10 @@ class Worlds(object):
 
         elif params[2] == "path":
             return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromPath()
+
+        elif params[2] == "coordinates":
+            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromCoordinates(params[3])
+
     
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
@@ -106,188 +111,12 @@ class Worlds(object):
         self.smach_view = self.world_definition['smach_view']
         self.depth_camera_use = self.world_definition['depth_camera_use']
 
-# Class to deal with one single obstacle
-class Obstacle(object):
-    def __init__(self,ID,shape,dimensions,pose,parent_name,parent_prefix,transforms_list):
-
-        # Save params from args
-        self.ID = ID
-        self.name = parent_prefix + '_' + 'obs_{0}'.format(self.ID)
-        self.parent_name = parent_name
-        self.pose = pose
-        self.home_path = rospy.get_param('world_definition/home_path')
-
-        basic_path = "/home/{0}/catkin_ws/src/pydag/Code/gz_models/".format(self.home_path)
-        product_xml_path_dict = {"cube":basic_path + "{0}.sdf".format("cube"),\
-                            "cylinder":basic_path + "{0}.sdf".format("cylinder"),\
-                            "sphere":basic_path + "{0}.sdf".format("sphere"),\
-                            "brick":basic_path + "{0}.sdf".format("brick"),\
-                            }
-
-        et = xml.etree.ElementTree.parse(product_xml_path_dict[shape])
-        root = et.getroot()
-
-        if shape == "cube":
-            root[0][1][0][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
-            root[0][1][1][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
-
-        et.write(product_xml_path_dict[shape])
-
-        # Definition of the dictionary with the paths where every type of obstacle is stores. In the future should be packed
-        self.product_xml = open(product_xml_path_dict[shape],"r").read()
-
-        self.marker_def = {"shape" : shape}
-        self.marker_def["origin"] = [[0,0,0],[0,0,0]]
-        self.marker_def["parent_name"] = str(self.name)
-        self.marker_def["name"] = self.name
-        self.marker_def["id"] = 1
-        self.marker_def["scale"] = dimensions
-
-        color = [0,0,0]
-        color.append(0)
-        self.marker_def["color"] = [0,0,0,1]
-           
-        # Get ROS params
-        self.world_definition = rospy.get_param('world_definition')
-        self.N_obs = self.world_definition['N_obs']
-
-        # Start service proxis to spawn and delete obstacles
-        self.spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-        self.delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
-
-        self.transforms_list = transforms_list
-
-        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
-        tfbroadcaster.Broadcast()
-
-        self.transforms_list = tfbroadcaster.getTransforms()
-        listener = tf.TransformListener()
-        
-        trans,rot = listener.lookupTransform('map',self.name, rospy.Time.now())
-
-        self.global_pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
-
-        self.Spawner()      # Spawn obstacle with defined data
-
-        self.MakeMarker()
 
 
-    # Function to query the service to spawn an obstacle
-    def Spawner(self):
-        try:
-            rospy.wait_for_service('gazebo/spawn_sdf_model')
-            response = self.spawn_model(self.name, self.product_xml, "", self.global_pose, "world")
-            time.sleep(0.01)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in spawn_sdf_model"
-
-    # Function to query the service to erase an obstacle
-    def Erase(self):
-        rospy.wait_for_service('gazebo/delete_model')
-        try:
-            delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
-            item_name = self.name
-            response = self.delete_model(item_name)
-            time.sleep(0.01)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in delete_model obstacle"
-
-    def getTransforms(self):
-        return self.transforms_list
-
-    def getGlobalPose(self):
-        return self.global_pose
-
-    def MakeMarker(self):
-
-        self.marker = RvizMarker(self.marker_def)
-
-class FreeSpacePose(object):
-    def __init__(self,ID,pose,parent_name,parent_prefix,transforms_list):
-
-        # Save params from args
-        self.ID = ID
-        self.name = parent_prefix + '_' + 'pos_{0}'.format(self.ID)
-        self.parent_name = parent_name
-        self.pose = pose
-
-        self.transforms_list = transforms_list
-
-        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
-        tfbroadcaster.Broadcast()
-
-        self.transforms_list = tfbroadcaster.getTransforms()
-        listener = tf.TransformListener()
-        
-        trans,rot = listener.lookupTransform('map',self.name, rospy.Time.now())
-
-        self.global_pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
 
 
-    def getTransforms(self):
-        return self.transforms_list
-
-    def getGlobalPose(self):
-        return self.global_pose
 
 
-class RvizMarker(object):
-    def __init__(self,marker_def):
-        self.marker_def = marker_def
-
-        self.world_definition = rospy.get_param('world_definition')
-
-        self.marker_pub = rospy.Publisher('/visualization_marker', Marker, queue_size = 1)
-
-        self.Spawner()
-
-    def Spawner(self):
-
-        marker = Marker()
-        marker.header.stamp = rospy.Time.now()
-        marker.header.frame_id = self.marker_def["parent_name"]
-        marker.ns = str(self.marker_def["name"])
-        marker.id = self.marker_def["id"]
-
-        if self.marker_def["shape"] == "arrow":
-            marker.type = 0
-        elif self.marker_def["shape"] == "cube":
-            marker.type = 1
-        elif self.marker_def["shape"] == "sphere":
-            marker.type = 2
-        elif self.marker_def["shape"] == "cylinder":
-            marker.type = 3
-
-        marker.action = 0
-        euler = self.marker_def["origin"][1]
-        quaternion = tf.transformations.quaternion_from_euler(euler[0],euler[1],euler[2])
-        marker.pose = Pose(Point(self.marker_def["origin"][0][0],self.marker_def["origin"][0][1],self.marker_def["origin"][0][2]),
-                        Quaternion(quaternion[0],quaternion[1],quaternion[2],quaternion[3]))
-        marker.scale = Point(self.marker_def["scale"][0],self.marker_def["scale"][1],self.marker_def["scale"][2])
-        marker.color = ColorRGBA(self.marker_def["color"][0],self.marker_def["color"][1],self.marker_def["color"][2],self.marker_def["color"][3])
-        # marker.lifetime = 0# rospy.Duration(0)
-        
-        self.marker = marker
-        t = 0
-        while not rospy.is_shutdown() and t < 10:
-            self.marker_pub.publish(self.marker)
-            t = t+1
-            time.sleep(0.1)
-
-
-    def Erase(self):
-        self.marker.action = 2
-
-        self.marker_pub.publish(self.marker)
-
-    def Actualize(self,posestamped):
-        self.marker.header.stamp = rospy.Time.now()
-        self.marker.pose = posestamped.pose
-        self.marker_pub.publish(self.marker)
 
 class Volume(object):
     def __init__(self,volume_def,transforms_list):
@@ -299,13 +128,14 @@ class Volume(object):
 
         self.transforms_list = transforms_list
         self.obs_pose_list = []
+        self.fsp_list = []
 
         tfbroadcaster = TfBroadcaster(self.name,"map",self.origin,self.transforms_list)
         tfbroadcaster.Broadcast()
         self.transforms_list = tfbroadcaster.getTransforms()
 
-
-        self.geometry_classes = {"cube" : Cube, "sphere" : Sphere, "cylinder" : Cylinder}
+        self.geometry_classes = {"cube" : Cube, "sphere" : Sphere, "cylinder" : Cylinder,
+                                 "prism": Prism}
 
         self.geometries = {}
 
@@ -316,6 +146,11 @@ class Volume(object):
 
             if self.geometries[geometry_def["name"]].obs_pose_list != []:
                 [self.obs_pose_list.append(obs) for obs in self.geometries[geometry_def["name"]].obs_pose_list]
+
+    def getFPGlobalPosefromCoordinates(self,coordinates):
+
+        return FreeSpacePose(1,self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
+
                 
     def getTransforms(self):
 
@@ -323,7 +158,29 @@ class Volume(object):
 
     def getGeometry(self,geometry_name):
 
-        return self.geometries[geometry_name]
+        if geometry_name != "volume":
+            return self.geometries[geometry_name]
+        else:
+            return self
+
+    def PoseFromArray(self,Array):
+        quat = tf.transformations.quaternion_from_euler(Array[1][0],Array[1][1],Array[1][2])
+
+        return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
+
+    def ArrayFromPose(self,pose):
+
+        euler = tf.transformations.euler_from_quaternion(pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orienation.w)
+
+        return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
+        
+
+
+
+
+
+
+
         
 class GenericGeometry:
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
@@ -335,6 +192,7 @@ class GenericGeometry:
         self.color = geometry_def["color"]
         self.alpha = geometry_def["alpha"]
         self.id = geometry_def["id"]
+        self.dimensions = geometry_def["dimensions"]
         self.parent_name = parent_name
 
         self.transforms_list = transforms_list
@@ -351,24 +209,39 @@ class GenericGeometry:
 
         time.sleep(1)
         
-        self.marker_def = {"shape" : self.shape}
-        self.marker_def["origin"] = self.origin
-        self.marker_def["parent_name"] = parent_name
-        self.marker_def["name"] = self.name
-        self.marker_def["id"] = self.id
 
-        color = geometry_def["color"]
+    def MakeRvizMarker(self):
+
+        self.rviz_marker_def = {"shape" : self.shape}
+        self.rviz_marker_def["origin"] = self.origin
+        self.rviz_marker_def["parent_name"] = self.parent_name
+        self.rviz_marker_def["name"] = self.name
+        self.rviz_marker_def["id"] = self.id
+        self.rviz_marker_def["scale"] = self.dimensions
+
+        color = self.color
         color.append(self.alpha)
-        self.marker_def["color"] = color
+        self.rviz_marker_def["color"] = color
 
-        
-    def MakeMarker(self):
+        self.rviz_marker = RvizMarker(self.rviz_marker_def)
 
-        self.marker = RvizMarker(self.marker_def)
+    def EraseRvizMarker(self):
 
-    def EraseMarker(self):
+        self.rviz_marker.Erase()
 
-        self.marker.Erase()
+    def MakeRvizPolygonArray(self):
+
+        self.rviz_polygon_array_def = {"parent_name" : self.parent_name}
+        self.rviz_polygon_array_def["name"] = self.name
+        self.rviz_polygon_array_def["id"] = self.id
+
+        self.rviz_polygon_array_def["polygon_array_poses"] = self.polygon_array_poses
+
+        self.rviz_polython_array = RvizPolygonArray(self.rviz_polygon_array_def)
+
+    def EraseRvizPolygonArray(self):
+
+        self.rviz_polython_array.Erase()
 
     def getTransforms(self):
 
@@ -385,7 +258,7 @@ class GenericGeometry:
     def getFPGlobalPosefromList(self):
 
         pose_def = {"use": "poses","quantity": 1}
-        self.GenerateRandomPoses(pose_def)
+        self.GeneratePosesSetRandom(pose_def)
 
         return self.poses[0].global_pose
 
@@ -396,14 +269,18 @@ class GenericGeometry:
             global_path.append(pose.global_pose)
 
         return global_path
+    
+    def getFPGlobalPosefromCoordinates(self,coordinates):
 
-    def RawDensityMatrix(self,obstacles_def):
+        return self.GenerateFreeSpacePosesFromCoordinates(coordinates).global_pose
+
+    def RawDensityMatrix(self,poses_set_def):
 
         # Initializes a tensor with random values and shaped as the obstacle tube
-        random_raw_matrix = np.random.rand(obstacles_def["dimensions"][0],obstacles_def["dimensions"][1],obstacles_def["dimensions"][2])
+        random_raw_matrix = np.random.rand(poses_set_def["dimensions"][0],poses_set_def["dimensions"][1],poses_set_def["dimensions"][2])
 
         # If the random value is lower than the density, set its obstacle tensor's position at True
-        selected_positions_matrix = random_raw_matrix<=obstacles_def["density"]
+        selected_positions_matrix = random_raw_matrix<=poses_set_def["density"]
 
         return selected_positions_matrix
 
@@ -498,33 +375,37 @@ class GenericGeometry:
 
         return fsposes_list
 
+    def GenerateFreeSpacePosesFromCoordinates(self,coordinates):
 
-    def GenerateDivisionMatrix(self,obstacles_def):
+        return FreeSpacePose(1,self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list)
 
-        selected_positions_matrix = self.RawDensityMatrix(obstacles_def)
 
-        poses_matrix = self.PosesDensityMatrix(obstacles_def,selected_positions_matrix)
+    def GeneratePosesSetMatrix(self,poses_set_def):
 
-        if obstacles_def["use"] == "obstacles":
+        selected_positions_matrix = self.RawDensityMatrix(poses_set_def)
 
-            self.obstacles = self.GenerateObstacleFromDensityMatrix(selected_positions_matrix,poses_matrix,obstacles_def["obstacles_shape"],obstacles_def["obstacles_dimensions"])
+        poses_matrix = self.PosesDensityMatrix(poses_set_def,selected_positions_matrix)
 
-        elif obstacles_def["use"] == "poses":
+        if poses_set_def["use"] == "obstacles":
+
+            self.obstacles = self.GenerateObstacleFromDensityMatrix(selected_positions_matrix,poses_matrix,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
+
+        elif poses_set_def["use"] == "poses":
 
             self.poses = self.GenerateFreeSpacePosesFromDensityMatrix(selected_positions_matrix,poses_matrix)
 
-    def GenerateRandomPoses(self,obstacles_def):
+    def GeneratePosesSetRandom(self,poses_set_def):
 
-        if "orienation" in obstacles_def.keys():
-            random_poses = self.RandomPoses(obstacles_def["quantity"],obstacles_def["orientation"])
+        if "orienation" in poses_set_def.keys():
+            random_poses = self.RandomPoses(poses_set_def["quantity"],poses_set_def["orientation"])
         else:
-            random_poses = self.RandomPoses(obstacles_def["quantity"])
+            random_poses = self.RandomPoses(poses_set_def["quantity"])
 
-        if obstacles_def["use"] == "obstacles":
+        if poses_set_def["use"] == "obstacles":
 
-            self.obstacles = self.GenerateObstacleFromPosesList(random_poses,obstacles_def["obstacles_shape"],obstacles_def["obstacles_dimensions"])
+            self.obstacles = self.GenerateObstacleFromPosesList(random_poses,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
 
-        elif obstacles_def["use"] == "poses":
+        elif poses_set_def["use"] == "poses":
 
             self.poses = self.GenerateFreeSpacePosesFromPosesList(random_poses)
 
@@ -538,67 +419,87 @@ class GenericGeometry:
 
         return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
 
-    def GenerateZigZag(self,obstacles_def):
+    def ArrayFromPose(self,pose):
 
-        matrix_definition = {"type" : "matrix", "use" : "poses",
-                            "dimensions": obstacles_def["dimensions"], "density": 1,
-                            "orientation": obstacles_def["orientation"]}
+        euler = tf.transformations.euler_from_quaternion([pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orientation.w])
 
-        self.GenerateDivisionMatrix(matrix_definition)
+        return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
+        
 
-        zigzag_path = []
 
-        for i in np.arange(matrix_definition["dimensions"][0]):
-            for j in np.arange(matrix_definition["dimensions"][1]):
-                for k in np.arange(matrix_definition["dimensions"][2]):
+    # def GeneratePosesSetZigZag(self,poses_set_def):
 
-                    if i%2 == 1:
+    #     matrix_definition = {"type" : "matrix", "use" : "poses",
+    #                         "dimensions": poses_set_def["dimensions"], "density": 1,
+    #                         "orientation": poses_set_def["orientation"]}
 
-                        J = matrix_definition["dimensions"][1]-1 - j
+    #     self.GeneratePosesSetMatrix(matrix_definition)
 
-                    else:
-                        J=j
+    #     zigzag_path = []
 
-                    zigzag_path.append(self.poses[i][J][k])
+    #     for i in np.arange(matrix_definition["dimensions"][0]):
+    #         for j in np.arange(matrix_definition["dimensions"][1]):
+    #             for k in np.arange(matrix_definition["dimensions"][2]):
 
-        self.path = zigzag_path
+    #                 if i%2 == 1:
+
+    #                     J = matrix_definition["dimensions"][1]-1 - j
+
+    #                 else:
+    #                     J=j
+
+    #                 zigzag_path.append(self.poses[i][J][k])
+
+    #     self.path = zigzag_path
+
+
+    def GeneratePosesSetZigZag(self,poses_set_def):
+
+        parallel_segments = self.DefineParallelSegmentsOverPerimeter(self.TranslatePosesList(self.base_vertexes_tf_list,[0,0,poses_set_def["height"]]),
+                                                                    poses_set_def["sweep_angle"],poses_set_def["spacing"],poses_set_def["margins"])
+
+        self.IntersectionsOfTwoSetOfSegments(self.SegmentizeListOfPoses(self.TranslatePosesList(self.base_vertexes_tf_list,[0,0,poses_set_def["height"]]),False),
+                                            parallel_segments)
+
+
+
+
+
+
 
 class Cube(GenericGeometry):
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
         GenericGeometry.__init__(self,geometry_def,parent_name,parent_prefix,transforms_list)
 
-        self.dimensions = geometry_def["dimensions"]
+        self.MakeRvizMarker()
 
-        self.marker_def["scale"] = self.dimensions
+        if "poses_sets" in geometry_def.keys():
+            for poses_set_def in geometry_def["poses_sets"]:
+                if poses_set_def["type"] == "matrix":
+                    self.GeneratePosesSetMatrix(poses_set_def)
 
-        self.MakeMarker()
+                elif poses_set_def["type"] == "random":
+                    self.GeneratePosesSetRandom(poses_set_def)
 
-        if "divisions" in geometry_def.keys():
-            for obstacles_def in geometry_def["divisions"]:
-                if obstacles_def["type"] == "matrix":
-                    self.GenerateDivisionMatrix(obstacles_def)
+                elif poses_set_def["type"] == "zigzag":
+                    self.GeneratePosesSetZigZag(poses_set_def)
 
-                elif obstacles_def["type"] == "random":
-                    self.GenerateRandomPoses(obstacles_def)
 
-                elif obstacles_def["type"] == "path":
-                    self.GenerateZigZag(obstacles_def)
-
-    def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
+    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
         # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
-        for i in np.arange(obstacles_def["dimensions"][0]):
-            for j in np.arange(obstacles_def["dimensions"][1]):
-                for k in np.arange(obstacles_def["dimensions"][2]):
+        for i in np.arange(poses_set_def["dimensions"][0]):
+            for j in np.arange(poses_set_def["dimensions"][1]):
+                for k in np.arange(poses_set_def["dimensions"][2]):
 
-                    pose = self.PoseFromArray([[-self.dimensions[0]/2+(0.5+i)*self.dimensions[0]/obstacles_def["dimensions"][0],\
-                                                -self.dimensions[1]/2+(0.5+j)*self.dimensions[1]/obstacles_def["dimensions"][1],\
-                                                -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/obstacles_def["dimensions"][2]],
-                                                obstacles_def["orientation"]])
+                    pose = self.PoseFromArray([[-self.dimensions[0]/2+(0.5+i)*self.dimensions[0]/poses_set_def["dimensions"][0],\
+                                                -self.dimensions[1]/2+(0.5+j)*self.dimensions[1]/poses_set_def["dimensions"][1],\
+                                                -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]],
+                                                poses_set_def["orientation"]])
 
                     poses_matrix[i][j][k] = pose
 
@@ -628,48 +529,43 @@ class Cube(GenericGeometry):
 
         return random_poses
 
-
 class Sphere(GenericGeometry):
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
         GenericGeometry.__init__(self,geometry_def,parent_name,parent_prefix,transforms_list)
 
-        self.dimensions = geometry_def["dimensions"]
+        self.MakeRvizMarker()
 
-        self.marker_def["scale"] = self.dimensions
+        if "poses_sets" in geometry_def.keys():
+            for poses_set_def in geometry_def["poses_sets"]:
+                if poses_set_def["type"] == "matrix":
+                    self.GeneratePosesSetMatrix(poses_set_def)
 
-        self.MakeMarker()
+                elif poses_set_def["type"] == "random":
+                    self.GeneratePosesSetRandom(poses_set_def)
 
-        if "divisions" in geometry_def.keys():
-            for obstacles_def in geometry_def["divisions"]:
-                if obstacles_def["type"] == "matrix":
-                    self.GenerateDivisionMatrix(obstacles_def)
+                elif poses_set_def["type"] == "zigzag":
+                    self.GeneratePosesSetZigZag(poses_set_def)
 
-                elif obstacles_def["type"] == "random":
-                    self.GenerateRandomPoses(obstacles_def)
-
-                elif obstacles_def["type"] == "path":
-                    self.GenerateZigZag(obstacles_def)
-
-    def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
+    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
         # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
-        for i in np.arange(obstacles_def["dimensions"][0]):
-            for j in np.arange(obstacles_def["dimensions"][1]):
-                for k in np.arange(obstacles_def["dimensions"][2]):
+        for i in np.arange(poses_set_def["dimensions"][0]):
+            for j in np.arange(poses_set_def["dimensions"][1]):
+                for k in np.arange(poses_set_def["dimensions"][2]):
 
-                    angle1 = (0.5+i)*(2*np.pi)/obstacles_def["dimensions"][0]
-                    angle2 = (0.5+j)*(np.pi)/obstacles_def["dimensions"][1]
-                    radius = (0.5+k)*self.dimensions[2]/obstacles_def["dimensions"][2]/2      # Esfera de radio [,,R]
+                    angle1 = (0.5+i)*(2*np.pi)/poses_set_def["dimensions"][0]
+                    angle2 = (0.5+j)*(np.pi)/poses_set_def["dimensions"][1]
+                    radius = (0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]/2      # Esfera de radio [,,R]
 
 
                     pose = self.PoseFromArray([[np.cos(angle1)*np.sin(angle2)*radius,\
                                                 np.sin(angle1)*np.sin(angle2)*radius,\
                                                 np.cos(angle2)*radius],
-                                                obstacles_def["orientation"]])
+                                                poses_set_def["orientation"]])
 
                     poses_matrix[i][j][k] = pose
 
@@ -702,43 +598,39 @@ class Cylinder(GenericGeometry):
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
         GenericGeometry.__init__(self,geometry_def,parent_name,parent_prefix,transforms_list)
 
-        self.dimensions = geometry_def["dimensions"]
+        self.MakeRvizMarker()
 
-        self.marker_def["scale"] = self.dimensions
+        if "poses_sets" in geometry_def.keys():
+            for poses_set_def in geometry_def["poses_sets"]:
+                if poses_set_def["type"] == "matrix":
+                    self.GeneratePosesSetMatrix(poses_set_def)
 
-        self.MakeMarker()
+                elif poses_set_def["type"] == "random":
+                    self.GeneratePosesSetRandom(poses_set_def)
 
-        if "divisions" in geometry_def.keys():
-            for obstacles_def in geometry_def["divisions"]:
-                if obstacles_def["type"] == "matrix":
-                    self.GenerateDivisionMatrix(obstacles_def)
+                elif poses_set_def["type"] == "zigzag":
+                    self.GeneratePosesSetZigZag(poses_set_def)
 
-                elif obstacles_def["type"] == "random":
-                    self.GenerateRandomPoses(obstacles_def)
-
-                elif obstacles_def["type"] == "path":
-                    self.GenerateZigZag(obstacles_def)
-
-    def PosesDensityMatrix(self,obstacles_def,selected_positions_matrix):
+    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
 
         # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
         # For every position in the three dimesions
-        for i in np.arange(obstacles_def["dimensions"][0]):
-            for j in np.arange(obstacles_def["dimensions"][1]):
-                for k in np.arange(obstacles_def["dimensions"][2]):
+        for i in np.arange(poses_set_def["dimensions"][0]):
+            for j in np.arange(poses_set_def["dimensions"][1]):
+                for k in np.arange(poses_set_def["dimensions"][2]):
 
-                    angle1 = (0.5+i)*(2*np.pi)/obstacles_def["dimensions"][0]
-                    radius = (0.5+j)*self.dimensions[1]/obstacles_def["dimensions"][1]/2      # Esfera de radio [,,R]
-                    height = -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/obstacles_def["dimensions"][2]
+                    angle1 = (0.5+i)*(2*np.pi)/poses_set_def["dimensions"][0]
+                    radius = (0.5+j)*self.dimensions[1]/poses_set_def["dimensions"][1]/2      # Esfera de radio [,,R]
+                    height = -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]
 
 
                     pose = self.PoseFromArray([[np.cos(angle1)*radius,\
                                                 np.sin(angle1)*radius,\
                                                 height],
-                                                obstacles_def["orientation"]])
+                                                poses_set_def["orientation"]])
 
                     poses_matrix[i][j][k] = pose
 
@@ -768,10 +660,443 @@ class Cylinder(GenericGeometry):
         return random_poses
 
 
+
+
+
+class Prism(GenericGeometry):
+    def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
+        GenericGeometry.__init__(self,geometry_def,parent_name,parent_prefix,transforms_list)
+
+        self.TransformVertexes()
+        self.ClusterVertexesOnPolygons()
+
+        self.MakeRvizPolygonArray()
+
+        if "poses_sets" in geometry_def.keys():
+            for poses_set_def in geometry_def["poses_sets"]:
+                if poses_set_def["type"] == "matrix":
+                    self.GeneratePosesSetMatrix(poses_set_def)
+
+                elif poses_set_def["type"] == "random":
+                    self.GeneratePosesSetRandom(poses_set_def)
+
+                elif poses_set_def["type"] == "zigzag":
+                    self.GeneratePosesSetZigZag(poses_set_def)
+
+    def TransformVertexes(self):
+        n_vertexes = len(self.dimensions[1])
+        self.vertexes_tf_list = []
+        self.base_vertexes_tf_list = []
+        for i,x_y in enumerate(self.dimensions[1]):
+
+            self.vertexes_tf_list.append(TfBroadcaster(str(i),self.name,self.PoseFromArray([[x_y[0],x_y[1],0.0],[0,0,0,1]]),self.transforms_list))
+            self.base_vertexes_tf_list.append(self.vertexes_tf_list[-1].pose)
+            self.vertexes_tf_list[-1].Broadcast()
+            self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
+
+            self.vertexes_tf_list.append(TfBroadcaster(str(i+n_vertexes),self.name,self.PoseFromArray([[x_y[0],x_y[1],self.dimensions[0]],[0,0,0,1]]),self.transforms_list))
+            self.vertexes_tf_list[-1].Broadcast()
+            self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
+
+    def ClusterVertexesOnPolygons(self):
+
+        n_vertexes = len(self.vertexes_tf_list)
+        self.polygon_array_poses = []
+
+        # Lateral faces
+        for polygon_index in range(0,n_vertexes,2):
+            polyhon_poses = []
+
+            for vertex_index in [0,2,3,1]:
+                if polygon_index == n_vertexes-2 and vertex_index>=2:
+                    vertex_index = vertex_index - n_vertexes
+                polyhon_poses.append(self.vertexes_tf_list[polygon_index+vertex_index].getGlobalPose())
+
+            self.polygon_array_poses.append(polyhon_poses)
+
+        # # Bottom face
+        # polyhon_poses = []
+        # for vertex_index in range(n_vertexes-2,-2,-2):
+        #     polyhon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        # self.polygon_array_poses.append(polyhon_poses)
+
+        # # Top face
+        # polyhon_poses = []
+        # for vertex_index in range(1,n_vertexes,2):
+        #     polyhon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        # self.polygon_array_poses.append(polyhon_poses)
+
+
+    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
+
+        pass
+
+    def TranslatePosesList(self,poses_list,direction):
+
+        translated_poses_list = []
+        for pose in poses_list:
+            pose_array = self.ArrayFromPose(pose)
+            pose_array[0][0] += direction[0]
+            pose_array[0][1] += direction[1]
+            pose_array[0][2] += direction[2]
+
+            translated_poses_list.append(self.PoseFromArray(pose_array))
+
+        return translated_poses_list
+
+
+    def DefineParallelSegmentsOverPerimeter(self,perimeter_vertexes_poses_list,sweep_angle,line_spacing,margins):
+
+        # create auxiliar tf with desired orientation over first vertex
+        first_vertex_position = perimeter_vertexes_poses_list[0].position
+
+        auxiliar_reference_pose = self.PoseFromArray([[first_vertex_position.x,first_vertex_position.y,first_vertex_position.z],[0,0,sweep_angle]])
+
+        auxiliar_reference_tf = TfBroadcaster("auxiliar_reference",self.name,auxiliar_reference_pose,self.transforms_list)
+        auxiliar_reference_tf.Broadcast()
+        auxiliar_reference_global_pose = auxiliar_reference_tf.getGlobalPose()
+        self.transforms_list = auxiliar_reference_tf.getTransforms()
+
+        # create frames for every perimeter axes and fill x,y distances
+        perimeter_vertexes_tf_list = []
+        distances_x = []
+        distances_y = []
+        for i,vertex_pose in enumerate(perimeter_vertexes_poses_list):
+            perimeter_vertexes_tf_list.append(TfBroadcaster("vertex_{}".format(i),self.name,vertex_pose,self.transforms_list))
+            perimeter_vertexes_tf_list[-1].Broadcast()
+
+            self.transforms_list = perimeter_vertexes_tf_list[-1].getTransforms()
+            
+            trans,rot = perimeter_vertexes_tf_list[-1].LookUpTransformFromFrame("auxiliar_reference")
+
+            distances_x.append(trans[0])
+            distances_y.append(trans[1])
+
+        square_limits = [[min(distances_x),max(distances_x)],[min(distances_y),max(distances_y)]]
+
+        # build segments
+        segments_list = []
+        ref_pos = auxiliar_reference_pose.position
+        for segment_y_distance in np.arange(square_limits[1][0],square_limits[1][1],line_spacing[1]):
+
+            p1 = Point3D(ref_pos.x+square_limits[0][0],ref_pos.y+segment_y_distance,0.0)
+            p2 = Point3D(ref_pos.x+square_limits[0][1],ref_pos.y+segment_y_distance,0.0)
+            # auxiliar_tf = TfBroadcaster("auxiliar_1","auxiliar_reference",self.Point3D2Pose(p1),self.transforms_list)
+            # auxiliar_tf.Broadcast()
+            # auxiliar_tf = TfBroadcaster("auxiliar_2","auxiliar_reference",self.Point3D2Pose(p2),self.transforms_list)
+            # auxiliar_tf.Broadcast()
+            # time.sleep(0.5)
+
+            segments_list.append(Segment3D(p1,p2))
+        
+        return segments_list
+
+    def IntersectionsOfTwoSetOfSegments(self,set1,set2):
+
+        n_vertexes = len(set1)
+        perimeter_segments_list = []
+        for i,vertex_pose in enumerate(set1):
+
+            if i == n_vertexes-1:
+                next_vertex_index = 0
+            else:
+                next_vertex_index = i+1
+
+            perimeter_segments_list.append(Segment3D(self.Pose2Point3D(set1[i]),self.Pose2Point3D(set1[next_vertex_index])))
+
+        intersection_tf_matrix = []
+        for segment2 in set2:
+            segment_intersection_tf_list = []
+            for segment1 in set2:
+                segment_intersection_point3D = segment2.intersection(segment1)
+                segment_intersection_tf = TfBroadcaster("auxiliar_1","auxiliar_reference",self.Point3D2Pose(segment_intersection_point3D),self.transforms_list)
+                segment_intersection_tf.Broadcast()
+                time.sleep(0.5)
+                segment_intersection_tf_list.append(segment_intersection_tf)
+
+            intersection_tf_matrix.append(segment_intersection_point3D_list)
+                
+
+
+
+    def Point3D2Pose(self,point3D):
+
+        return self.PoseFromArray([[point3D.x,point3D.y,point3D.z],[0,0,0]])
+
+    def Pose2Point3D(self,pose):
+
+        return Point3D(pose.position.x, pose.position.y, pose.position.z)
+
+    def SegmentizeListOfPoses(self,poses_list,open):
+
+        n_vertexes = len(poses_list)
+        segments_list = []
+        for i,vertex_pose in enumerate(poses_list):
+
+            segments_list.append(Segment3D(self.Pose2Point3D(poses_list[i]),self.Pose2Point3D(poses_list[i+1])))
+
+        if open == False:
+            segments_list.append(Segment3D(self.Pose2Point3D(poses_list[-1]),self.Pose2Point3D(poses_list[0])))
+
+        return segments_list
+
+
+
+
+
+
+# Class to deal with one single obstacle
+class Obstacle(object):
+    def __init__(self,ID,shape,dimensions,pose,parent_name,parent_prefix,transforms_list):
+
+        # Save params from args
+        self.ID = ID
+        self.name = parent_prefix + '_' + 'obs_{0}'.format(self.ID)
+        self.parent_name = parent_name
+        self.pose = pose
+        self.home_path = rospy.get_param('world_definition/home_path')
+
+        basic_path = "/home/{0}/catkin_ws/src/pydag/Code/gz_models/".format(self.home_path)
+        product_xml_path_dict = {"cube":basic_path + "{0}.sdf".format("cube"),\
+                                "cylinder":basic_path + "{0}.sdf".format("cylinder"),\
+                                "sphere":basic_path + "{0}.sdf".format("sphere"),\
+                                "brick":basic_path + "{0}.sdf".format("brick"),\
+                                }
+
+        et = xml.etree.ElementTree.parse(product_xml_path_dict[shape])
+        root = et.getroot()
+
+        if shape == "cube":
+            root[0][1][0][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
+            root[0][1][1][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
+
+        et.write(product_xml_path_dict[shape])
+
+        # Definition of the dictionary with the paths where every type of obstacle is stores. In the future should be packed
+        self.product_xml = open(product_xml_path_dict[shape],"r").read()
+
+        self.rviz_marker_def = {"shape" : shape}
+        self.rviz_marker_def["origin"] = [[0,0,0],[0,0,0]]
+        self.rviz_marker_def["parent_name"] = str(self.name)
+        self.rviz_marker_def["name"] = self.name
+        self.rviz_marker_def["id"] = 1
+        self.rviz_marker_def["scale"] = dimensions
+
+        color = [0,0,0]
+        color.append(0)
+        self.rviz_marker_def["color"] = [0,0,0,1]
+           
+        # Get ROS params
+        self.world_definition = rospy.get_param('world_definition')
+        self.N_obs = self.world_definition['N_obs']
+
+        # Start service proxis to spawn and delete obstacles
+        self.spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+        self.delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
+
+        self.transforms_list = transforms_list
+
+        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
+        tfbroadcaster.Broadcast()
+
+        self.transforms_list = tfbroadcaster.getTransforms()
+        
+        trans,rot = self.tfbroadcaster.LookUpTransformFromFrame("map")
+
+        self.global_pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
+
+        self.Spawner()      # Spawn obstacle with defined data
+
+        self.MakeRvizMarker()
+
+
+    # Function to query the service to spawn an obstacle
+    def Spawner(self):
+        try:
+            rospy.wait_for_service('gazebo/spawn_sdf_model')
+            response = self.spawn_model(self.name, self.product_xml, "", self.global_pose, "world")
+            time.sleep(0.01)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in spawn_sdf_model"
+
+    # Function to query the service to erase an obstacle
+    def Erase(self):
+        rospy.wait_for_service('gazebo/delete_model')
+        try:
+            delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
+            item_name = self.name
+            response = self.delete_model(item_name)
+            time.sleep(0.01)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in delete_model obstacle"
+
+    def getTransforms(self):
+        return self.transforms_list
+
+    def getGlobalPose(self):
+        return self.global_pose
+
+    def MakeRvizMarker(self):
+
+        self.marker = RvizMarker(self.rviz_marker_def)
+
+
+
+
+
+
+
+class FreeSpacePose(object):
+    def __init__(self,ID,pose,parent_name,parent_prefix,transforms_list):
+
+        # Save params from args
+        self.ID = ID
+        self.name = parent_prefix + '_' + 'pos_{0}'.format(self.ID)
+        self.parent_name = parent_name
+        self.pose = pose
+
+        self.transforms_list = transforms_list
+
+        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
+        tfbroadcaster.Broadcast()
+
+        self.transforms_list = tfbroadcaster.getTransforms()
+        
+        trans,rot = tfbroadcaster.LookUpTransformFromFrame("map")
+
+        self.global_pose = tfbroadcaster.getGlobalPose()
+
+
+    def getTransforms(self):
+        return self.transforms_list
+
+    def getGlobalPose(self):
+        return self.global_pose
+
+
+
+
+
+
+class RvizMarker(object):
+    def __init__(self,rviz_marker_def):
+        self.rviz_marker_def = rviz_marker_def
+
+        self.world_definition = rospy.get_param('world_definition')
+
+        self.marker_pub = rospy.Publisher('/visualization_marker', Marker, queue_size = 1)
+
+        self.Spawner()
+
+    def Spawner(self):
+
+        marker = Marker()
+        marker.header.stamp = rospy.Time.now()
+        marker.header.frame_id = self.rviz_marker_def["parent_name"]
+        marker.ns = str(self.rviz_marker_def["name"])
+        marker.id = self.rviz_marker_def["id"]
+
+        if self.rviz_marker_def["shape"] == "arrow":
+            marker.type = 0
+        elif self.rviz_marker_def["shape"] == "cube":
+            marker.type = 1
+        elif self.rviz_marker_def["shape"] == "sphere":
+            marker.type = 2
+        elif self.rviz_marker_def["shape"] == "cylinder":
+            marker.type = 3
+
+        marker.action = 0
+        euler = self.rviz_marker_def["origin"][1]
+        quaternion = tf.transformations.quaternion_from_euler(euler[0],euler[1],euler[2])
+        marker.pose = Pose(Point(self.rviz_marker_def["origin"][0][0],self.rviz_marker_def["origin"][0][1],self.rviz_marker_def["origin"][0][2]),
+                        Quaternion(quaternion[0],quaternion[1],quaternion[2],quaternion[3]))
+        marker.scale = Point(self.rviz_marker_def["scale"][0],self.rviz_marker_def["scale"][1],self.rviz_marker_def["scale"][2])
+        marker.color = ColorRGBA(self.rviz_marker_def["color"][0],self.rviz_marker_def["color"][1],self.rviz_marker_def["color"][2],self.rviz_marker_def["color"][3])
+        # marker.lifetime = 0# rospy.Duration(0)
+        
+        self.marker = marker
+        t = 0
+        while not rospy.is_shutdown() and t < 10:
+            self.marker_pub.publish(self.marker)
+            t = t+1
+            time.sleep(0.1)
+
+    def Erase(self):
+        self.marker.action = 2
+
+        self.marker_pub.publish(self.marker)
+
+    def Actualize(self,posestamped):
+        self.marker.header.stamp = rospy.Time.now()
+        self.marker.pose = posestamped.pose
+        self.marker_pub.publish(self.marker)
+
+
+
+
+
+class RvizPolygonArray(object):
+    def __init__(self,rviz_polygon_array_def):
+        self.rviz_polygon_array_def = rviz_polygon_array_def
+
+        self.polygon_array_pub = rospy.Publisher('/visualization_polygon_array', PolygonArray, queue_size = 1)
+
+        self.Spawner()
+
+    def Spawner(self):
+
+        polygon_array = PolygonArray()
+        polygon_array.header.stamp = rospy.Time.now()
+        polygon_array.header.frame_id = self.rviz_polygon_array_def["parent_name"]
+
+        for i,polygon_poses in enumerate(self.rviz_polygon_array_def["polygon_array_poses"]):
+            polygon = PolygonStamped()
+            polygon.header.stamp = rospy.Time.now()
+            polygon.header.frame_id = self.rviz_polygon_array_def["parent_name"]
+
+            for pose in polygon_poses:
+                polygon.polygon.points.append(Point32(pose.position.x,pose.position.y,pose.position.z))
+
+            polygon_array.polygons.append(polygon)
+
+            # polygon_array.labels = self.rviz_polygon_array_def["labels"]#[i]
+            # polygon_array.likelihood = self.rviz_polygon_array_def["likelihood"]#[i]
+        
+        polygon_array.labels = [1,1,1,1,1,1]
+        polygon_array.likelihood = [1.0,1.0,1.0,1.0,1.0,1.0]
+
+        self.polygon_array = polygon_array
+
+        t = 0
+        while not rospy.is_shutdown() and t < 10:
+            self.polygon_array_pub.publish(self.polygon_array)
+            t = t+1
+            time.sleep(0.1)
+
+    def Erase(self):
+        pass
+
+    def Actualize(self,posestamped):
+        pass
+
+
+
+
+
+
 class TfBroadcaster(object):
     def __init__(self,name,parent_name = "map",poses = [],transforms_list = []):
 
+        self.pose = poses
+
+        self.name = name
         self.transforms_list = transforms_list
+
+        self.lookup_transform_listener = tf.TransformListener()
 
         transformStamped = geometry_msgs.msg.TransformStamped()
         transformStamped.header.stamp = rospy.Time.now()
@@ -816,3 +1141,19 @@ class TfBroadcaster(object):
 
     def getTransforms(self):
         return self.transforms_list
+
+    def LookUpTransformFromFrame(self,frame):
+        
+        trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
+
+        return trans,rot
+
+    def getGlobalPose(self):
+
+        trans,rot = self.LookUpTransformFromFrame("map")
+        self.global_pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
+
+        return self.global_pose
+
+
+

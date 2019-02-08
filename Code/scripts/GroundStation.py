@@ -54,6 +54,11 @@ class GroundStation(object):
 
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
+        mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
+                            .format(self.home_path,self.mission_name,self.submission_name)
+        with open(mission_def_path) as f:
+            self.mission_def = json.load(f)
+
         self.Listener()     # Start subscribers
 
         self.gs_sm = GroundStation_SM(self)        # Create Ground Station State Machine
@@ -75,7 +80,11 @@ class GroundStation(object):
                                 "inspector":["wait","wait","wait"],
                                 "smooth_path":["path","path","wait"],
                                 "safety":["path","path","wait"],
-                                "2UAVs_trivial":["path","path","wait"]}
+                                "2UAVs_trivial":["path","path"],
+                                "1UAVs_trivial":["path"],
+                                "1UAVs_complex":["path"],
+                                "world_in_construction":["path"]}
+
 
         # Actualize own world definition with role list
         self.world_definition["roles_list"] = mission_to_role_dicc[self.submission_name][:self.N_uav]
@@ -108,36 +117,63 @@ class GroundStation(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
-        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/{1}_spawner_JA.launch".format(self.home_path,self.world_definition['px4_use'])
+        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/complete_spawner_JA.launch".format(self.home_path)
 
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
 
-        if self.sitl == True:
-            root[2].attrib["default"] = "true"
+        config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
+                            .format(self.home_path,self.mission_def["UAVs_Config"][ID]["model"])
+        with open(config_def_path) as f:
+            config_def = json.load(f)
+
+        config_def.update(copy.deepcopy(self.mission_def["UAVs_Config"][ID]))
+
+        # sitl
+        root[2].attrib["default"] = config_def["mode"]
+
+        # ual use
+        if config_def["ual_use"] == True:
+            root[7].attrib["default"] = 'true'
         else:
-            root[2].attrib["default"] = "false"
+            root[7].attrib["default"] = 'false'
 
-        if self.ual_use == True:
-            root[7].attrib["default"] = "true"
+        # autopilot
+        root[8].attrib["default"] = config_def["autopilot"]
+
+        # uav manager embedded
+        if config_def["uav_manager_on_gs"] == True:
+            root[9].attrib["default"] = 'true'
         else:
-            root[7].attrib["default"] = "false"
+            root[9].attrib["default"] = 'false'
 
-        root[8].attrib["default"] = "px4"
-
+        # smooth path
         if ID+1 == 1:
-            root[9].attrib["default"] = "true"
+            root[10].attrib["default"] = 'true'
         else:
-            root[9].attrib["default"] = "false"
+            root[10].attrib["default"] = 'false'
 
-        root[10].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[10][0].attrib["value"] = str(ID+1)
-        root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[11][0].attrib["value"] = str(ID+1)
-        root[12].attrib["name"] = 'uav_{}'.format(ID+1)
-        root[12].attrib["args"] = '-ID={}'.format(ID+1)
-        root[13].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
-        root[13][0].attrib["value"] = str(ID+1)
+        # if sitl
+        root[11][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[11][0][0][0].attrib["value"] = str(ID+1)
+        root[11][1][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+
+        # if ual use
+        root[12][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[12][0][0].attrib["value"] = str(ID+1)
+        
+        if config_def["autopilot"] == "px4":
+            root[12][0][6].attrib["value"] = "mavros"
+        else:
+            root[12][0][6].attrib["value"] = config_def["autopilot"]
+
+        # uav manager
+        root[13][0].attrib["name"] = 'uav_{}'.format(ID+1)
+        root[13][0].attrib["args"] = '-ID={}'.format(ID+1)
+
+        # if smooth path
+        root[13][1].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
+        root[13][1][0].attrib["value"] = str(ID+1)
 
         et.write(launch_path)
 

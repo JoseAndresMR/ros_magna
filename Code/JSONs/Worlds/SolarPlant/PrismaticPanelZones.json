@@ -1,0 +1,36 @@
+{
+    "scenario": {
+        "volumes": [
+            {
+                "name": "SolarPanelsZoneA",
+                "prefix": "SPzA",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Panels",
+                        "prefix": "Pan",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0.0,0,0]],
+                        "dimensions": [3.0,[[0.0,0.0],[-1.0,2.0],[0.0,4.0],[-3.0,6.0],[-8.0,14.0],[-4.0,14.0],[7.0,12.0]]],
+                        "color": [85,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 1.5,
+                                "spacing": [3,1],
+                                "sweep_angle":2.0,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

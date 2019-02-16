@@ -34,9 +34,9 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
         'world'              :                   "SolarPlant",                    # Type of the world or sceneario created
-        'subworld'           :                   "PrismaticPanelZones",
-        'mission'            :                   "TestCrazyflieLPS",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "world_in_construction",
+        'subworld'           :                   "CanameroReal",
+        'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "safety",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations

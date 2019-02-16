@@ -1,0 +1,113 @@
+{
+    "scenario": {
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[10.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Control_zone",
+                        "prefix": "CZ",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,-5.0,1.5],[0,0,0]],
+                        "dimensions": [5.0,5.0,3.0],
+                        "color": [85,255,255],
+                        "alpha": 0.3
+                    },
+                    {
+                        "name": "UAVs_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,5.0,0.5],[0,0,0]],
+                        "dimensions": [8.0,1.0,1.0],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "use" : "poses",
+                                "dimensions": [3,1,1],
+                                "density": 1,
+                                "orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "security_height_1",
+                        "prefix": "secheight1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,5.0,14.0],[0,0,0]],
+                        "dimensions": [8.0,1.0,1.0],
+                        "color": [255,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "use" : "poses",
+                                "dimensions": [3,1,1],
+                                "density": 1,
+                                "orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "SolarPanelsZoneA",
+                "prefix": "SPzA",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Panels",
+                        "prefix": "Pan",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0.0,0,0]],
+                        "dimensions": [3.0,[[0.0,0.0],[-1.0,2.0],[4.0,12.0],[-3.0,6.0],[-8.0,14.0],[-4.0,14.0],[7.0,12.0]]],
+                        "color": [85,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "use" : "obstacles",
+                                "dimensions": [5,7,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [0.2, 6, 3.5],
+                                "orientation": [0,1.25,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Inspection",
+                        "prefix": "ins",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,10.0],[0.0,0,0]],
+                        "dimensions": [3.0,[[0.0,0.0],[-1.0,2.0],[4.0,12.0],[-3.0,6.0],[-8.0,14.0],[-4.0,14.0],[7.0,12.0]]],
+                        "color": [85,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 2.5,
+                                "spacing": [3,2],
+                                "sweep_angle":0.0,
+                                "initial_sense": "right",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -54,7 +54,7 @@ class UAV_Manager(object):
 
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
-        
+
 
         if self.uav_models[self.ID-1] != "plane":
             rospy.init_node('uav_{}'.format(self.ID), anonymous=True)        # Start the node
@@ -66,7 +66,7 @@ class UAV_Manager(object):
         self.uavs_data_list = []
         self.uavs_config_list = []
         for n_uav in range(1,self.N_uav+1):
-            self.uavs_config_list.append(UAV_Config(n_uav,self.uav_models[n_uav-1],True))
+            self.uavs_config_list.append(UAV_Config(n_uav))
             self.uavs_data_list.append(UAV_Data(n_uav,self.ID,self.uavs_config_list[n_uav-1]))
         
         # Publishers initialisation

@@ -18,6 +18,8 @@ import rosbag
 import subprocess
 import signal
 import xml.etree.ElementTree
+import json
+import copy
 from std_msgs.msg import Int32, String
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
@@ -28,7 +30,6 @@ from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
 
 import utils
-from Worlds import *
 from pydag.srv import *
 from GroundStation_SM import GroundStation_SM
 
@@ -83,7 +84,8 @@ class GroundStation(object):
                                 "2UAVs_trivial":["path","path"],
                                 "1UAVs_trivial":["path"],
                                 "1UAVs_complex":["path"],
-                                "world_in_construction":["path"]}
+                                "world_in_construction":["path"],
+                                "1UAVs_inspection":["path"]}
 
 
         # Actualize own world definition with role list
@@ -164,8 +166,21 @@ class GroundStation(object):
         
         if config_def["autopilot"] == "px4":
             root[12][0][6].attrib["value"] = "mavros"
-        else:
+        elif config_def["autopilot"] == "dji":
             root[12][0][6].attrib["value"] = config_def["autopilot"]
+
+            if config_def["laser_altimeter"] == True:
+                root[12][0][7].attrib["value"] = 'true'
+            else:
+                root[12][0][7].attrib["value"] = 'false'
+
+            if config_def["self_arming"] == True:
+                root[12][0][8].attrib["value"] = 'true'
+            else:
+                root[12][0][8].attrib["value"] = 'false'
+
+            # root[12][0][7].attrib["value"] = config_def["laser_altimeter"]
+            # root[12][0][8].attrib["value"] = config_def["self_arming"]
 
         # uav manager
         root[13][0].attrib["name"] = 'uav_{}'.format(ID+1)
@@ -382,7 +397,6 @@ class GroundStation(object):
         self.N_obs = self.world_definition['N_obs']
         self.n_dataset = self.world_definition['n_dataset']
         self.uav_models = self.world_definition['uav_models']
-        self.path_length = self.world_definition['path_length']
         self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']

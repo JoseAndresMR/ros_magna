@@ -7,10 +7,9 @@ import json
 from copy import deepcopy
 
 class UAV_Config(object):
-    def __init__(self,ID,model,ual_use,sitl = True):
+    def __init__(self,ID):
 
         self.ID = ID
-        self.model = model
 
         self.GettingWorldDefinition()
 
@@ -18,6 +17,9 @@ class UAV_Config(object):
                             .format(self.home_path,self.mission_name,self.submission_name)
         with open(mission_def_path) as f:
             mission_def = json.load(f)
+
+        self.model = mission_def["UAVs_Config"][self.ID-1]["model"]
+        
 
         config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
                             .format(self.home_path,self.model)
@@ -29,7 +31,6 @@ class UAV_Config(object):
         self.autopilot = self.config_def["autopilot"]
         self.ual_use = bool(self.config_def["ual_use"])
         self.security_radius = self.config_def["security_radius"]
-        self.model = self.config_def["model"]
         self.mode = self.config_def["mode"]
         self.marker_color = self.config_def["marker_color"]
 
@@ -62,7 +63,7 @@ class UAV_Config(object):
         self.top_sub_addr["battery_level"] = '/uav_{}/mavros/battery'.format(self.ID)
 
     def autupilot_dji(self):
-        pass
+        self.top_sub_addr["battery_level"] = '/uav_{}/mavros/battery'.format(self.ID)
 
     def autupilot_crazy(self):
         pass

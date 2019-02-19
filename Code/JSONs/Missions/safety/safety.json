@@ -2,15 +2,14 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"f550",
-            "mode": "real",
+            "model":"iris",
+            "mode": "sitl",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
             "uav_manager_on_gs": true,
             "laser_altimeter": true,
             "self_arming": true
         }
-
     ],
     "State_Machine": [
         {
@@ -89,12 +88,10 @@
                                 "path": [
                                     {
                                         "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
-                                    },
-                                    {
-                                        "definition":["Panels_Zone_1","Aproximation","matrix",[0,0,0]]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 2,
+                                "dynamic": "velocity"
                             },
                             "outcomes":{
                                 "succeeded": "1_inspection",

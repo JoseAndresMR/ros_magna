@@ -2,51 +2,62 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="real" name="mode" />
+    <arg default="sitl" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="30.0" name="mavros_offboard_rate" />
 
     <arg default="true" name="ual_use" />
-    <arg default="dji" name="autopilot" />
+    <arg default="px4" name="autopilot" />
     <arg default="true" name="uav_manager_on_gs" />
-    <arg default="true" name="smooth_path" />
+    <arg default="true" name="smooth_path_generator" />
 
-    <group if="$(eval mode == 'sitl')">
-        <group if="$(eval autopilot == 'px4')">
-            <include file="$(find pydag)/launch/PX4_spawn_robot_JA.launch" ns="$(arg ns_prefix)1">
-                <arg name="id" value="1" />
-                <arg name="material" value="Orange" />
-                <arg name="mode" value="$(arg mode)" />
-                <arg name="x" value="0" />
-                <arg name="y" value="0" />
-                <arg name="z" value="0" />
-                <arg name="yaw" value="0" />
-            </include>
+    <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)1">
+        <group>
+            <group if="$(eval autopilot == 'px4')">
+                <include file="$(find pydag)/launch/PX4_spawn_robot_JA.launch">
+                    <arg name="id" value="1" />
+                    <arg name="material" value="Orange" />
+                    <arg name="mode" value="$(arg mode)" />
+                    <arg name="x" value="0" />
+                    <arg name="y" value="0" />
+                    <arg name="z" value="0" />
+                    <arg name="yaw" value="0" />
+                </include>
+            </group>
+
+            <group if="$(eval autopilot == 'dji')">
+                <include file="$(find dji_sdk)/launch/sdk.launch" />
+            </group>
+
+            <group if="$(eval autopilot == 'crazyflie')">
+                <include file="$(find lps-ros)/launch/loco_cpp.launch" />
+            </group>
         </group>
+    
 
-        <group if="$(eval autopilot == 'dji')">
-            <include file="$(find pydag)/launch/DJI_spawn_robot_JA.launch" ns="$(arg ns_prefix)1" />
+        <group if="$(arg ual_use)">
+            <group if="$(eval autopilot == 'px4')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="uav_id" value="1" />
+                    <param name="pose_frame_id" value="$(arg pose_frame_id)" />
+                    <param name="ual_server" value="$(arg ual_server)" />
+                    <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
+                    <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
+                    <param name="home_pose_parent_frame" value="map" />
+                    <param name="backend" value="mavros" />
+                </node>
+            </group>
+            <group if="$(eval autopilot == 'dji')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="backend" value="dji" />
+                    <param name="laser_altimeter" value="false" />
+                    <param name="self_arming" value="true" />
+                    <rosparam param="home_pose">[-2, 0, 0]</rosparam>
+                </node>
+            </group>   
         </group>
-
-        <group if="$(eval autopilot == 'crazyflie')">
-            <include file="$(find lps-ros)/launch/loco_cpp.launch" ns="" />
-        </group>
-    </group>
-
-    <group if="$(arg ual_use)">
-        <node name="ual" ns="$(arg ns_prefix)1" output="screen" pkg="uav_abstraction_layer" type="server">
-            <param name="uav_id" value="1" />
-            <param name="pose_frame_id" value="$(arg pose_frame_id)" />
-            <param name="ual_server" value="$(arg ual_server)" />
-            <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
-            <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
-            <param name="home_pose_parent_frame" value="map" />
-            <param name="backend" value="dji" />
-            <param name="laser_altimeter" value="true" />
-            <param name="self_arming" value="true" />
-        </node>
     </group>
 
     <group if="$(arg uav_manager_on_gs)">
@@ -55,10 +66,10 @@
         <node name="path_follower_node_1" pkg="uav_path_manager" type="path_follower_node">
             <param name="uav_id" value="1" />
         </node>
-
-        <group if="$(arg smooth_path)">
-            <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
-        </group>
+    </group>
+    
+    <group if="$(arg smooth_path_generator)">
+        <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
     </group>
 
 </launch>

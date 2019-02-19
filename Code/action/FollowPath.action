@@ -1,6 +1,7 @@
 # Define the goal
 geometry_msgs/Pose[] goal_path_poses_list
 int8 smooth_path_mode
+string dynamic
 --- 
 # Define the result
 string output

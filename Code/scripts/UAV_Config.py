@@ -4,6 +4,7 @@
 import numpy as np
 import rospy, time, tf, tf2_ros
 import json
+import rospkg
 from copy import deepcopy
 
 class UAV_Config(object):
@@ -13,7 +14,9 @@ class UAV_Config(object):
 
         self.GettingWorldDefinition()
 
-        mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
+        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+
+        mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
                             .format(self.home_path,self.mission_name,self.submission_name)
         with open(mission_def_path) as f:
             mission_def = json.load(f)
@@ -94,7 +97,6 @@ class UAV_Config(object):
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.world_definition = rospy.get_param('world_definition')
-        self.home_path = self.world_definition['home_path']
         self.mission_name = self.world_definition['mission']
         self.submission_name = self.world_definition['submission']
         self.world_name = self.world_definition['world']

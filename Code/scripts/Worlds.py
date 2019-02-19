@@ -16,6 +16,7 @@ import tf, tf2_ros
 import json
 import copy
 import random
+import rospkg
 from uav_abstraction_layer.srv import *
 from std_msgs.msg import Header, ColorRGBA
 from geometry_msgs.msg import *
@@ -37,9 +38,11 @@ class Worlds(object):
         self.ID = int(ID)
 
         self.GettingWorldDefinition()       # Global parameters inizialization.
+        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+
         print "creating world",ID
 
-        world_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Worlds/{1}/{2}.json"\
+        world_def_path = "{0}/Code/JSONs/Worlds/{1}/{2}.json"\
                             .format(self.home_path,self.world_name,self.subworld_name)
 
         with open(world_def_path) as f:
@@ -108,7 +111,6 @@ class Worlds(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.uav_models = self.world_definition['uav_models']
         self.path_length = self.world_definition['path_length']
-        self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']
         self.depth_camera_use = self.world_definition['depth_camera_use']
@@ -129,11 +131,13 @@ class Volume(object):
         self.origin = volume_def["origin"]
 
         self.transforms_list = transforms_list
+        print("on volume",len(self.transforms_list))
         self.obs_pose_list = []
         self.fsp_list = []
 
         tfbroadcaster = TfBroadcaster(self.name,"map",self.origin,self.transforms_list)
         self.transforms_list = tfbroadcaster.getTransforms()
+        print("on volume",len(self.transforms_list))
 
         self.geometry_classes = {"cube" : Cube, "sphere" : Sphere, "cylinder" : Cylinder,
                                  "prism": Prism}
@@ -144,13 +148,14 @@ class Volume(object):
 
             self.geometries[geometry_def["name"]] = self.geometry_classes[geometry_def["shape"]](geometry_def,self.name,self.prefix,self.transforms_list)
             self.transforms_list = self.geometries[geometry_def["name"]].getTransforms()
+            print("on volume",len(self.transforms_list))
 
             if self.geometries[geometry_def["name"]].obs_pose_list != []:
                 [self.obs_pose_list.append(obs) for obs in self.geometries[geometry_def["name"]].obs_pose_list]
 
     def getFPGlobalPosefromCoordinates(self,coordinates):
 
-        return FreeSpacePose(1,self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
+        return FreeSpacePose(np.random.randint(100),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
 
                 
     def getTransforms(self):
@@ -197,6 +202,9 @@ class GenericGeometry:
         self.parent_name = parent_name
 
         self.transforms_list = transforms_list
+        print("all",len(self.transforms_list))
+        self.transforms_persistent_list = copy.deepcopy(transforms_list)
+        print("persistent",len(self.transforms_persistent_list))
 
         self.n_obs = 0
         self.obs_pose_list = []
@@ -206,6 +214,9 @@ class GenericGeometry:
 
         tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.origin,self.transforms_list)
         self.transforms_list = tfbroadcaster.getTransforms()
+        print("all",len(self.transforms_list))
+        self.transforms_persistent_list.append(tfbroadcaster.getTransforms()[-1])
+        print("persistent",len(self.transforms_persistent_list))
 
         time.sleep(1)
         
@@ -244,8 +255,8 @@ class GenericGeometry:
         self.rviz_polython_array.Erase()
 
     def getTransforms(self):
-
-        return self.transforms_list
+        print("persistent",len(self.transforms_persistent_list))
+        return self.transforms_persistent_list
 
     def getObstacles(self,indexes):
 
@@ -284,7 +295,7 @@ class GenericGeometry:
 
         return selected_positions_matrix
 
-    def GenerateObstacleFromDensityMatrix(self,selected_positions_matrix,poses_matrix,shapes,dimensions):
+    def GenerateObstacleFromMatrix(self,selected_positions_matrix,poses_matrix,shapes,dimensions):
 
         obs_list = copy.deepcopy(selected_positions_matrix.tolist())
 
@@ -308,6 +319,7 @@ class GenericGeometry:
                                                             self.transforms_list)
 
                         self.transforms_list = obs_list[i][j][k].getTransforms()
+                        print("all",len(self.transforms_list))
 
                         # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
@@ -340,7 +352,7 @@ class GenericGeometry:
 
         return obs_list
 
-    def GenerateFreeSpacePosesFromDensityMatrix(self,selected_positions_matrix,poses_matrix):
+    def GenerateFreeSpacePosesFromMatrix(self,selected_positions_matrix,poses_matrix,make_persistent = True):
 
         fsposes_list = copy.deepcopy(selected_positions_matrix.tolist())
 
@@ -356,10 +368,14 @@ class GenericGeometry:
                                                         self.transforms_list)
 
                     self.transforms_list = fsposes_list[i][j][k].getTransforms()
+                    print("all",len(self.transforms_list))
+                    if make_persistent == True:
+                        self.transforms_persistent_list.append(fsposes_list[i][j][k].getTransforms()[-1])
+                        print("persistent",len(self.transforms_persistent_list))
 
         return fsposes_list
 
-    def GenerateFreeSpacePosesFromPosesList(self,selected_positions):
+    def GenerateFreeSpacePosesFromPosesList(self,selected_positions,make_persistent = True):
 
         fsposes_list = []
 
@@ -368,28 +384,39 @@ class GenericGeometry:
             fsposes_list.append(FreeSpacePose(str(i),  pose, self.name, self.prefix, self.transforms_list))
 
             self.transforms_list = fsposes_list[-1].getTransforms()
+            print("all",len(self.transforms_list))
+            if make_persistent == True:
+                self.transforms_persistent_list.append(fsposes_list[-1].getTransforms()[-1])
+                print("persistent",len(self.transforms_persistent_list))
 
 
         return fsposes_list
 
     def GenerateFreeSpacePosesFromCoordinates(self,coordinates):
 
-        return FreeSpacePose(1,self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list)
+        return FreeSpacePose(np.random.randint(100),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list)
 
 
-    def GeneratePosesSetMatrix(self,poses_set_def):
+    def GeneratePosesSetDimensionMatrix(self,poses_set_def,make_persistent = True):
 
-        selected_positions_matrix = self.RawDensityMatrix(poses_set_def)
+        if poses_set_def["matrix_type"] == "dimension": 
 
-        poses_matrix = self.PosesDensityMatrix(poses_set_def,selected_positions_matrix)
+            selected_positions_matrix = self.RawDensityMatrix(poses_set_def)
+
+            poses_matrix = self.PosesDimensionMatrix(poses_set_def,selected_positions_matrix)
+
+        elif poses_set_def["matrix_type"] == "distance": 
+
+            poses_matrix, selected_positions_matrix = self.PosesDistanceMatrix(poses_set_def)
+
 
         if poses_set_def["use"] == "obstacles":
 
-            self.obstacles = self.GenerateObstacleFromDensityMatrix(selected_positions_matrix,poses_matrix,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
+            self.obstacles = self.GenerateObstacleFromMatrix(selected_positions_matrix,poses_matrix,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
 
         elif poses_set_def["use"] == "poses":
 
-            self.poses = self.GenerateFreeSpacePosesFromDensityMatrix(selected_positions_matrix,poses_matrix)
+            self.poses = self.GenerateFreeSpacePosesFromMatrix(selected_positions_matrix,poses_matrix,make_persistent)
 
     def GeneratePosesSetRandom(self,poses_set_def):
 
@@ -417,7 +444,6 @@ class GenericGeometry:
         elif poses_set_def["use"] == "poses":
 
             self.path = self.GenerateFreeSpacePosesFromPosesList(poses)
-
 
 
     def GenerateRandomDimensionalValues(self, limits):
@@ -449,7 +475,7 @@ class Cube(GenericGeometry):
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
                 if poses_set_def["type"] == "matrix":
-                    self.GeneratePosesSetMatrix(poses_set_def)
+                    self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
                     self.GeneratePosesSetRandom(poses_set_def)
@@ -458,7 +484,7 @@ class Cube(GenericGeometry):
                     self.GeneratePosesSetZigZag(poses_set_def)
 
 
-    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
+    def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
@@ -510,7 +536,7 @@ class Cube(GenericGeometry):
                             "dimensions": poses_set_def["dimensions"], "density": 1,
                             "orientation": poses_set_def["orientation"]}
 
-        self.GeneratePosesSetMatrix(matrix_definition)
+        self.GeneratePosesSetDimensionMatrix(matrix_definition,False)
 
         zigzag_path = []
 
@@ -542,7 +568,7 @@ class Sphere(GenericGeometry):
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
                 if poses_set_def["type"] == "matrix":
-                    self.GeneratePosesSetMatrix(poses_set_def)
+                    self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
                     self.GeneratePosesSetRandom(poses_set_def)
@@ -550,7 +576,7 @@ class Sphere(GenericGeometry):
                 elif poses_set_def["type"] == "zigzag":
                     self.GeneratePosesSetZigZag(poses_set_def)
 
-    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
+    def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
@@ -607,7 +633,7 @@ class Cylinder(GenericGeometry):
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
                 if poses_set_def["type"] == "matrix":
-                    self.GeneratePosesSetMatrix(poses_set_def)
+                    self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
                     self.GeneratePosesSetRandom(poses_set_def)
@@ -615,7 +641,7 @@ class Cylinder(GenericGeometry):
                 elif poses_set_def["type"] == "zigzag":
                     self.GeneratePosesSetZigZag(poses_set_def)
 
-    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
+    def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
 
         # Create a list shaped as the obstacle tube
         poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
@@ -679,7 +705,7 @@ class Prism(GenericGeometry):
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
                 if poses_set_def["type"] == "matrix":
-                    self.GeneratePosesSetMatrix(poses_set_def)
+                    self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
                     self.GeneratePosesSetRandom(poses_set_def)
@@ -693,12 +719,14 @@ class Prism(GenericGeometry):
         self.base_vertexes_pose_list = []
         for i,x_y in enumerate(self.dimensions[1]):
 
-            self.vertexes_tf_list.append(TfBroadcaster(str(i),self.name,self.PoseFromArray([[x_y[0],x_y[1],0.0],[0,0,0,1]]),self.transforms_list))
+            self.vertexes_tf_list.append(TfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i),self.name,self.PoseFromArray([[x_y[0],x_y[1],0.0],[0,0,0,1]]),self.transforms_list))
             self.base_vertexes_pose_list.append(self.vertexes_tf_list[-1].pose)
             self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
+            print("all",len(self.transforms_list))
 
-            self.vertexes_tf_list.append(TfBroadcaster(str(i+n_vertexes),self.name,self.PoseFromArray([[x_y[0],x_y[1],self.dimensions[0]],[0,0,0,1]]),self.transforms_list))
+            self.vertexes_tf_list.append(TfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i+n_vertexes),self.name,self.PoseFromArray([[x_y[0],x_y[1],self.dimensions[0]],[0,0,0,1]]),self.transforms_list))
             self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
+            print("all",len(self.transforms_list))
 
     def ClusterVertexesOnPolygons(self):
 
@@ -729,9 +757,9 @@ class Prism(GenericGeometry):
         # self.polygon_array_poses.append(polygon_poses)
 
 
-    def PosesDensityMatrix(self,poses_set_def,selected_positions_matrix):
+    def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
         
-        auxiliar_reference_tf, square_limits, center_tf = self.DefineSquareOverPerimeter(self.TranslatePosesList(self.base_vertexes_pose_list,[0,0,self.dimensions[0]]),poses_set_def["set_orientation"][2])
+        auxiliar_reference_tf, square_limits, center_tf = self.DefineSquareOverPerimeter(self.TranslatePosesList(self.base_vertexes_pose_list,[0,0,self.dimensions[0]/2]),poses_set_def["set_orientation"][2])
 
         square_dimensions = [square_limits[0][1]-square_limits[0][0],square_limits[1][1]-square_limits[1][0],self.dimensions[0]]
 
@@ -754,7 +782,7 @@ class Prism(GenericGeometry):
                                                 -square_dimensions[2]/2+(0.5+k)*square_dimensions[2]/poses_set_def["dimensions"][2]],
                                                 poses_set_def["poses_orientation"]])
 
-                    auxiliar_tf = TfBroadcaster("aux".format(self.name),center_tf.name,pose,self.transforms_list)
+                    auxiliar_tf = TfBroadcaster("aux",center_tf.name,pose,self.transforms_list)
                     _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
 
                     aux_pose = self.PoseFromArray([trans,[0,0,0]])
@@ -764,14 +792,55 @@ class Prism(GenericGeometry):
                     
                     is_inside = polygon.encloses_point(Point2D(pose.position.x,pose.position.y))
 
-
                     if not is_inside:
                         selected_positions_matrix[i][j][k] = False
-                        
-
 
         return poses_matrix
 
+    
+    def PosesDistanceMatrix(self,poses_set_def):
+
+        auxiliar_reference_tf, square_limits, center_tf = self.DefineSquareOverPerimeter(self.TranslatePosesList(self.base_vertexes_pose_list,[0,0,self.dimensions[0]/2]),poses_set_def["set_orientation"][2])
+
+        aux_cube_dimension = [square_limits[0][1]-square_limits[0][0],square_limits[1][1]-square_limits[1][0],self.dimensions[0]]
+
+        range_x = np.arange(-aux_cube_dimension[0]/2,aux_cube_dimension[0]/2,poses_set_def["dimensions"][0])
+        range_y = np.arange(-aux_cube_dimension[1]/2,aux_cube_dimension[1]/2,poses_set_def["dimensions"][1])
+        range_z = np.arange(0.0,1.0,self.dimensions[0])
+
+        selected_positions_matrix = self.RawDensityMatrix({"density":poses_set_def["density"],
+                                                            "dimensions" : [len(range_x),len(range_y),len(range_z)]})
+
+        # Create a list shaped as the obstacle tube
+        poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())
+
+        vertexes_point2d_list = []
+        for pose in self.base_vertexes_pose_list:
+            vertexes_point2d_list.append(Point2D(pose.position.x,pose.position.y))
+
+        polygon = Polygon2D(*vertexes_point2d_list)
+
+        # For every position in the three dimesions
+        for i,I in enumerate(range_x):
+            for j,J in enumerate(range_y):
+                for k,K in enumerate(range_z):
+
+                    pose = self.PoseFromArray([[I,J,K], poses_set_def["poses_orientation"]])
+
+                    auxiliar_tf = TfBroadcaster("aux",center_tf.name,pose,self.transforms_list)
+                    _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
+
+                    aux_pose = self.PoseFromArray([trans,[0,0,0]])
+                    pose.position = aux_pose.position
+                    
+                    poses_matrix[i][j][k] = pose
+                    
+                    is_inside = polygon.encloses_point(Point2D(pose.position.x,pose.position.y))
+
+                    if not is_inside:
+                        selected_positions_matrix[i][j][k] = False
+
+        return poses_matrix, selected_positions_matrix
 
     def TranslatePosesList(self,poses_list,direction):
 
@@ -795,15 +864,17 @@ class Prism(GenericGeometry):
 
         auxiliar_reference_tf = TfBroadcaster("{0}_auxiliar_reference".format(self.name),self.name,auxiliar_reference_pose,self.transforms_list)
         self.transforms_list = auxiliar_reference_tf.getTransforms()
+        print("all",len(self.transforms_list))
 
         # create frames for every perimeter axes and fill x,y distances
         perimeter_vertexes_tf_list = []
         distances_x = []
         distances_y = []
         for i,vertex_pose in enumerate(perimeter_vertexes_poses_list):
-            perimeter_vertexes_tf_list.append(TfBroadcaster("vertex_{}".format(i),self.name,vertex_pose,self.transforms_list))
+            perimeter_vertexes_tf_list.append(TfBroadcaster("{0}_perimeter_vertex_{1}".format(self.name,i),self.name,vertex_pose,self.transforms_list))
 
             self.transforms_list = perimeter_vertexes_tf_list[-1].getTransforms()
+            print("all",len(self.transforms_list))
             
             _,trans,rot = perimeter_vertexes_tf_list[-1].LookUpTransformFromFrame("{0}_auxiliar_reference".format(self.name))
 
@@ -818,6 +889,7 @@ class Prism(GenericGeometry):
         
         center_tf = TfBroadcaster("{0}_center".format(self.name),"{0}_auxiliar_reference".format(self.name),center_pose,self.transforms_list)
         self.transforms_list = center_tf.getTransforms()
+        print("all",len(self.transforms_list))
 
         return auxiliar_reference_tf, square_limits, center_tf
 
@@ -829,15 +901,14 @@ class Prism(GenericGeometry):
 
         # build segments
         segments_list = []
-        ref_pos = auxiliar_reference_tf.pose.position
         for segment_y_distance in np.arange(square_limits[1][0],square_limits[1][1],line_spacing[1]):
 
-            pose1_auxiliar = self.PoseFromArray([[ref_pos.x+square_limits[0][0],ref_pos.y+segment_y_distance,0.0],[0,0,0]])
+            pose1_auxiliar = self.PoseFromArray([[square_limits[0][0],segment_y_distance,0.0],[0,0,0]])
             auxiliar_tf = TfBroadcaster("{0}_auxiliar_1".format(self.name),"{0}_auxiliar_reference".format(self.name),pose1_auxiliar,self.transforms_list)
             _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
             p1 = Point3D(trans[0],trans[1],trans[2])
 
-            pose2_auxiliar = self.PoseFromArray([[ref_pos.x+square_limits[0][1],ref_pos.y+segment_y_distance,0.0],[0,0,0]])
+            pose2_auxiliar = self.PoseFromArray([[square_limits[0][1],segment_y_distance,0.0],[0,0,0]])
             auxiliar_tf = TfBroadcaster("{0}_auxiliar_2".format(self.name),"{0}_auxiliar_reference".format(self.name),pose2_auxiliar,self.transforms_list)
             _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
             p2 = Point3D(trans[0],trans[1],trans[2])
@@ -858,6 +929,7 @@ class Prism(GenericGeometry):
                 if segment_intersection_point3D:
                     segment_intersection_tf = TfBroadcaster(self.name+"zigzag_inter"+str(i),self.name,self.Point3D2Pose(segment_intersection_point3D[0]),self.transforms_list)
                     self.transforms_list = segment_intersection_tf.getTransforms()
+                    print("all",len(self.transforms_list))
                     segment_intersection_tf_list.append(segment_intersection_tf)
                     i += 1
 
@@ -950,9 +1022,9 @@ class Obstacle(object):
         self.name = parent_prefix + '_' + 'obs_{0}'.format(self.ID)
         self.parent_name = parent_name
         self.pose = pose
-        self.home_path = rospy.get_param('world_definition/home_path')
+        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
 
-        basic_path = "/home/{0}/catkin_ws/src/pydag/Code/gz_models/".format(self.home_path)
+        basic_path = "{0}/Code/gz_models/".format(self.home_path)
         product_xml_path_dict = {"cube":basic_path + "{0}.sdf".format("cube"),\
                                 "cylinder":basic_path + "{0}.sdf".format("cylinder"),\
                                 "sphere":basic_path + "{0}.sdf".format("sphere"),\
@@ -1001,6 +1073,9 @@ class Obstacle(object):
         self.Spawner()      # Spawn obstacle with defined data
 
         self.MakeRvizMarker()
+
+        # self.transforms_list = self.transforms_list[:-1]
+        # tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
 
 
     # Function to query the service to spawn an obstacle
@@ -1132,7 +1207,7 @@ class RvizPolygonArray(object):
     def __init__(self,rviz_polygon_array_def):
         self.rviz_polygon_array_def = rviz_polygon_array_def
 
-        self.polygon_array_pub = rospy.Publisher('/visualization_polygon_array', PolygonArray, queue_size = 1)
+        self.polygon_array_pub = rospy.Publisher('/visualization_polygon_array/{}'.format(rviz_polygon_array_def["name"]), PolygonArray, queue_size = 1)
 
         self.Spawner()
 
@@ -1149,6 +1224,8 @@ class RvizPolygonArray(object):
 
             for pose in polygon_poses:
                 polygon.polygon.points.append(Point32(pose.position.x,pose.position.y,pose.position.z))
+                polygon_array.labels.append(1)
+                polygon_array.likelihood.append(1.0)
 
             polygon_array.polygons.append(polygon)
 
@@ -1227,14 +1304,20 @@ class TfBroadcaster(object):
     def Broadcast(self):
         broadcaster = tf2_ros.StaticTransformBroadcaster()
         broadcaster.sendTransform(self.transforms_list)
-        time.sleep(0.25)
+        time.sleep(0.05)
 
     def getTransforms(self):
         return self.transforms_list
 
     def LookUpTransformFromFrame(self,frame):
         
-        trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
+        exit_flag = False
+        while not(rospy.is_shutdown()) and exit_flag == False:
+            try:
+                trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
+                exit_flag = True
+            except:
+                time.sleep(0.2)
 
         pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
 

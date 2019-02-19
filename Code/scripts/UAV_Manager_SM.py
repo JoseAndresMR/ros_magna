@@ -223,7 +223,7 @@ class UAV_Manager_SM(object):
         # Copy the goal path to follow into GS's variable
         heritage.smooth_path_mode = self.action_goal.smooth_path_mode
         heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
-        output = heritage.PathFollower()     # Tell the GS to execute that function
+        output = heritage.PathFollower(self.action_goal.dynamic)     # Tell the GS to execute that function
 
         # response = FollowPathActionResponse()
         # response.output = output
@@ -250,7 +250,7 @@ class UAV_Manager_SM(object):
         heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAD role with at the required distance
-        heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance)
+        heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
 
         return 'completed'
 
@@ -263,7 +263,7 @@ class UAV_Manager_SM(object):
         heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAP role with the required bias
-        heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos)
+        heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
 
         return 'completed'
 

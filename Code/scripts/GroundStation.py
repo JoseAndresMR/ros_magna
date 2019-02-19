@@ -20,6 +20,7 @@ import signal
 import xml.etree.ElementTree
 import json
 import copy
+import rospkg
 from std_msgs.msg import Int32, String
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
@@ -38,6 +39,8 @@ class GroundStation(object):
         # Global parameters inizialization.
         self.GettingWorldDefinition()
 
+        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+
         ### Initializations
 
         self.setRoles()     # Decompose mision into rules
@@ -55,7 +58,7 @@ class GroundStation(object):
 
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
-        mission_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/Missions/{1}/{2}.json"\
+        mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
                             .format(self.home_path,self.mission_name,self.submission_name)
         with open(mission_def_path) as f:
             self.mission_def = json.load(f)
@@ -74,22 +77,13 @@ class GroundStation(object):
     # Function to decompose each mission on a role for each UAV and set its param
     def setRoles(self):
         # Definition of decomposing dictionary
-        mission_to_role_dicc = {"follow_paths_sbys":["path","path","path"],
-                                "queue_of_followers_ad":["path","uav_ad","uav_ad"],
-                                "queue_of_followers_ap":["path","uav_ap","uav_ap"],
-                                "long_wait":["wait","wait","wait"],
-                                "inspector":["wait","wait","wait"],
-                                "smooth_path":["path","path","wait"],
-                                "safety":["path","path","wait"],
-                                "2UAVs_trivial":["path","path"],
-                                "1UAVs_trivial":["path"],
-                                "1UAVs_complex":["path"],
-                                "world_in_construction":["path"],
-                                "1UAVs_inspection":["path"]}
+        mission_to_role_dicc = {"safety":["path","path","path"],
+                                "SolarPlant":["path","uav_ad","uav_ad"],
+                                "TestCrazyflieLPS":["path","uav_ap","uav_ap"]}
 
 
         # Actualize own world definition with role list
-        self.world_definition["roles_list"] = mission_to_role_dicc[self.submission_name][:self.N_uav]
+        self.world_definition["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
 
         # Add tag to role if depth camera is used
         if self.depth_camera_use == True:
@@ -111,6 +105,7 @@ class GroundStation(object):
         rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
 
         rospy.set_param('uav_{}/ual/home_pose'.format(ID),position)
+
         rospy.set_param('uav_{}/ual/pose_frame_id'.format(ID),"map")
         time.sleep(1)
 
@@ -119,12 +114,12 @@ class GroundStation(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
-        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/complete_spawner_JA.launch".format(self.home_path)
+        launch_path = "{0}/Code/launch/complete_spawner_JA.launch".format(self.home_path)
 
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
 
-        config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
+        config_def_path = "{0}/Code/JSONs/UAV_Configurations/{1}.json"\
                             .format(self.home_path,self.mission_def["UAVs_Config"][ID]["model"])
         with open(config_def_path) as f:
             config_def = json.load(f)
@@ -156,39 +151,41 @@ class GroundStation(object):
             root[10].attrib["default"] = 'false'
 
         # if sitl
-        root[11][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[11][0][0][0].attrib["value"] = str(ID+1)
-        root[11][1][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        # root[11][0][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[11][0][0][0][0].attrib["value"] = str(ID+1)
+        # root[11][0][1][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
 
         # if ual use
-        root[12][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[12][0][0].attrib["value"] = str(ID+1)
-        
+        # root[11][1][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        root[11][1][0][0][0].attrib["value"] = str(ID+1)
+
+
         if config_def["autopilot"] == "px4":
-            root[12][0][6].attrib["value"] = "mavros"
+            pass
+
         elif config_def["autopilot"] == "dji":
-            root[12][0][6].attrib["value"] = config_def["autopilot"]
 
             if config_def["laser_altimeter"] == True:
-                root[12][0][7].attrib["value"] = 'true'
+                root[11][1][1][0][1].attrib["value"] = 'true'
             else:
-                root[12][0][7].attrib["value"] = 'false'
+                root[11][1][1][0][1].attrib["value"] = 'false'
 
             if config_def["self_arming"] == True:
-                root[12][0][8].attrib["value"] = 'true'
+                root[11][1][1][0][2].attrib["value"] = 'true'
             else:
-                root[12][0][8].attrib["value"] = 'false'
+                root[11][1][1][0][2].attrib["value"] = 'false'
 
             # root[12][0][7].attrib["value"] = config_def["laser_altimeter"]
             # root[12][0][8].attrib["value"] = config_def["self_arming"]
 
         # uav manager
-        root[13][0].attrib["name"] = 'uav_{}'.format(ID+1)
-        root[13][0].attrib["args"] = '-ID={}'.format(ID+1)
+        root[12][0].attrib["name"] = 'uav_{}'.format(ID+1)
+        root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
 
         # if smooth path
-        root[13][1].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
-        root[13][1][0].attrib["value"] = str(ID+1)
+        root[12][1].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
+        root[12][1][0].attrib["value"] = str(ID+1)
 
         et.write(launch_path)
 
@@ -199,7 +196,7 @@ class GroundStation(object):
     def CreatingSimulationDataStorage(self):
 
         # Definition of root path
-        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
                                  .format(self.home_path,self.world_name,self.subworld_name,
                                  self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 
@@ -327,12 +324,12 @@ class GroundStation(object):
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 
-        for n_uav in range(self.N_uav):
-            rospy.Subscriber('/pydag/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/path'.format(n_uav+1))
-            rospy.Subscriber('/pydag/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path'.format(n_uav+1))
-            rospy.Subscriber('/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1))
+        # for n_uav in range(self.N_uav):
+        #     rospy.Subscriber('/pydag/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/path'.format(n_uav+1))
+        #     rospy.Subscriber('/pydag/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path'.format(n_uav+1))
+        #     rospy.Subscriber('/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1))
 
-        rospy.Subscriber('/visualization_marker', Marker, self.visualization_marker_callback)
+        # rospy.Subscriber('/visualization_marker', Marker, self.visualization_marker_callback)
 
     # Function to update and local parameters of UAVs status
     def handle_uav_status(self,data):
@@ -372,17 +369,17 @@ class GroundStation(object):
         except:
             print "The bag file does not exist"
 
-    def path_callback(self,data,topic):
-        try:
-            self.bag.write(topic, data)
-        except:
-            print "The bag file does not exist"
+    # def path_callback(self,data,topic):
+    #     try:
+    #         self.bag.write(topic, data)
+    #     except:
+    #         print "The bag file does not exist"
 
-    def visualization_marker_callback(self,data):
-        try:
-            self.bag.write('/visualization_marker', data)
-        except:
-            print "The bag file does not exist"
+    # def visualization_marker_callback(self,data):
+    #     try:
+    #         self.bag.write('/visualization_marker', data)
+    #     except:
+    #         print "The bag file does not exist"
             
 
     # Function to get Global ROS parameters
@@ -397,7 +394,6 @@ class GroundStation(object):
         self.N_obs = self.world_definition['N_obs']
         self.n_dataset = self.world_definition['n_dataset']
         self.uav_models = self.world_definition['uav_models']
-        self.home_path = self.world_definition['home_path']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']
         self.depth_camera_use = self.world_definition['depth_camera_use']

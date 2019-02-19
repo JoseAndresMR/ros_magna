@@ -23,7 +23,10 @@ from geographic_msgs.msg import GeoPoint
 from geometry_msgs.msg import *
 
 polygons_geo = {}
-polygons_local = {}
+
+polygons_geo["Origin"] = [
+    [39.335793, -5.355964,0.0]
+]
 
 polygons_geo["Grupo_Izqueirda"] = [
     [39.333192, -5.357926,0.0],
@@ -61,7 +64,20 @@ polygons_geo["Grupo_Centro"] = [
     [39.333334, -5.355488,0.0]
 ]
 
-# polygons_geo["Grupo_Izqueirda"] = [
+polygons_geo["Grupo_Derecha"] = [
+    [39.333678, -5.355006,0.0],
+    [39.334636, -5.355023,0.0],
+    [39.334636, -5.354729,0.0],
+    [39.334735, -5.354727,0.0],
+    [39.334743, -5.355040,0.0],
+    [39.335160, -5.355051,0.0],
+    [39.335215, -5.353487,0.0],
+    [39.334035, -5.353450,0.0],
+    [39.334021, -5.353835,0.0],
+    [39.333728, -5.353824,0.0],
+]
+
+# polygons_geo["Largo"] = [
 #     [,0.0],
 #     [,0.0],
 #     [,0.0],
@@ -77,8 +93,11 @@ polygons_geo["Grupo_Centro"] = [
 # ]
 
 
-origin_geo = [39.332938, -5.357793,0.0]
+polygons_local = {}
+
+origin_geo = polygons_geo["Origin"][0]
 new_coordinate_geo = GeoPoint(*origin_geo)
+limits = [[99999,-99999],[99999,-99999]]
 
 for key in polygons_geo.keys():
     vertex_local_list = []
@@ -88,8 +107,64 @@ for key in polygons_geo.keys():
         local_pose = geo_local_pose.geoToUtmToCartesian(new_coordinate_geo)
         vertex_local_list.append([local_pose.x,local_pose.y,local_pose.z])
 
+        if local_pose.x < limits[0][0]:
+            limits[0][0] = local_pose.x
+        if local_pose.x > limits[0][1]:
+            limits[0][1] = local_pose.x
+
+        if local_pose.y < limits[1][0]:
+            limits[1][0] = local_pose.y
+        if local_pose.y > limits[1][1]:
+            limits[1][1] = local_pose.y
+
     polygons_local[key] = vertex_local_list
 
-print(polygons_local)
+scale_center = [(limits[0][1]+limits[0][0])/2,(limits[1][1]+limits[1][0])/2]
+scale_factor = 0.15
+
+polygons_scaled_local = {}
+
+vertex_local_scaled_list = []
+for new_local in polygons_local["Origin"]:
+    # Relative to scale center
+    new_local[0]-=scale_center[0]
+    new_local[1]-=scale_center[1]
+
+    # Scaling
+    new_local[0]*=scale_factor
+    new_local[1]*=scale_factor
+
+    vertex_local_scaled_list.append(new_local)
+
+polygons_local_aux = copy.deepcopy(polygons_local)
+
+polygons_scaled_local["Origin"] = vertex_local_scaled_list
+
+for key in polygons_local_aux.keys():
+    if key != "Origin":
+        vertex_local_scaled_list = []
+        for new_local in polygons_local_aux[key]:
+
+            # Relative to scale center
+            new_local[0]-=scale_center[0]
+            new_local[1]-=scale_center[1]
+
+            # Scaling
+            new_local[0]*=scale_factor
+            new_local[1]*=scale_factor
+
+            # Relative to Origin
+            new_local[0]-=polygons_scaled_local["Origin"][0][0]
+            new_local[1]-=polygons_scaled_local["Origin"][0][1]
+
+            vertex_local_scaled_list.append(new_local)
+
+        polygons_scaled_local[key] = vertex_local_scaled_list
 
 
+
+
+# print(polygons_local)
+print("limits",limits)
+# print("scale_center",scale_center)
+print("scaled",polygons_scaled_local)

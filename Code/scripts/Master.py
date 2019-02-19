@@ -19,11 +19,14 @@ import csv
 import subprocess
 import signal
 import xml.etree.ElementTree
+import pandas as pd
+import rospkg
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from std_srvs.srv import *
 from sensor_msgs.msg import *
 import pandas as pd
+import rospkg
 
 from pydag.srv import *
 import utils
@@ -34,12 +37,12 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
         'world'              :                   "SolarPlant",                    # Type of the world or sceneario created
-        'subworld'           :                   "CanameroReal",
-        'mission'            :                   "safety",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "safety",
+        'subworld'           :                   "Canamero3Scaled015",
+        'mission'            :                   "TestCrazyflieLPS",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "1UAVs_path",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
+        'N_uav'              :                       3,                       # Number of aerial vehicles that take part in the simulations
         'uav_models'         :            ["iris", "iris", "iris"],           # Type of airborne of each vehicle
         'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
@@ -54,11 +57,7 @@ class Master(object):
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
         self.rviz_gui = True
 
-        # computer' path definition for each user
-        user = "JA"
-        if user == "JA":
-            home_path = "joseandresmr"
-        self.world_definition["home_path"] = home_path
+        self.world_definition["home_path"] = rospkg.RosPack().get_path('pydag')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
         self.world_definition["save_flag"] = True
@@ -96,9 +95,9 @@ class Master(object):
                     while not rospy.is_shutdown() and (self.simulation_finished == False):
                         time.sleep(2)
                         # Control of exceeded simulation duration
-                        if (time.time() - timer_start) > self.world_definition["path_length"]*600:
-                            self.GS_launch.shutdown()     # Terminate Ground Station
-                            self.simulation_finished = True    # Activate end flag
+                        # if (time.time() - timer_start) > self.world_definition["path_length"]*600:
+                        #     self.GS_launch.shutdown()     # Terminate Ground Station
+                        #     self.simulation_finished = True    # Activate end flag
                 except:
                     self.processess_killer(2)       # Kill unwanted processess
 
@@ -116,7 +115,7 @@ class Master(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "/home/{0}/catkin_ws/src/pydag/Code/launch/gazebo_spawner_JA.launch".format(self.world_definition["home_path"])])
+            "{0}/Code/launch/gazebo_spawner_JA.launch".format(self.world_definition["home_path"])])
 
         self.Gazebo_launch.start()
         time.sleep(0.5)
@@ -126,13 +125,13 @@ class Master(object):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
 
-        launch_path = "/home/{0}/catkin_ws/src/pydag/Code/launch/GS_spawner_JA.launch".format(self.world_definition['home_path'])
+        launch_path = "{0}/Code/launch/GS_spawner_JA.launch".format(self.world_definition['home_path'])
 
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
         if self.rviz_gui == True:
             root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "/home/{0}/catkin_ws/src/pydag/Code/Rviz_configs/{1}.rviz".format(self.world_definition['home_path'],self.world_definition["world"])
+            root[1][0].attrib["args"] = "{0}/Code/Rviz_configs/{1}.rviz".format(self.world_definition['home_path'],self.world_definition["world"])
         else:
             root[1].attrib["if"] = "false"
         et.write(launch_path)
@@ -144,7 +143,7 @@ class Master(object):
     def DatasetExistanceChecker(self):
 
         # Build path from definition
-        self.first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        self.first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
                                  .format(self.world_definition["home_path"],self.world_definition["world"],self.world_definition["subworld"],
                                  self.world_definition["mission"],self.world_definition["submission"],self.world_definition['N_uav'],
                                  self.world_definition['N_obs'])

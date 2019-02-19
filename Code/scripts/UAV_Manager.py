@@ -13,7 +13,8 @@ import argparse
 import tf, tf2_ros
 import signal
 import copy
-from six.moves import cPickle as pickle
+import rospkg
+# from six.moves import cPickle as pickle
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
@@ -35,6 +36,8 @@ class UAV_Manager(object):
         self.ID = int(ID)
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
+
+        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
 
         self.brain = UAV_Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
 
@@ -291,7 +294,7 @@ class UAV_Manager(object):
     ### Role functions ###
 
     # Function to model the target of role follow static waypoint path
-    def PathFollower(self):
+    def PathFollower(self,dynamic):
 
         if self.uav_models[self.ID-1] == "plane":
             self.PathFollower_FW()
@@ -347,7 +350,13 @@ class UAV_Manager(object):
                     self.preemption_launched = True
                     return self.critical_event
 
-                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                if dynamic == "position":
+                    self.GoToWPCommand(False,self.goal["pose"])
+
+                elif dynamic == "velocity":
+
+                    self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+
                 self.Evaluator()          # Evaluate the situation
                     
                 time.sleep(0.02)
@@ -377,11 +386,16 @@ class UAV_Manager(object):
         self.fw_qgc.MoveCommand("pass",self.goal_path_poses_list,0)
 
     # Function to model the target of role UAV Follower AD
-    def UAVFollowerAtDistance(self,target_ID,distance):
+    def UAVFollowerAtDistance(self,target_ID,distance,action_time):
 
         if self.uav_models[self.ID-1] == "plane":
             self.PathFollower_FW()
             return
+
+        action_start_time = rospy.Time.now()
+
+        self.smooth_path_mode = 0
+        self.brain.smooth_path_mode = self.smooth_path_mode
 
         self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
@@ -390,13 +404,18 @@ class UAV_Manager(object):
         self.GSStateActualization()
 
         # Execute while Ground Station doesn't send another instruction
-        while not rospy.is_shutdown() and self.uavs_data_list[1].preempt_flag == False:
+        while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
+
+            if self.preemption_launched == False and self.critical_event != 'nothing':
+                self.preemption_launched = True
+                return self.critical_event
 
             # Create an independent copy of the position of the UAV to follow
             self.goal_WP_pose = copy.deepcopy(self.uavs_data_list[target_ID-1].position.pose)
 
             # If role is orca3, goal wp will be trickered moving it in veolcitywise
             if self.solver_algorithm == "orca3":
+
                 tar_vel_lin = self.uavs_data_list[target_ID-1].velocity.twist.linear
 
                 tar_pos = self.uavs_data_list[target_ID-1].position.pose.position
@@ -417,25 +436,35 @@ class UAV_Manager(object):
 
             # Control distance to goal
             if self.DistanceToGoal() > distance:
-                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
-                self.Evaluator()        # Evaluate the situation
 
+                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                
             else:
                 self.SetVelocityCommand(True)       # If on goal, hover. In future should still be take care off collisions
 
+            self.Evaluator()        # Evaluate the situation
             time.sleep(0.2)
 
     # Function to model the target of role UAV Follower AP
-    def UAVFollowerAtPosition(self,target_ID,pos):
+    def UAVFollowerAtPosition(self,target_ID,pos,action_time):
 
         self.queue_of_followers_ap_pos = pos        # Save the position requiered
+
+        action_start_time = rospy.Time.now()
+
+        self.smooth_path_mode = 0
+        self.brain.smooth_path_mode = self.smooth_path_mode
 
         # Actualize the state and send it to Ground Station
         self.state = "following UAV {} at position".format(target_ID)
         self.GSStateActualization()
 
         # Execute while Ground Station doesn't send another instruction
-        while not rospy.is_shutdown() and self.uavs_data_list[1].preempt_flag == False:
+        while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
+
+            if self.preemption_launched == False and self.critical_event != 'nothing':
+                self.preemption_launched = True
+                return self.critical_event
 
             # Create an independent copy of the position of the UAV to follow
             self.goal_WP_pose = copy.deepcopy(self.uavs_data_list[target_ID-1].position.pose)
@@ -466,12 +495,12 @@ class UAV_Manager(object):
 
             # Control distance to goal
             if self.DistanceToGoal() > self.accepted_target_radio:
-
                 self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
-                self.Evaluator()        # Evaluate the situation
 
             else:
                 self.SetVelocityCommand(True)       # If on goal, hover
+
+            self.Evaluator()         # Evaluate the situation
 
             time.sleep(0.2)
 
@@ -509,7 +538,7 @@ class UAV_Manager(object):
                 goal_WP_pose.position.z += change_matrix[0][2]
                 # self.goal_WP_pose = goal_WP_pose
                 self.goal_path_poses_list = [goal_WP_pose]
-                outcome = self.PathFollower()
+                outcome = self.PathFollower("velocity")
         # for i in np.arange(len(self.goal_path_poses_list)):
                 # self.GoToWPCommand(True,goal_WP_pose)
 
@@ -692,7 +721,7 @@ class UAV_Manager(object):
     def StoreData(self):
         print "saving uav",self.ID,"mission data"
 
-        first_folder_path = "/home/{0}/catkin_ws/src/pydag/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
                                  .format(self.home_path,self.world_name,self.subworld_name,
                                  self.mission_name,self.submission_name,self.N_uav,self.N_obs)
 
@@ -773,7 +802,6 @@ class UAV_Manager(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_pose_list = self.world_definition['obs_pose_list']
-        self.home_path = self.world_definition['home_path']
         self.depth_camera_use = self.world_definition['depth_camera_use']
         self.smach_view = self.world_definition['smach_view']
         self.save_flag = self.world_definition['save_flag']

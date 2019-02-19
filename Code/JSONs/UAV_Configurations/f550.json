@@ -1,5 +1,7 @@
 {
     "autopilot" : "dji",
     "ual_use": 1,
-    "security_radius": 0.3
+    "security_radius": 0.3,
+    "laser_altimeter" : false,
+    "self_arming": true
 }

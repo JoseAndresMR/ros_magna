@@ -282,6 +282,10 @@ class GroundStation_SM(object):
         if "smooth_path_mode" in params.keys():
             goal.smooth_path_mode = params["smooth_path_mode"]
 
+        goal.dynamic = "velocity"
+        if "dynamic" in params.keys():
+            goal.dynamic = params["dynamic"]
+
         return goal
 
     # Result callback for follow path service. In the future should be implemented out of SM
@@ -320,7 +324,7 @@ class GroundStation_SM(object):
         # Build the goal from arguments
         goal.target_ID = params["target_ID"]
         goal.distance = params["distance"]
-        goal.time = 10      # In the future should be received from argument or mission dictionary
+        goal.time = params["time"]
 
         return goal
 

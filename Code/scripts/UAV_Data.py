@@ -12,7 +12,7 @@ from uav_abstraction_layer.msg import State
 from pydag.srv import *
 from pydag.msg import *
 # from ADSB import ADSB
-from cv_bridge import CvBridge, CvBridgeError
+# from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
 
 class UAV_Data(object):
@@ -228,7 +228,6 @@ class UAV_Data(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.communications = self.world_definition['communications']
-        self.home_path = self.world_definition['home_path']
         self.depth_camera_use = self.world_definition['depth_camera_use']
         self.obs_pose_list = self.world_definition['obs_pose_list']
 

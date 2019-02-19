@@ -13,13 +13,13 @@ import math
 import numpy as np
 import tf
 # import rvo2
-import rvo23d
+# import rvo23d
 import time
 # from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
-import tensorflow as tflow
+# import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
 class UAV_Brain(object):
@@ -222,7 +222,7 @@ class UAV_Brain(object):
         
         if self.smooth_path_mode != 0:
             return self.uavs_data_list[self.ID-1].smooth_velocity
-
+        
         # Set algorithm params
         desired_velocity_module = 2
         desired_velocity_module_at_goal = 0
@@ -313,5 +313,4 @@ class UAV_Brain(object):
         self.n_dataset = self.world_definition['n_dataset']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.obs_pose_list = self.world_definition['obs_pose_list']
-        self.home_path = self.world_definition['home_path']
         self.heading_use = self.world_definition['heading_use']

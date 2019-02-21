@@ -24,7 +24,7 @@ class UAV_Config(object):
         self.model = mission_def["UAVs_Config"][self.ID-1]["model"]
         
 
-        config_def_path = "/home/{0}/catkin_ws/src/pydag/Code/JSONs/UAV_Configurations/{1}.json"\
+        config_def_path = "{0}/Code/JSONs/UAV_Configurations/{1}.json"\
                             .format(self.home_path,self.model)
         with open(config_def_path) as f:
             self.config_def = json.load(f)
@@ -34,6 +34,7 @@ class UAV_Config(object):
         self.autopilot = self.config_def["autopilot"]
         self.ual_use = bool(self.config_def["ual_use"])
         self.security_radius = self.config_def["security_radius"]
+        self.max_speed = self.config_def["max_speed"]
         self.mode = self.config_def["mode"]
         self.marker_color = self.config_def["marker_color"]
 

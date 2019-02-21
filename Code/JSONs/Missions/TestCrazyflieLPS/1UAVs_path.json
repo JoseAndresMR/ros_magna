@@ -2,13 +2,12 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"iris",
+            "model":"f550",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
             "uav_manager_on_gs": true
         }
-
     ],
     "State_Machine": [
         {
@@ -89,7 +88,10 @@
                                         "definition":["Ground_Station","above_take_off","matrix",[0,0,0]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[1.0,0.0,0.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[1.0,0.0,10.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[1.0,3.0,10.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 1

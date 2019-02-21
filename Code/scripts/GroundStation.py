@@ -63,6 +63,14 @@ class GroundStation(object):
         with open(mission_def_path) as f:
             self.mission_def = json.load(f)
 
+        self.uav_models = []
+        for n_uav in self.mission_def["UAVs_Config"]:
+            self.uav_models.append(n_uav["model"])
+
+        self.world_definition["uav_models"] = self.uav_models
+        
+        rospy.set_param('world_definition', self.world_definition)
+
         self.Listener()     # Start subscribers
 
         self.gs_sm = GroundStation_SM(self)        # Create Ground Station State Machine
@@ -98,8 +106,8 @@ class GroundStation(object):
         # uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
         uav_frame = {}
         uav_frame['translation'] = position
-        if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
-            yaw = yaw + np.pi
+        # if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
+        #     yaw = 0.5
         uav_frame['gz_initial_yaw'] =  yaw # radians
         uav_frame['model'] = model      # Actualize on received param info
         rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
@@ -393,7 +401,6 @@ class GroundStation(object):
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']
         self.n_dataset = self.world_definition['n_dataset']
-        self.uav_models = self.world_definition['uav_models']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']
         self.depth_camera_use = self.world_definition['depth_camera_use']

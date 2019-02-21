@@ -48,6 +48,9 @@ class Worlds(object):
         with open(world_def_path) as f:
             self.world_def = json.load(f)
 
+        self.world_definition["world_boundaries"] = self.world_def["scenario"]["world_boundaries"]
+        rospy.set_param('world_definition', self.world_definition)
+
         if self.mission_name != 'basic_movement':
 
             # Save world definition params
@@ -109,7 +112,6 @@ class Worlds(object):
         self.N_uav = self.world_definition['N_uav']
         self.N_obs = self.world_definition['N_obs']
         self.n_dataset = self.world_definition['n_dataset']
-        self.uav_models = self.world_definition['uav_models']
         self.path_length = self.world_definition['path_length']
         self.solver_algorithm = self.world_definition['solver_algorithm']
         self.smach_view = self.world_definition['smach_view']
@@ -135,7 +137,7 @@ class Volume(object):
         self.obs_pose_list = []
         self.fsp_list = []
 
-        tfbroadcaster = TfBroadcaster(self.name,"map",self.origin,self.transforms_list)
+        tfbroadcaster = StaticTfBroadcaster(self.name,"map",self.origin,self.transforms_list)
         self.transforms_list = tfbroadcaster.getTransforms()
         print("on volume",len(self.transforms_list))
 
@@ -147,7 +149,7 @@ class Volume(object):
         for geometry_def in volume_def["geometries"]:
 
             self.geometries[geometry_def["name"]] = self.geometry_classes[geometry_def["shape"]](geometry_def,self.name,self.prefix,self.transforms_list)
-            self.transforms_list = self.geometries[geometry_def["name"]].getTransforms()
+            # self.transforms_list = self.geometries[geometry_def["name"]].getTransforms()
             print("on volume",len(self.transforms_list))
 
             if self.geometries[geometry_def["name"]].obs_pose_list != []:
@@ -155,7 +157,7 @@ class Volume(object):
 
     def getFPGlobalPosefromCoordinates(self,coordinates):
 
-        return FreeSpacePose(np.random.randint(100),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
+        return FreeSpacePose(np.random.randint(1000),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
 
                 
     def getTransforms(self):
@@ -201,10 +203,10 @@ class GenericGeometry:
         self.dimensions = geometry_def["dimensions"]
         self.parent_name = parent_name
 
-        self.transforms_list = transforms_list
-        print("all",len(self.transforms_list))
-        self.transforms_persistent_list = copy.deepcopy(transforms_list)
-        print("persistent",len(self.transforms_persistent_list))
+        self.transforms_auxiliar_list = copy.deepcopy(transforms_list)
+        print("all",len(self.transforms_auxiliar_list))
+        self.transforms_list = copy.deepcopy(transforms_list)
+        print("persistent",len(self.transforms_list))
 
         self.n_obs = 0
         self.obs_pose_list = []
@@ -212,11 +214,11 @@ class GenericGeometry:
         self.obs_transforms_list = []
         self.obs_shape_list = []
 
-        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.origin,self.transforms_list)
-        self.transforms_list = tfbroadcaster.getTransforms()
-        print("all",len(self.transforms_list))
-        self.transforms_persistent_list.append(tfbroadcaster.getTransforms()[-1])
-        print("persistent",len(self.transforms_persistent_list))
+        tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.origin,self.transforms_auxiliar_list)
+        self.transforms_auxiliar_list = tfbroadcaster.getTransforms()
+        print("all",len(self.transforms_auxiliar_list))
+        self.transforms_list.append(tfbroadcaster.getTransforms()[-1])
+        print("persistent",len(self.transforms_list))
 
         time.sleep(1)
         
@@ -255,8 +257,8 @@ class GenericGeometry:
         self.rviz_polython_array.Erase()
 
     def getTransforms(self):
-        print("persistent",len(self.transforms_persistent_list))
-        return self.transforms_persistent_list
+        print("persistent",len(self.transforms_list))
+        return self.transforms_list
 
     def getObstacles(self,indexes):
 
@@ -316,10 +318,10 @@ class GenericGeometry:
                                                             poses_matrix[i][j][k],\
                                                             self.name,\
                                                             self.prefix,\
-                                                            self.transforms_list)
+                                                            self.transforms_auxiliar_list)
 
-                        self.transforms_list = obs_list[i][j][k].getTransforms()
-                        print("all",len(self.transforms_list))
+                        self.transforms_auxiliar_list = obs_list[i][j][k].getTransforms()
+                        print("all",len(self.transforms_auxiliar_list))
 
                         # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
@@ -345,7 +347,7 @@ class GenericGeometry:
                                     pose,\
                                     self.name,\
                                     self.prefix,\
-                                    self.transforms_list))
+                                    self.transforms_auxiliar_list))
             self.obs_pose_list.append([[float(obs_list[-1].global_pose.position.x),float(obs_list[-1].global_pose.position.y),float(obs_list[-1].global_pose.position.z)],[0,0,0,1]])
 
             self.n_obs=self.n_obs+1     # Actualize the counter of created obstacles
@@ -365,13 +367,13 @@ class GenericGeometry:
                                                         poses_matrix[i][j][k],\
                                                         self.name,\
                                                         self.prefix,\
-                                                        self.transforms_list)
+                                                        self.transforms_auxiliar_list)
 
-                    self.transforms_list = fsposes_list[i][j][k].getTransforms()
-                    print("all",len(self.transforms_list))
+                    self.transforms_auxiliar_list = fsposes_list[i][j][k].getTransforms()
+                    print("all",len(self.transforms_auxiliar_list))
                     if make_persistent == True:
-                        self.transforms_persistent_list.append(fsposes_list[i][j][k].getTransforms()[-1])
-                        print("persistent",len(self.transforms_persistent_list))
+                        self.transforms_list.append(fsposes_list[i][j][k].getTransforms()[-1])
+                        print("persistent",len(self.transforms_list))
 
         return fsposes_list
 
@@ -381,20 +383,20 @@ class GenericGeometry:
 
         for i,pose in enumerate(selected_positions):
 
-            fsposes_list.append(FreeSpacePose(str(i),  pose, self.name, self.prefix, self.transforms_list))
+            fsposes_list.append(FreeSpacePose(str(i),  pose, self.name, self.prefix, self.transforms_auxiliar_list))
 
-            self.transforms_list = fsposes_list[-1].getTransforms()
-            print("all",len(self.transforms_list))
+            self.transforms_auxiliar_list = fsposes_list[-1].getTransforms()
+            print("all",len(self.transforms_auxiliar_list))
             if make_persistent == True:
-                self.transforms_persistent_list.append(fsposes_list[-1].getTransforms()[-1])
-                print("persistent",len(self.transforms_persistent_list))
+                self.transforms_list.append(fsposes_list[-1].getTransforms()[-1])
+                print("persistent",len(self.transforms_list))
 
 
         return fsposes_list
 
     def GenerateFreeSpacePosesFromCoordinates(self,coordinates):
 
-        return FreeSpacePose(np.random.randint(100),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list)
+        return FreeSpacePose(np.random.randint(100),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_auxiliar_list)
 
 
     def GeneratePosesSetDimensionMatrix(self,poses_set_def,make_persistent = True):
@@ -713,20 +715,22 @@ class Prism(GenericGeometry):
                 elif poses_set_def["type"] == "zigzag":
                     self.GeneratePosesSetZigZag(poses_set_def)
 
+        del(self.transforms_auxiliar_list)
+
     def TransformVertexes(self):
         n_vertexes = len(self.dimensions[1])
         self.vertexes_tf_list = []
         self.base_vertexes_pose_list = []
         for i,x_y in enumerate(self.dimensions[1]):
 
-            self.vertexes_tf_list.append(TfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i),self.name,self.PoseFromArray([[x_y[0],x_y[1],0.0],[0,0,0,1]]),self.transforms_list))
+            self.vertexes_tf_list.append(StaticTfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i),self.name,self.PoseFromArray([[x_y[0],x_y[1],0.0],[0,0,0,1]]),self.transforms_auxiliar_list))
             self.base_vertexes_pose_list.append(self.vertexes_tf_list[-1].pose)
-            self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
-            print("all",len(self.transforms_list))
+            # self.transforms_auxiliar_list = self.vertexes_tf_list[-1].getTransforms()
+            # print("all",len(self.transforms_auxiliar_list))
 
-            self.vertexes_tf_list.append(TfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i+n_vertexes),self.name,self.PoseFromArray([[x_y[0],x_y[1],self.dimensions[0]],[0,0,0,1]]),self.transforms_list))
-            self.transforms_list = self.vertexes_tf_list[-1].getTransforms()
-            print("all",len(self.transforms_list))
+            self.vertexes_tf_list.append(StaticTfBroadcaster("{0}_prism_vertex_{1}".format(self.name,i+n_vertexes),self.name,self.PoseFromArray([[x_y[0],x_y[1],self.dimensions[0]],[0,0,0,1]]),self.transforms_auxiliar_list))
+            # self.transforms_auxiliar_list = self.vertexes_tf_list[-1].getTransforms()
+            # print("all",len(self.transforms_auxiliar_list))
 
     def ClusterVertexesOnPolygons(self):
 
@@ -782,7 +786,7 @@ class Prism(GenericGeometry):
                                                 -square_dimensions[2]/2+(0.5+k)*square_dimensions[2]/poses_set_def["dimensions"][2]],
                                                 poses_set_def["poses_orientation"]])
 
-                    auxiliar_tf = TfBroadcaster("aux",center_tf.name,pose,self.transforms_list)
+                    auxiliar_tf = StaticTfBroadcaster("aux",center_tf.name,pose,self.transforms_auxiliar_list)
                     _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
 
                     aux_pose = self.PoseFromArray([trans,[0,0,0]])
@@ -827,7 +831,7 @@ class Prism(GenericGeometry):
 
                     pose = self.PoseFromArray([[I,J,K], poses_set_def["poses_orientation"]])
 
-                    auxiliar_tf = TfBroadcaster("aux",center_tf.name,pose,self.transforms_list)
+                    auxiliar_tf = StaticTfBroadcaster("aux",center_tf.name,pose,self.transforms_auxiliar_list)
                     _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
 
                     aux_pose = self.PoseFromArray([trans,[0,0,0]])
@@ -862,19 +866,19 @@ class Prism(GenericGeometry):
 
         auxiliar_reference_pose = self.PoseFromArray([[first_vertex_position.x,first_vertex_position.y,first_vertex_position.z],[0,0,sweep_angle]])
 
-        auxiliar_reference_tf = TfBroadcaster("{0}_auxiliar_reference".format(self.name),self.name,auxiliar_reference_pose,self.transforms_list)
-        self.transforms_list = auxiliar_reference_tf.getTransforms()
-        print("all",len(self.transforms_list))
+        auxiliar_reference_tf = StaticTfBroadcaster("{0}_auxiliar_reference".format(self.name),self.name,auxiliar_reference_pose,self.transforms_auxiliar_list)
+        self.transforms_auxiliar_list = auxiliar_reference_tf.getTransforms()
+        print("all",len(self.transforms_auxiliar_list))
 
         # create frames for every perimeter axes and fill x,y distances
         perimeter_vertexes_tf_list = []
         distances_x = []
         distances_y = []
         for i,vertex_pose in enumerate(perimeter_vertexes_poses_list):
-            perimeter_vertexes_tf_list.append(TfBroadcaster("{0}_perimeter_vertex_{1}".format(self.name,i),self.name,vertex_pose,self.transforms_list))
+            perimeter_vertexes_tf_list.append(StaticTfBroadcaster("{0}_perimeter_vertex_{1}".format(self.name,i),self.name,vertex_pose,self.transforms_auxiliar_list))
 
-            self.transforms_list = perimeter_vertexes_tf_list[-1].getTransforms()
-            print("all",len(self.transforms_list))
+            self.transforms_auxiliar_list = perimeter_vertexes_tf_list[-1].getTransforms()
+            print("all",len(self.transforms_auxiliar_list))
             
             _,trans,rot = perimeter_vertexes_tf_list[-1].LookUpTransformFromFrame("{0}_auxiliar_reference".format(self.name))
 
@@ -887,9 +891,9 @@ class Prism(GenericGeometry):
                                            square_limits[1][0]+(square_limits[1][1]-square_limits[1][0])/2,
                                            0.0],[0.0,0.0,0.0]])
         
-        center_tf = TfBroadcaster("{0}_center".format(self.name),"{0}_auxiliar_reference".format(self.name),center_pose,self.transforms_list)
-        self.transforms_list = center_tf.getTransforms()
-        print("all",len(self.transforms_list))
+        center_tf = StaticTfBroadcaster("{0}_center".format(self.name),"{0}_auxiliar_reference".format(self.name),center_pose,self.transforms_auxiliar_list)
+        self.transforms_auxiliar_list = center_tf.getTransforms()
+        print("all",len(self.transforms_auxiliar_list))
 
         return auxiliar_reference_tf, square_limits, center_tf
 
@@ -904,12 +908,12 @@ class Prism(GenericGeometry):
         for segment_y_distance in np.arange(square_limits[1][0],square_limits[1][1],line_spacing[1]):
 
             pose1_auxiliar = self.PoseFromArray([[square_limits[0][0],segment_y_distance,0.0],[0,0,0]])
-            auxiliar_tf = TfBroadcaster("{0}_auxiliar_1".format(self.name),"{0}_auxiliar_reference".format(self.name),pose1_auxiliar,self.transforms_list)
+            auxiliar_tf = StaticTfBroadcaster("{0}_auxiliar_1".format(self.name),"{0}_auxiliar_reference".format(self.name),pose1_auxiliar,self.transforms_auxiliar_list)
             _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
             p1 = Point3D(trans[0],trans[1],trans[2])
 
             pose2_auxiliar = self.PoseFromArray([[square_limits[0][1],segment_y_distance,0.0],[0,0,0]])
-            auxiliar_tf = TfBroadcaster("{0}_auxiliar_2".format(self.name),"{0}_auxiliar_reference".format(self.name),pose2_auxiliar,self.transforms_list)
+            auxiliar_tf = StaticTfBroadcaster("{0}_auxiliar_2".format(self.name),"{0}_auxiliar_reference".format(self.name),pose2_auxiliar,self.transforms_auxiliar_list)
             _,trans,rot = auxiliar_tf.LookUpTransformFromFrame(self.name)
             p2 = Point3D(trans[0],trans[1],trans[2])
 
@@ -927,9 +931,9 @@ class Prism(GenericGeometry):
             for segment1 in set1:
                 segment_intersection_point3D = segment2.intersection(segment1)
                 if segment_intersection_point3D:
-                    segment_intersection_tf = TfBroadcaster(self.name+"zigzag_inter"+str(i),self.name,self.Point3D2Pose(segment_intersection_point3D[0]),self.transforms_list)
-                    self.transforms_list = segment_intersection_tf.getTransforms()
-                    print("all",len(self.transforms_list))
+                    segment_intersection_tf = StaticTfBroadcaster(self.name+"zigzag_inter"+str(i),self.name,self.Point3D2Pose(segment_intersection_point3D[0]),self.transforms_auxiliar_list)
+                    self.transforms_auxiliar_list = segment_intersection_tf.getTransforms()
+                    print("all",len(self.transforms_auxiliar_list))
                     segment_intersection_tf_list.append(segment_intersection_tf)
                     i += 1
 
@@ -1009,8 +1013,7 @@ class Prism(GenericGeometry):
 
         return poses
 
-
-
+        
 
 
 # Class to deal with one single obstacle
@@ -1064,7 +1067,7 @@ class Obstacle(object):
 
         self.transforms_list = transforms_list
 
-        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
+        tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
 
         self.transforms_list = tfbroadcaster.getTransforms()
         
@@ -1075,7 +1078,7 @@ class Obstacle(object):
         self.MakeRvizMarker()
 
         # self.transforms_list = self.transforms_list[:-1]
-        # tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
+        # tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
 
 
     # Function to query the service to spawn an obstacle
@@ -1129,7 +1132,7 @@ class FreeSpacePose(object):
 
         self.transforms_list = transforms_list
 
-        tfbroadcaster = TfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
+        tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.pose,self.transforms_list)
 
         self.transforms_list = tfbroadcaster.getTransforms()
         
@@ -1254,12 +1257,12 @@ class RvizPolygonArray(object):
 
 
 
-class TfBroadcaster(object):
+class StaticTfBroadcaster(object):
     def __init__(self,name,parent_name = "map",poses = [],transforms_list = []):
 
         self.pose = poses
         self.name = name
-        self.transforms_list = transforms_list
+        self.transforms_list = copy.deepcopy(transforms_list)
 
         self.lookup_transform_listener = tf.TransformListener()
 
@@ -1276,7 +1279,7 @@ class TfBroadcaster(object):
                 quat = tf.transformations.quaternion_from_euler(poses[1][0],poses[1][1],poses[1][2])
                 transformStamped.transform.rotation = Quaternion(quat[0],quat[1],quat[2],quat[3])   
 
-                self.transforms_list.append(transformStamped)
+                self.transforms_list.append(copy.deepcopy(transformStamped))
 
             elif len(poses.shape) == 3: 
                 identity = 0
@@ -1296,7 +1299,7 @@ class TfBroadcaster(object):
             transformStamped.transform.translation = poses.position
             transformStamped.transform.rotation = poses.orientation  
 
-            self.transforms_list.append(transformStamped)
+            self.transforms_list.append(copy.deepcopy(transformStamped))
 
         self.Broadcast()
 
@@ -1329,5 +1332,81 @@ class TfBroadcaster(object):
 
         return self.global_pose
 
+
+
+class DynamicTfBroadcaster(object):
+    def __init__(self,name,parent_name = "map",poses = [],transforms_list = []):
+
+        self.pose = poses
+        self.name = name
+        self.transforms_list = copy.deepcopy(transforms_list)
+
+        self.lookup_transform_listener = tf.TransformListener()
+
+        transformStamped = geometry_msgs.msg.TransformStamped()
+        transformStamped.header.stamp = rospy.Time.now()
+        transformStamped.header.frame_id = parent_name
+
+        if type(poses) == list:
+            poses = np.array(poses)
+
+            if len(poses.shape) == 2: 
+                transformStamped.child_frame_id = name
+                transformStamped.transform.translation = Point(poses[0][0],poses[0][1],poses[0][2])
+                quat = tf.transformations.quaternion_from_euler(poses[1][0],poses[1][1],poses[1][2])
+                transformStamped.transform.rotation = Quaternion(quat[0],quat[1],quat[2],quat[3])   
+
+                self.transforms_list.append(copy.deepcopy(transformStamped))
+
+            elif len(poses.shape) == 3: 
+                identity = 0
+                for i in range(poses.shape[0]):
+                    for j in range(poses.shape[1]):
+                        for k in range(poses.shape[2]):
+                            transformStamped.child_frame_id = name + '_{0}_{1}_{2}'.format(i,j,k)
+                            transformStamped.transform.translation = poses[i][j][k].position
+                            transformStamped.transform.rotation = poses[i][j][k].orientation  
+
+                            identity + 1
+
+                            self.transforms_list.append(copy.deepcopy(transformStamped))
+
+        elif type(poses) == type(Pose()):
+            transformStamped.child_frame_id = name
+            transformStamped.transform.translation = poses.position
+            transformStamped.transform.rotation = poses.orientation  
+
+            self.transforms_list.append(copy.deepcopy(transformStamped))
+
+        self.Broadcast()
+
+
+    def Broadcast(self):
+        broadcaster = tf2_ros.TransformBroadcaster()
+        broadcaster.sendTransform(self.transforms_list)
+        time.sleep(0.05)
+
+    def getTransforms(self):
+        return self.transforms_list
+
+    def LookUpTransformFromFrame(self,frame):
+        
+        exit_flag = False
+        while not(rospy.is_shutdown()) and exit_flag == False:
+            try:
+                trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
+                exit_flag = True
+            except:
+                time.sleep(0.2)
+
+        pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
+
+        return pose,trans,rot
+
+    def getGlobalPose(self):
+
+        self.global_pose,_,_ = self.LookUpTransformFromFrame("map")
+
+        return self.global_pose
 
 

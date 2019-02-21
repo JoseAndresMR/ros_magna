@@ -36,14 +36,13 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'world'              :                   "SolarPlant",                    # Type of the world or sceneario created
-        'subworld'           :                   "Canamero3Scaled015",
+        'world'              :                   "LPS",                    # Type of the world or sceneario created
+        'subworld'           :                   "Empty",
         'mission'            :                   "TestCrazyflieLPS",                    # Global mission that characterizes every UAV's role
         'submission'         :                   "1UAVs_path",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_uav'              :                       3,                       # Number of aerial vehicles that take part in the simulations
-        'uav_models'         :            ["iris", "iris", "iris"],           # Type of airborne of each vehicle
+        'N_uav'              :                       1,                       # Number of aerial vehicles that take part in the simulations
         'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding

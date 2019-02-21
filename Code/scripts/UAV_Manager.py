@@ -16,6 +16,7 @@ import copy
 import rospkg
 # from six.moves import cPickle as pickle
 from uav_abstraction_layer.srv import *
+from uav_abstraction_layer.msg import State as ual_state_msg
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Path
@@ -91,8 +92,8 @@ class UAV_Manager(object):
 
         # Wait time to let Gazebo's Real Time recover from model spawns
         if self.uav_models[self.ID-1] != "plane":
-            while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state == 0:
-                time.sleep(0.5)
+            while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
+                time.sleep(0.1)
                 # print(self.uavs_data_list[self.ID-1].ual_state)
         # time.sleep(10 * self.N_uav)
         # time.sleep((self.ID-1) * 8)
@@ -168,7 +169,7 @@ class UAV_Manager(object):
         if hover== False:
 
             # Ask the Brain to decide the velocity
-            self.new_velocity_twist = self.brain.Guidance()
+            self.new_velocity_twist = self.brain.Guidance(self.uavs_config_list[self.ID-1].max_speed)
 
             time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
@@ -212,10 +213,19 @@ class UAV_Manager(object):
         try:
             ual_set_velocity = rospy.ServiceProxy(self.uavs_config_list[self.ID-1].ser_cli_addr['take_off'], TakeOff)
             ual_set_velocity(heigth,blocking)
-            return
+            
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in take_off"
+
+        print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaAAAAAAAAG")
+        print(self.uavs_data_list[self.ID-1].ual_state)
+        print(ual_state_msg.FLYING_AUTO)
+
+        while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
+            print(self.uavs_data_list[self.ID-1].ual_state)
+            time.sleep(0.1)
+            print(self.uavs_data_list[self.ID-1].ual_state)
 
     def TakeOffCommand_FW(self,heigth, blocking):
 
@@ -238,6 +248,9 @@ class UAV_Manager(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in go_to_waypoint"
+
+        while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
+            time.sleep(0.1)
 
     def LandCommand_FW(self, land_point = []):
 
@@ -577,12 +590,10 @@ class UAV_Manager(object):
         if self.N_obs > 0:
             collision_obs = [x for x in self.brain.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
 
-        world_boundaries = [[-50,50],[-50,50],[-1,50]]
-
         checks = self.CheckFloatsArrayIntoBoundary([self.uavs_data_list[self.ID-1].position.pose.position.x,
                                                     self.uavs_data_list[self.ID-1].position.pose.position.y,
                                                     self.uavs_data_list[self.ID-1].position.pose.position.z],
-                                                    world_boundaries)
+                                                    self.world_boundaries)
 
         collision_world_boundaries = not(all(checks))
 
@@ -806,6 +817,7 @@ class UAV_Manager(object):
         self.smach_view = self.world_definition['smach_view']
         self.save_flag = self.world_definition['save_flag']
         self.role = self.world_definition['roles_list'][self.ID-1]
+        self.world_boundaries = self.world_definition['world_boundaries']
 
 
 def main():                #### No estoy seguro de toda esta estructura

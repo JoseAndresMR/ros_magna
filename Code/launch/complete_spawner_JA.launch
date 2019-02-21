@@ -9,7 +9,7 @@
     <arg default="30.0" name="mavros_offboard_rate" />
 
     <arg default="true" name="ual_use" />
-    <arg default="px4" name="autopilot" />
+    <arg default="dji" name="autopilot" />
     <arg default="true" name="uav_manager_on_gs" />
     <arg default="true" name="smooth_path_generator" />
 
@@ -31,7 +31,7 @@
                 <include file="$(find dji_sdk)/launch/sdk.launch" />
             </group>
 
-            <group if="$(eval autopilot == 'crazyflie')">
+            <group if="$(eval autopilot == 'bitcraze')">
                 <include file="$(find lps-ros)/launch/loco_cpp.launch" />
             </group>
         </group>
@@ -54,9 +54,13 @@
                     <param name="backend" value="dji" />
                     <param name="laser_altimeter" value="false" />
                     <param name="self_arming" value="true" />
-                    <rosparam param="home_pose">[-2, 0, 0]</rosparam>
                 </node>
             </group>   
+            <group if="$(eval autopilot == 'crazyflie')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="backend" value="crazyflie" />
+                </node>
+            </group>
         </group>
     </group>
 

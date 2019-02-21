@@ -1,5 +1,6 @@
 {
     "scenario": {
+        "world_boundaries": [[-50,50],[-50,50],[-50,50]],
         "volumes": [
             {
                 "name": "World_limits",

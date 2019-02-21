@@ -53,9 +53,10 @@ class UAV_Brain(object):
 
 
     # Function to decide which algorithm is used for new velocity depending on parameters
-    def Guidance(self):
+    def Guidance(self,desired_speed):
 
         self.NeighborSelector()
+        self.desired_speed = desired_speed
 
         # print "loop time", time.time() - self.timer_start
         # self.timer_start = time.time()
@@ -224,8 +225,7 @@ class UAV_Brain(object):
             return self.uavs_data_list[self.ID-1].smooth_velocity
         
         # Set algorithm params
-        desired_velocity_module = 2
-        desired_velocity_module_at_goal = 0
+        desired_speed_at_goal = 0
         aprox_distance = 3
 
         # Create a vector from actual position to goal position
@@ -237,13 +237,13 @@ class UAV_Brain(object):
 
         # If at the distance shorter than aproximation distance, reduce the velocity module
         if distance_norm < aprox_distance:
-            desired_velocity_module = desired_velocity_module_at_goal - (desired_velocity_module - desired_velocity_module_at_goal)\
-                                    + ((desired_velocity_module - desired_velocity_module_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
+            desired_speed = desired_speed_at_goal - (desired_speed - desired_speed_at_goal)\
+                                    + ((desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
 
         # Multiply each axis by the velocity module
-        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*desired_velocity_module,\
-                                relative_distance[1]/distance_norm*desired_velocity_module,\
-                                relative_distance[2]/distance_norm*desired_velocity_module)
+        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*desired_speed,\
+                                relative_distance[1]/distance_norm*desired_speed,\
+                                relative_distance[2]/distance_norm*desired_speed)
 
         # Transform it in a pose position and calculate its orientation in Euler angles
         relative_WP_pose_degrees=Pose(relative_WP_linear,\

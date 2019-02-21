@@ -2,6 +2,7 @@
     <node name="ground_station" output="screen" pkg="pydag" type="GroundStation.py" />
     
     <group if="true">
-        <node args="/home/joseandresmr/catkin_ws/src/pydag/Code/Rviz_configs/SolarPlant.rviz" name="rviz" pkg="rviz" type="rviz" />
+        <node args="/home/joseandresmr/catkin_ws/src/pydag/Code/Rviz_configs/LPS.rviz" name="rviz" pkg="rviz" type="rviz" />
     </group>
+
 </launch>

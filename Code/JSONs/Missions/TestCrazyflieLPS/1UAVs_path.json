@@ -2,7 +2,7 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"f550",
+            "model":"iris",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
@@ -50,7 +50,7 @@
                     "ids": "all",
                     "ids_var": "uav",
                     "parameters": {
-                        "height": 0.3
+                        "height": 2.1
                     }
                 }
             ],
@@ -84,9 +84,6 @@
                             "ids_var": "uav",
                             "parameters": {
                                 "path": [
-                                    {
-                                        "definition":["Ground_Station","above_take_off","matrix",[0,0,0]]
-                                    },
                                     {
                                         "definition":["Ground_Station","volume","coordinates",[[1.0,0.0,10.0],[0,0,0,1]]]
                                     },

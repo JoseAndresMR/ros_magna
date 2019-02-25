@@ -4,5 +4,5 @@
     "security_radius": 0.3,
     "laser_altimeter" : false,
     "self_arming": true,
-    "max_speed": 2
+    "max_speed": 1
 }

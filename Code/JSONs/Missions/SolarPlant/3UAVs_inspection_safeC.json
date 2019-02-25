@@ -1,0 +1,430 @@
+{
+    "UAVs_Config": [
+        {
+            "ID":1,
+            "model":"iris",
+            "mode": "real",
+            "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": false
+        },
+        {
+            "ID":2,
+            "model":"iris",
+            "mode": "real",
+            "marker_color": [0,255,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": false
+        },
+        {
+            "ID":3,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [255,255,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": true
+        }
+
+    ],
+    "State_Machine": [
+        {
+            "type": "CBState",
+            "state_type":"new_world",
+            "name": "new world",
+            "outcomes": {
+                "completed": "world_created_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "world_created_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration":1
+            },
+            "outcomes": {
+                "completed": "spawn_UAVs"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"spawn_uavs",
+            "name": "spawn_UAVs",
+            "outcomes": {
+                "completed": "initial_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "initial_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration":1
+            },
+            "outcomes": {
+                "completed": "1_take_off"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "take_off",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "take_off",
+                    "name": "take_off",
+                    "ids": 3,
+                    "ids_var": "uav",
+                    "parameters": {
+                        "height": 3
+                    }
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "succeeded"
+                },
+                "failed": {
+                    "all": "aborted"
+                }
+            },
+            "outcomes": {
+                "completed": "1_inspection"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "inspection",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "StateMachine",
+                    "name": "inspection",
+                    "ids": 3,
+                    "occurrencies": [
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "to_panels_zone",
+                            "ids": 3,
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Ground_Station","security_height_3","matrix",[2,0,0]]
+                                    }
+                                ],
+                                "smooth_path_mode": 1,
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "3_inspection",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "3_battery_recharge_path",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "inspection",
+                            "ids": 3,
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["SolarPanelsZoneC","Inspection","path"]
+                                    }
+                                ],
+                                "smooth_path_mode": 1,
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "3_to_home",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "3_battery_recharge_path",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "to_home",
+                            "ids": 3,
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","security_height_3","matrix",[2,0,0]]
+                                    }
+                                ],
+                                "smooth_path_mode": 1,
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "3_to_home",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "StateMachine",
+                            "name": "battery_recharge_path",
+                            "ids": 3,
+                            "occurrencies": [
+                                {
+                                    "type": "SimpleActionState",
+                                    "state_type": "follow_path",
+                                    "name": "to_home",
+                                    "ids": 3,
+                                    "ids_var": "uav",
+                                    "parameters": {
+                                        "path": [
+                                            {
+                                                "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                            },
+                                            {
+                                                "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]
+                                            }
+                                        ],
+                                        "smooth_path_mode": 1,
+                                        "dynamic": "velocity"
+                                    },
+                                    "outcomes":{
+                                        "succeeded": "3_land",
+                                        "collision": "collision",
+                                        "GS_critical_event": "GS_critical_event",
+                                        "preempted": "collision",
+                                        "aborted": "collision"
+                                    }
+                                },
+                                {
+                                    "type": "SimpleActionState",
+                                    "state_type": "land",
+                                    "name": "land",
+                                    "ids": 3,
+                                    "ids_var": "uav",
+                                    "parameters": {
+                                        "height": 2
+                                    },
+                                    "outcomes":{
+                                        "succeeded": "recharge_wait",
+                                        "collision": "collision",
+                                        "GS_critical_event": "GS_critical_event",
+                                        "preempted": "collision",
+                                        "aborted": "collision"
+                                    }
+                                },
+                                {
+                                    "type": "CBState",
+                                    "state_type":"wait",
+                                    "name": "recharge_wait",
+                                    "parameters": {
+                                        "exit_type": "button"
+                                    },
+                                    "outcomes": {
+                                        "completed": "3_take_off",
+                                        "failed":"completed"
+                                    }
+                                },
+                                {
+                                    "type": "SimpleActionState",
+                                    "state_type": "take_off",
+                                    "name": "take_off",
+                                    "ids": 3,
+                                    "ids_var": "uav",
+                                    "parameters": {
+                                        "height": 2
+                                    },
+                                    "outcomes":{
+                                        "succeeded": "completed",
+                                        "collision": "collision",
+                                        "GS_critical_event": "GS_critical_event",
+                                        "preempted": "collision",
+                                        "aborted": "collision"
+                                    }
+                                }
+                            ],
+                            "outcomes":{
+                                "completed": "3_to_panels_zone",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "low_battery"
+                            }
+                        }
+                    ],
+                    "outcomes":{
+                        "completed": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "low_battery": "low_battery"
+                    }
+                }
+            ],
+            "outcome_cb":"collision_if_any_collided",
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "completed"
+                },
+                "collision": {
+                    "all": "collision"
+                },
+                "low_battery": {
+                    "all": "low_battery"
+                },
+                "GS_critical_event": {
+                    "all": "GS_critical_event"
+                }
+            },
+            "outcomes": {
+                "completed": "1_save_csv",
+                "collision": "1_hovering",
+                "low_battery": "1_hovering",
+                "GS_critical_event": "1_hovering"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "hovering",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "basic_move",
+                    "name": "hover",
+                    "ids": 1,
+                    "ids_var": "uav",
+                    "parameters": {
+                        "move_type": "translation",
+                        "dynamic": "position",
+                        "direction": "left",
+                        "value": 0.0
+                    }
+                },
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "basic_move",
+                    "name": "hover",
+                    "ids": 2,
+                    "ids_var": "uav",
+                    "parameters": {
+                        "move_type": "translation",
+                        "dynamic": "position",
+                        "direction": "left",
+                        "value": 0.0
+                    }
+                },
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "basic_move",
+                    "name": "hover",
+                    "ids": 3,
+                    "ids_var": "uav",
+                    "parameters": {
+                        "move_type": "translation",
+                        "dynamic": "position",
+                        "direction": "left",
+                        "value": 0.0
+                    }
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "succeeded"
+                },
+                "collision": {
+                    "all": "collision"
+                },
+                "low_battery": {
+                    "all": "low_battery"
+                }
+            },
+            "outcomes": {
+                "completed": "safety_wait",
+                "collision": "safety_wait",
+                "low_battery": "safety_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "safety_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration": 10
+            },
+            "outcomes": {
+                "completed": "1_save_csv"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "save_csv",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "save_csv",
+                    "name": "save_csv",
+                    "ids": "all",
+                    "ids_var" : "uav"
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "succeeded"
+                },
+                "failed": {
+                    "all": "aborted"
+                }
+            },
+            "outcomes": {
+                "completed": "1_all_land"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "all_land",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "land",
+                    "name": "land",
+                    "ids": "all",
+                    "ids_var": "uav",
+                    "parameters": {
+                        "height": 2
+                    }
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "succeeded"
+                },
+                "failed": {
+                    "all": "aborted"
+                }
+            },
+            "outcomes": {
+                "completed": "completed"
+            }
+        }
+    ]
+}

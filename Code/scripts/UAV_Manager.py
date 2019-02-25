@@ -54,7 +54,7 @@ class UAV_Manager(object):
 
         self.preemption_launched = False
 
-        self.accepted_target_radio = 0.5        # In the future, received on the world definition
+        self.accepted_target_radio = 1        # In the future, received on the world definition
 
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
@@ -159,6 +159,7 @@ class UAV_Manager(object):
         h = std_msgs.msg.Header()
         self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
         while not rospy.is_shutdown() and self.DistanceToGoal() > 0.2:
+            print(self.DistanceToGoal())
             time.sleep(0.1)
         time.sleep(1)
         return
@@ -179,7 +180,7 @@ class UAV_Manager(object):
             if ((main_role == "path" and self.state.split(" ")[0] == "to")
                 or main_role == "uav_ad" or main_role == "uav_ap"
                 ) and time_condition >= 1 and self.save_flag:
-                self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
+                # self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
                 self.last_saved_time == time.time()     # Restart time since last save
 
         # Check if hover activated
@@ -218,14 +219,9 @@ class UAV_Manager(object):
             print "Service call failed: %s"%e
             print "error in take_off"
 
-        print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaAAAAAAAAG")
-        print(self.uavs_data_list[self.ID-1].ual_state)
-        print(ual_state_msg.FLYING_AUTO)
 
         while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
-            print(self.uavs_data_list[self.ID-1].ual_state)
             time.sleep(0.1)
-            print(self.uavs_data_list[self.ID-1].ual_state)
 
     def TakeOffCommand_FW(self,heigth, blocking):
 
@@ -336,7 +332,7 @@ class UAV_Manager(object):
         if self.smooth_path_mode != 0:
             self.goal_path_smooth = self.SmoothPath(self.goal_path)
             self.path_pub_smooth.publish(self.goal_path_smooth)
-            smooth_server_response = self.sendSmoothPath(self.goal_path_smooth,1.0,1.2)
+            smooth_server_response = self.sendSmoothPath(self.goal_path_smooth,1.0,1.0)
 
             # if smooth_server_response != True:
             #     return
@@ -364,6 +360,7 @@ class UAV_Manager(object):
                     return self.critical_event
 
                 if dynamic == "position":
+                    print("flaggggg")
                     self.GoToWPCommand(False,self.goal["pose"])
 
                 elif dynamic == "velocity":
@@ -372,7 +369,7 @@ class UAV_Manager(object):
 
                 self.Evaluator()          # Evaluate the situation
                     
-                time.sleep(0.02)
+                time.sleep(0.2)
 
             self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
@@ -458,6 +455,8 @@ class UAV_Manager(object):
             self.Evaluator()        # Evaluate the situation
             time.sleep(0.2)
 
+        return 'succeeded'
+
     # Function to model the target of role UAV Follower AP
     def UAVFollowerAtPosition(self,target_ID,pos,action_time):
 
@@ -516,6 +515,8 @@ class UAV_Manager(object):
             self.Evaluator()         # Evaluate the situation
 
             time.sleep(0.2)
+
+        return 'succeeded'
 
     # Function to model the target of role of single basic move
     def basic_move(self,move_type,dynamic,direction,value):

@@ -204,9 +204,9 @@ class GenericGeometry:
         self.parent_name = parent_name
 
         self.transforms_auxiliar_list = copy.deepcopy(transforms_list)
-        print("all",len(self.transforms_auxiliar_list))
+        # print("all",len(self.transforms_auxiliar_list))
         self.transforms_list = copy.deepcopy(transforms_list)
-        print("persistent",len(self.transforms_list))
+        # print("persistent",len(self.transforms_list))
 
         self.n_obs = 0
         self.obs_pose_list = []
@@ -216,9 +216,9 @@ class GenericGeometry:
 
         tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.origin,self.transforms_auxiliar_list)
         self.transforms_auxiliar_list = tfbroadcaster.getTransforms()
-        print("all",len(self.transforms_auxiliar_list))
+        # print("all",len(self.transforms_auxiliar_list))
         self.transforms_list.append(tfbroadcaster.getTransforms()[-1])
-        print("persistent",len(self.transforms_list))
+        # print("persistent",len(self.transforms_list))
 
         time.sleep(1)
         
@@ -257,8 +257,8 @@ class GenericGeometry:
         self.rviz_polython_array.Erase()
 
     def getTransforms(self):
-        print("persistent",len(self.transforms_list))
-        return self.transforms_list
+        # print("persistent",len(self.transforms_list))
+        return self.transforms_auxiliar_list
 
     def getObstacles(self,indexes):
 
@@ -321,7 +321,7 @@ class GenericGeometry:
                                                             self.transforms_auxiliar_list)
 
                         self.transforms_auxiliar_list = obs_list[i][j][k].getTransforms()
-                        print("all",len(self.transforms_auxiliar_list))
+                        # print("all",len(self.transforms_auxiliar_list))
 
                         # self.obs_pose_list.append([np.asarray(self.obs_list.point),np.asarray(self.obs_list.quaternion)])
 
@@ -370,10 +370,10 @@ class GenericGeometry:
                                                         self.transforms_auxiliar_list)
 
                     self.transforms_auxiliar_list = fsposes_list[i][j][k].getTransforms()
-                    print("all",len(self.transforms_auxiliar_list))
+                    # print("all",len(self.transforms_auxiliar_list))
                     if make_persistent == True:
                         self.transforms_list.append(fsposes_list[i][j][k].getTransforms()[-1])
-                        print("persistent",len(self.transforms_list))
+                        # print("persistent",len(self.transforms_list))
 
         return fsposes_list
 
@@ -386,10 +386,10 @@ class GenericGeometry:
             fsposes_list.append(FreeSpacePose(str(i),  pose, self.name, self.prefix, self.transforms_auxiliar_list))
 
             self.transforms_auxiliar_list = fsposes_list[-1].getTransforms()
-            print("all",len(self.transforms_auxiliar_list))
+            # print("all",len(self.transforms_auxiliar_list))
             if make_persistent == True:
                 self.transforms_list.append(fsposes_list[-1].getTransforms()[-1])
-                print("persistent",len(self.transforms_list))
+                # print("persistent",len(self.transforms_list))
 
 
         return fsposes_list
@@ -715,7 +715,7 @@ class Prism(GenericGeometry):
                 elif poses_set_def["type"] == "zigzag":
                     self.GeneratePosesSetZigZag(poses_set_def)
 
-        del(self.transforms_auxiliar_list)
+        # del(self.transforms_auxiliar_list)
 
     def TransformVertexes(self):
         n_vertexes = len(self.dimensions[1])
@@ -808,8 +808,8 @@ class Prism(GenericGeometry):
 
         aux_cube_dimension = [square_limits[0][1]-square_limits[0][0],square_limits[1][1]-square_limits[1][0],self.dimensions[0]]
 
-        range_x = np.arange(-aux_cube_dimension[0]/2,aux_cube_dimension[0]/2,poses_set_def["dimensions"][0])
-        range_y = np.arange(-aux_cube_dimension[1]/2,aux_cube_dimension[1]/2,poses_set_def["dimensions"][1])
+        range_x = np.arange(0.2-aux_cube_dimension[0]/2,aux_cube_dimension[0]/2,poses_set_def["dimensions"][0])
+        range_y = np.arange(0.2-aux_cube_dimension[1]/2,aux_cube_dimension[1]/2,poses_set_def["dimensions"][1])
         range_z = np.arange(0.0,1.0,self.dimensions[0])
 
         selected_positions_matrix = self.RawDensityMatrix({"density":poses_set_def["density"],
@@ -868,7 +868,7 @@ class Prism(GenericGeometry):
 
         auxiliar_reference_tf = StaticTfBroadcaster("{0}_auxiliar_reference".format(self.name),self.name,auxiliar_reference_pose,self.transforms_auxiliar_list)
         self.transforms_auxiliar_list = auxiliar_reference_tf.getTransforms()
-        print("all",len(self.transforms_auxiliar_list))
+        # print("all",len(self.transforms_auxiliar_list))
 
         # create frames for every perimeter axes and fill x,y distances
         perimeter_vertexes_tf_list = []
@@ -878,7 +878,7 @@ class Prism(GenericGeometry):
             perimeter_vertexes_tf_list.append(StaticTfBroadcaster("{0}_perimeter_vertex_{1}".format(self.name,i),self.name,vertex_pose,self.transforms_auxiliar_list))
 
             self.transforms_auxiliar_list = perimeter_vertexes_tf_list[-1].getTransforms()
-            print("all",len(self.transforms_auxiliar_list))
+            # print("all",len(self.transforms_auxiliar_list))
             
             _,trans,rot = perimeter_vertexes_tf_list[-1].LookUpTransformFromFrame("{0}_auxiliar_reference".format(self.name))
 
@@ -893,7 +893,7 @@ class Prism(GenericGeometry):
         
         center_tf = StaticTfBroadcaster("{0}_center".format(self.name),"{0}_auxiliar_reference".format(self.name),center_pose,self.transforms_auxiliar_list)
         self.transforms_auxiliar_list = center_tf.getTransforms()
-        print("all",len(self.transforms_auxiliar_list))
+        # print("all",len(self.transforms_auxiliar_list))
 
         return auxiliar_reference_tf, square_limits, center_tf
 
@@ -933,7 +933,7 @@ class Prism(GenericGeometry):
                 if segment_intersection_point3D:
                     segment_intersection_tf = StaticTfBroadcaster(self.name+"zigzag_inter"+str(i),self.name,self.Point3D2Pose(segment_intersection_point3D[0]),self.transforms_auxiliar_list)
                     self.transforms_auxiliar_list = segment_intersection_tf.getTransforms()
-                    print("all",len(self.transforms_auxiliar_list))
+                    # print("all",len(self.transforms_auxiliar_list))
                     segment_intersection_tf_list.append(segment_intersection_tf)
                     i += 1
 
@@ -1040,6 +1040,9 @@ class Obstacle(object):
         if shape == "cube":
             root[0][1][0][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
             root[0][1][1][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
+        elif shape == "sphere":
+            root[0][1][0][0][0][0].text = str(dimensions[0])
+            root[0][1][1][0][0][0].text = str(dimensions[0])
 
         et.write(product_xml_path_dict[shape])
 

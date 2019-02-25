@@ -87,7 +87,9 @@ class GroundStation(object):
         # Definition of decomposing dictionary
         mission_to_role_dicc = {"safety":["path","path","path"],
                                 "SolarPlant":["path","uav_ad","uav_ad"],
-                                "TestCrazyflieLPS":["path","uav_ap","uav_ap"]}
+                                "TestCrazyflieLPS":["path","uav_ap","uav_ap"],
+                                "Delivery":["path","uav_ap","uav_ap"],
+                                "TestDJI":["path","uav_ap","uav_ap"]}
 
 
         # Actualize own world definition with role list

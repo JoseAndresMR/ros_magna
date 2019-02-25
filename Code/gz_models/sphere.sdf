@@ -1,4 +1,3 @@
-<?xml version="1.0" ?>
 <sdf version="1.5">
   <model name="Sphere">
     <static>true</static>
@@ -6,14 +5,14 @@
       <collision name="collision">
         <geometry>
           <sphere>
-            <radius>0.75</radius>
+            <radius>0.3</radius>
           </sphere>
         </geometry>
       </collision>
       <visual name="visual">
         <geometry>
           <sphere>
-            <radius>0.75</radius>
+            <radius>0.3</radius>
           </sphere>
         </geometry>
       </visual>

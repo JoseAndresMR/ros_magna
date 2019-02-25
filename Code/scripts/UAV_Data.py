@@ -32,6 +32,8 @@ class UAV_Data(object):
         self.ual_state = 0
         self.battery_percentage = 1
 
+        self.distance_rel2main = 9999
+
         self.main_uav_position = []
 
         self.GettingWorldDefinition()
@@ -146,7 +148,7 @@ class UAV_Data(object):
 
     def battery_callback(self,data):
 
-        # self.battery_percentage = data.percentage
+        self.battery_percentage = data.percentage
         time.sleep(0.1)
 
     # Function to deal with depth image data

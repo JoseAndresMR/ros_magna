@@ -2,7 +2,7 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"typhoon_h480",
+            "model":"iris",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
@@ -96,16 +96,22 @@
                                         "definition":["Ground_Station","above_take_off","matrix",[0,0,0]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[1.0,-3.0,10.0],[0,0,0,1]]]
+                                        "definition":["Delivery_1","Approximation","matrix",[0,0,0]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[1.0,3.0,10.0],[0,0,0,1]]]
+                                        "definition":["Delivery_1","Delivery","matrix",[0,0,0]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[1.0,-3.0,10.0],[0,0,0,1]]]
+                                        "definition":["Delivery_1","Approximation","matrix",[0,0,0]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[1.0,3.0,10.0],[0,0,0,1]]]
+                                        "definition":["Delivery_2","Approximation","matrix",[0,0,0]]
+                                    },
+                                    {
+                                        "definition":["Delivery_2","Delivery","matrix",[0,0,0]]
+                                    },
+                                    {
+                                        "definition":["Delivery_2","Approximation","matrix",[0,0,0]]
                                     }
                                 ],
                                 "smooth_path_mode": 1

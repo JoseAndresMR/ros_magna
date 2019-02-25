@@ -13,7 +13,7 @@ import math
 import numpy as np
 import tf
 # import rvo2
-# import rvo23d
+import rvo23d
 import time
 # from cv_bridge import CvBridge, CvBridgeError
 from uav_abstraction_layer.srv import *
@@ -237,13 +237,13 @@ class UAV_Brain(object):
 
         # If at the distance shorter than aproximation distance, reduce the velocity module
         if distance_norm < aprox_distance:
-            desired_speed = desired_speed_at_goal - (desired_speed - desired_speed_at_goal)\
-                                    + ((desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
+            self.desired_speed = desired_speed_at_goal - (self.desired_speed - desired_speed_at_goal)\
+                                    + ((self.desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
 
         # Multiply each axis by the velocity module
-        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*desired_speed,\
-                                relative_distance[1]/distance_norm*desired_speed,\
-                                relative_distance[2]/distance_norm*desired_speed)
+        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*self.desired_speed,\
+                                relative_distance[1]/distance_norm*self.desired_speed,\
+                                relative_distance[2]/distance_norm*self.desired_speed)
 
         # Transform it in a pose position and calculate its orientation in Euler angles
         relative_WP_pose_degrees=Pose(relative_WP_linear,\

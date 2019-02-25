@@ -1,3 +1,7 @@
 <launch>
     <node pkg="pydag" type="Master.py" name="master" output="screen"/>
+
+    <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" respawn="true" respawn_delay="5" />
+
+    <node pkg="master_sync_fkie" type="master_sync" name="master_sync" respawn="true" respawn_delay="5" />
 </launch>

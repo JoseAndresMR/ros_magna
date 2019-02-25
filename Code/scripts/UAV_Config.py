@@ -52,8 +52,8 @@ class UAV_Config(object):
         elif self.autopilot == "crazy":
             self.autupilot_crazy()
 
-        if self.ual_use == True:
-            self.ual()
+        # if self.ual_use == True:
+        self.ual()
 
         if self.model == "iris":
             self.model_iris()
@@ -64,10 +64,10 @@ class UAV_Config(object):
     
     def autupilot_px4(self):
 
-        self.top_sub_addr["battery_level"] = '/uav_{}/mavros/battery'.format(self.ID)
+        self.top_sub_addr["battery_level"] = '/uav_{}/mavros/battery2'.format(self.ID)
 
     def autupilot_dji(self):
-        self.top_sub_addr["battery_level"] = '/uav_{}/mavros/battery'.format(self.ID)
+        self.top_sub_addr["battery_level"] = '/uav_{}/dji/battery'.format(self.ID)
 
     def autupilot_crazy(self):
         pass

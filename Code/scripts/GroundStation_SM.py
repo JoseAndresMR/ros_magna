@@ -226,6 +226,7 @@ class GroundStation_SM(object):
                                                            first_pose.orientation.z,
                                                            first_pose.orientation.w))[2]
             heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
+            time.sleep(2)
             heritage.UAVSpawner(i)      # Call service to spawn the UAV
 
             # Wait until the UAV is in ready state
@@ -251,7 +252,7 @@ class GroundStation_SM(object):
     # Goal callback for takeoff state service
     def take_off_goal_cb(self, ud, goal, params):
         goal.height = params["height"]     # Define takeoff height, in future will be received in ud or mission dictionary
-        # time.sleep(5*ud.id)
+        # time.sleep(3*ud.id)
         return goal
 
     # Result callback for takeoff state service
@@ -329,8 +330,8 @@ class GroundStation_SM(object):
         return goal
 
     # Result callback for follow uav ad service
-    def follow_uav_ad_result_cb(self, ud, result, heritage):
-        return "succeeded"
+    def follow_uav_ad_result_cb(self, ud, status, result):
+        return result.output
 
     # Goal callback for follow uav ap service
     def follow_uav_ap_goal_cb(self, ud, goal, params):
@@ -342,8 +343,8 @@ class GroundStation_SM(object):
         return goal
 
     # Result callback for follow uav ap service
-    def follow_uav_ap_result_cb(self, ud, result, heritage):
-        return "succeeded"
+    def follow_uav_ap_result_cb(self, ud, status, result):
+        return result.output
 
     # Goal callback for land service
     def land_goal_cb(self, ud, goal, params):

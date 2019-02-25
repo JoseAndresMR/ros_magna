@@ -4,7 +4,7 @@ float32[] pos
 int64 time
 --- 
 # Define the result
-bool success
+string output
 ---
 # Define a feedback message
 float32 percent_complete

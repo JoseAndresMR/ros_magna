@@ -143,14 +143,14 @@ class UAV_Manager_SM(object):
             #                         {'completed':'action_server_advertiser'})
 
             ### FOLLOW UAV AD STATE MACHINE  & WRAPPER###
-            self.follow_uav_ad_sm = StateMachine(outcomes=['completed', 'failed'],
-                                         input_keys=['action_goal'])
+            self.follow_uav_ad_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
+                                         input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_uav_ad'] = ActionServerWrapper(
                         '/pydag/GS_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
                         FollowUAVADAction,
                         self.follow_uav_ad_sm,
-                        ['completed'], ['failed'], ['preempted'],
+                        ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
@@ -158,19 +158,22 @@ class UAV_Manager_SM(object):
 
                 StateMachine.add('follow_uav_ad',
                                  CBState(self.follow_uav_ad_stcb,
-                                         input_keys=['action_goal'],
+                                         input_keys=['action_goal','action_result','_preempt_requested'],
                                          cb_kwargs={'heritage':heritage}),
-                                 {'completed':'completed'})
+                                 {'completed':'completed',
+                                  'collision':'collision',
+                                  'low_battery':'low_battery',
+                                  'GS_critical_event':'GS_critical_event'})
 
             ### FOLLOW UAV AP STATE MACHINE  & WRAPPER###
-            self.follow_uav_ap_sm = StateMachine(outcomes=['completed', 'failed'],
-                                         input_keys=['action_goal'])
+            self.follow_uav_ap_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
+                                         input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_uav_ap'] = ActionServerWrapper(
                         '/pydag/GS_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
                         FollowUAVAPAction,
                         self.follow_uav_ap_sm,
-                        ['completed'], ['failed'], ['preempted'],
+                        ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
@@ -178,9 +181,12 @@ class UAV_Manager_SM(object):
 
                 StateMachine.add('follow_uav_ap',
                                  CBState(self.follow_uav_ap_stcb,
-                                         input_keys=['action_goal'],
+                                         input_keys=['action_goal','action_result','_preempt_requested'],
                                          cb_kwargs={'heritage':heritage}),
-                                 {'completed':'completed'})
+                                 {'completed':'completed',
+                                  'collision':'collision',
+                                  'low_battery':'low_battery',
+                                  'GS_critical_event':'GS_critical_event'})
 
             if heritage.smach_view == True:
                 sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
@@ -241,7 +247,7 @@ class UAV_Manager_SM(object):
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_uav_ad_stcb(self,heritage):
 
         # Tell the GS the identity of its new target
@@ -250,11 +256,13 @@ class UAV_Manager_SM(object):
         heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAD role with at the required distance
-        heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
+        output = heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
+
+        self.action_result.output = output
 
         return 'completed'
 
-    @cb_interface(outcomes=['completed','failed'])
+    @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_uav_ap_stcb(self,heritage):
 
         # Tell the GS the identity of its new target
@@ -263,7 +271,9 @@ class UAV_Manager_SM(object):
         heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAP role with the required bias
-        heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
+        output = heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
+
+        self.action_result.output = output
 
         return 'completed'
 

@@ -157,11 +157,20 @@ class UAV_Manager(object):
     def GoToWPCommand(self,blocking,goal_WP_pose):
 
         h = std_msgs.msg.Header()
-        self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
+        # self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
+        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
+        try:
+            ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
+            ual_set_velocity(PoseStamped(h,goal_WP_pose),True)
+            return
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in go_to_waypoint"
+
         while not rospy.is_shutdown() and self.DistanceToGoal() > 0.2:
             print(self.DistanceToGoal())
             time.sleep(0.1)
-        time.sleep(1)
+        time.sleep(0.5)
         return
 
     # Function to deal with UAL server Set Velocity
@@ -360,7 +369,7 @@ class UAV_Manager(object):
                     return self.critical_event
 
                 if dynamic == "position":
-                    print("flaggggg")
+                    
                     self.GoToWPCommand(False,self.goal["pose"])
 
                 elif dynamic == "velocity":

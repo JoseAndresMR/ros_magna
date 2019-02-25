@@ -10,10 +10,10 @@
         },
         {
             "ID":2,
-            "model":"f550",
+            "model":"iris",
             "mode": "sitl",
             "marker_color": [0,255,0,0.5],
-            "ual_use": false,
+            "ual_use": true,
             "uav_manager_on_gs": true
         }
     ],
@@ -108,8 +108,8 @@
                                         "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
                                     }
                                 ],
-                                "smooth_path_mode": 1,
-                                "dynamic": "velocity"
+                                "smooth_path_mode": 0,
+                                "dynamic": "position"
                             },
                             "outcomes":{
                                 "succeeded": "2_inspection",
@@ -129,14 +129,14 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["SolarPanelsZoneB","Approximation","coordinates",[[1.70, 5.32,0.5],[0,0,0,1]]]
+                                        "definition":["SolarPanelsZoneB","Approximation","coordinates",[[4.21, 3.23,0.5],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["SolarPanelsZoneB","Inspection","path"]
                                     }
                                 ],
-                                "smooth_path_mode": 1,
-                                "dynamic": "velocity"
+                                "smooth_path_mode": 0,
+                                "dynamic": "position"
                             },
                             "outcomes":{
                                 "succeeded": "2_to_home",
@@ -156,14 +156,14 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["SolarPanelsZoneB","Approximation","coordinates",[[1.70, 5.32,0.5],[0,0,0,1]]]
+                                        "definition":["SolarPanelsZoneB","Approximation","coordinates",[[4.21, 3.23,0.5],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["Ground_Station","security_height_2","matrix",[0,0,0]]
                                     }
                                 ],
-                                "smooth_path_mode": 1,
-                                "dynamic": "velocity"
+                                "smooth_path_mode": 0,
+                                "dynamic": "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -188,14 +188,14 @@
                                     "parameters": {
                                         "path": [
                                             {
-                                                "definition":["SolarPanelsZoneB","Approximation","coordinates",[[1.70, 5.32,0.5],[0,0,0,1]]]
+                                                "definition":["SolarPanelsZoneB","Approximation","coordinates",[[4.21, 3.23,0.5],[0,0,0,1]]]
                                             },
                                             {
                                                 "definition":["Ground_Station","security_height_2","matrix",[1,0,0]]
                                             }
                                         ],
-                                        "smooth_path_mode": 1,
-                                        "dynamic": "velocity"
+                                        "smooth_path_mode": 0,
+                                        "dynamic": "position"
                                     },
                                     "outcomes":{
                                         "succeeded": "2_land",

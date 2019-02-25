@@ -138,7 +138,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-7.14, 6.78,0.5],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["SolarPanelsZoneC","Inspection","path"]
@@ -165,7 +165,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                        "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-7.14, 6.78,0.5],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["Ground_Station","security_height_3","matrix",[2,0,0]]
@@ -197,7 +197,7 @@
                                     "parameters": {
                                         "path": [
                                             {
-                                                "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-12.52, 11.84,0.5],[0,0,0,1]]]
+                                                "definition":["SolarPanelsZoneC","Approximation","coordinates",[[-7.14, 6.78,0.5],[0,0,0,1]]]
                                             },
                                             {
                                                 "definition":["Ground_Station","security_height_1","matrix",[0,0,0]]

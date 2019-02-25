@@ -230,8 +230,8 @@ class GroundStation_SM(object):
             heritage.UAVSpawner(i)      # Call service to spawn the UAV
 
             # Wait until the UAV is in ready state
-            while not rospy.is_shutdown() and heritage.states_list[i] != "waiting for action command":
-                time.sleep(0.5)
+            # while not rospy.is_shutdown() and heritage.states_list[i] != "waiting for action command":
+            #     time.sleep(0.5)
                 # print(heritage.states_list[i])
                 # print("UAV {} with state".format(i+1), heritage.states_list[i])
 

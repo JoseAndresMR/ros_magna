@@ -1221,12 +1221,12 @@ class RvizPolygonArray(object):
 
         polygon_array = PolygonArray()
         polygon_array.header.stamp = rospy.Time.now()
-        polygon_array.header.frame_id = self.rviz_polygon_array_def["parent_name"]
+        polygon_array.header.frame_id = "map"
 
         for i,polygon_poses in enumerate(self.rviz_polygon_array_def["polygon_array_poses"]):
             polygon = PolygonStamped()
             polygon.header.stamp = rospy.Time.now()
-            polygon.header.frame_id = self.rviz_polygon_array_def["parent_name"]
+            polygon.header.frame_id = "map"
 
             for pose in polygon_poses:
                 polygon.polygon.points.append(Point32(pose.position.x,pose.position.y,pose.position.z))

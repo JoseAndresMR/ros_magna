@@ -120,7 +120,7 @@ for key in polygons_geo.keys():
     polygons_local[key] = vertex_local_list
 
 scale_center = [(limits[0][1]+limits[0][0])/2,(limits[1][1]+limits[1][0])/2]
-scale_factor = 0.15
+scale_factor = 0.08
 
 polygons_scaled_local = {}
 

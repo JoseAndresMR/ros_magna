@@ -1,0 +1,125 @@
+{
+    "UAVs_Config": [
+        {
+            "ID":1,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": true
+        },
+        {
+            "ID":2,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [0,255,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": true
+        }
+    ],
+    "State_Machine": [
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "world_created_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration":100
+            },
+            "outcomes": {
+                "completed": "1_coordinated_follow_paths"
+            }
+        },
+        {
+            "type": "StateMachine",
+            "name": "coordinated_follow_paths",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "Concurrence",
+                    "name": "coordinated_follow_wp",
+                    "ids": 1,
+                    "occurrencies": [
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "coordinated_follow_wp_1",
+                            "ids": "all",
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Ground_Station","security_height_3","matrix",[2,0,0]]
+                                    }
+                                ],
+                                "smooth_path_mode": 2
+                            },
+                            "outcomes":{
+                                "succeeded": "3_inspection",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcome_cb":"collision_if_any_collided",
+                    "occurrencies_outcome_map": {
+                        "completed": {
+                            "all": "completed"
+                        },
+                        "failed": {
+                            "all": "aborted"
+                        }
+                    },
+                    "outcomes": {
+                        "completed": "2_coordinated_follow_wp",
+                        "failed": "failed"
+                    }
+                },
+                {
+                    "type": "Concurrence",
+                    "name": "coordinated_follow_wp",
+                    "ids": 2,
+                    "occurrencies": [
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "coordinated_follow_wp_2",
+                            "ids": "all",
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Ground_Station","security_height_3","matrix",[2,0,0]]
+                                    }
+                                ],
+                                "smooth_path_mode": 2
+                            },
+                            "outcomes":{
+                                "succeeded": "3_inspection",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcome_cb":"collision_if_any_collided",
+                    "occurrencies_outcome_map": {
+                        "completed": {
+                            "all": "completed"
+                        },
+                        "failed": {
+                            "all": "aborted"
+                        }
+                    },
+                    "outcomes": {
+                        "completed": "completed",
+                        "failed": "failed"
+                    }
+                }
+            ],
+            "outcomes":{
+                "completed": "completed",
+                "failed" : "failed"
+            }
+        }
+    ]
+}

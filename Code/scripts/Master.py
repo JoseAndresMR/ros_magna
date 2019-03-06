@@ -1,6 +1,28 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
+# ----------------------------------------------------------------------------------------------------------------------
+# ROS-MAGNA
+# ----------------------------------------------------------------------------------------------------------------------
+# The MIT License (MIT)
+
+# Copyright (c) 2016 GRVC University of Seville
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+# OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 """
 Created on Mon Feb 21 2018
 
@@ -36,22 +58,26 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.world_definition = {
-        'world'              :                   "SolarPlant",                    # Type of the world or sceneario created
-        'subworld'           :                   "Canamero3Scaled008B",
-        'mission'            :                   "SolarPlant",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "3UAVs_inspection_safeB",
+        'world'              :                   "Delivery",                    # Type of the world or sceneario created
+        'subworld'           :                   "Delivery",
+        'mission'            :                   "Delivery",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "2UAVs_follow_ad_safe",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
-        'N_obs'              :                       0,                       # Number of obstacles placed onto some kind of scenarios
+        'N_obs'              :                       1,                       # Number of obstacles placed onto some kind of scenarios
         'path_length'        :                       10,                       # Length of the path for roles that follow one
         'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         }
+
+        # Starting times: A 129    B 113.7      C 99.5     
+        # 13.5
+        # HECTOR 99700 ALEJANDRO 99699 a.castillejocalle@gmail.com
 
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
         self.rviz_gui = True

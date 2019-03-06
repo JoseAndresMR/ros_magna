@@ -2,7 +2,7 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="real" name="mode" />
+    <arg default="sitl" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
@@ -10,7 +10,7 @@
 
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="false" name="uav_manager_on_gs" />
+    <arg default="true" name="uav_manager_on_gs" />
     <arg default="false" name="smooth_path_generator" />
 
     <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)2">

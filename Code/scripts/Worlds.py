@@ -63,7 +63,7 @@ class Worlds(object):
         self.ID = int(ID)
 
         self.GettingWorldDefinition()       # Global parameters inizialization.
-        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+        self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         print "creating world",ID
 
@@ -73,15 +73,15 @@ class Worlds(object):
         with open(world_def_path) as f:
             self.world_def = json.load(f)
 
-        self.world_definition["world_boundaries"] = self.world_def["scenario"]["world_boundaries"]
-        rospy.set_param('world_definition', self.world_definition)
+        self.hyperparameters["world_boundaries"] = self.world_def["scenario"]["world_boundaries"]
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)
 
         if self.mission_name != 'basic_movement':
 
             # Save world definition params
-            self.N_uav = self.world_definition['N_uav']
-            self.N_obs = self.world_definition['N_obs']
-            self.path_length = self.world_definition['path_length']         # In the future would be interesting to be able to decide this for every path generatoiion
+            self.N_uav = self.hyperparameters['N_uav']
+            self.N_obs = self.hyperparameters['N_obs']
+            self.path_length = self.hyperparameters['path_length']         # In the future would be interesting to be able to decide this for every path generatoiion
 
         self.obstacleGeneratorGeneric()        # Decide position and spawn the obstacles
 
@@ -107,9 +107,9 @@ class Worlds(object):
             if self.volumes[volume_def["name"]].obs_pose_list != []:
                 [self.obs_pose_list.append(obs) for obs in self.volumes[volume_def["name"]].obs_pose_list]
 
-        self.world_definition["obs_shape"] = []
-        self.world_definition["obs_pose_list"] = self.obs_pose_list
-        rospy.set_param('world_definition', self.world_definition)      # Actualize the ROS param
+        self.hyperparameters["obs_shape"] = []
+        self.hyperparameters["obs_pose_list"] = self.obs_pose_list
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
 
     def getFSPoseGlobal(self,params):
 
@@ -128,19 +128,19 @@ class Worlds(object):
 
     
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.path_length = self.world_definition['path_length']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.smach_view = self.world_definition['smach_view']
-        self.depth_camera_use = self.world_definition['depth_camera_use']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
+        self.n_simulation = self.hyperparameters['n_simulation']
+        self.N_uav = self.hyperparameters['N_uav']
+        self.N_obs = self.hyperparameters['N_obs']
+        self.n_dataset = self.hyperparameters['n_dataset']
+        self.path_length = self.hyperparameters['path_length']
+        self.solver_algorithm = self.hyperparameters['solver_algorithm']
+        self.smach_view = self.hyperparameters['smach_view']
+        self.depth_camera_use = self.hyperparameters['depth_camera_use']
 
 
 
@@ -1050,7 +1050,7 @@ class Obstacle(object):
         self.name = parent_prefix + '_' + 'obs_{0}'.format(self.ID)
         self.parent_name = parent_name
         self.pose = pose
-        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+        self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         basic_path = "{0}/Code/gz_models/".format(self.home_path)
         product_xml_path_dict = {"cube":basic_path + "{0}.sdf".format("cube"),\
@@ -1086,8 +1086,8 @@ class Obstacle(object):
         self.rviz_marker_def["color"] = [0,0,0,1]
            
         # Get ROS params
-        self.world_definition = rospy.get_param('world_definition')
-        self.N_obs = self.world_definition['N_obs']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.N_obs = self.hyperparameters['N_obs']
 
         # Start service proxis to spawn and delete obstacles
         self.spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
@@ -1181,7 +1181,7 @@ class RvizMarker(object):
     def __init__(self,rviz_marker_def):
         self.rviz_marker_def = rviz_marker_def
 
-        self.world_definition = rospy.get_param('world_definition')
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
 
         self.marker_pub = rospy.Publisher('/visualization_marker', Marker, queue_size = 1)
 

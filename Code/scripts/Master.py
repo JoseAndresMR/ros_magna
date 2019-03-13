@@ -50,14 +50,14 @@ from sensor_msgs.msg import *
 import pandas as pd
 import rospkg
 
-from pydag.srv import *
+from magna.srv import *
 import utils
 
 class Master(object):
     def __init__(self):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
-        self.world_definition = {
+        self.hyperparameters = {
         'world'              :                   "Delivery",                    # Type of the world or sceneario created
         'subworld'           :                   "Delivery",
         'mission'            :                   "Delivery",                    # Global mission that characterizes every UAV's role
@@ -75,24 +75,21 @@ class Master(object):
         'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         }
 
-        # Starting times: A 129    B 113.7      C 99.5     
-        # 13.5
-        # HECTOR 99700 ALEJANDRO 99699 a.castillejocalle@gmail.com
 
-        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
         self.rviz_gui = True
 
-        self.world_definition["home_path"] = rospkg.RosPack().get_path('pydag')[:-5]
+        self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
-        self.world_definition["save_flag"] = True
+        self.hyperparameters["save_flag"] = True
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
 
         ### Initializations
         self.GazeboLauncher()    # Start Gazebo standalone
-        rospy.set_param('world_definition', self.world_definition)    # Upload ROS params above defined
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)    # Upload ROS params above defined
         rospy.init_node('master', anonymous=True)     # Start node
         self.MasterListener()       # Start subscribers
         self.n_simulation_bias = 0      # Initi
@@ -100,11 +97,11 @@ class Master(object):
         ### Bunch of simulations
         if botton_selected != "q":    # If user decission was not to abort, start bunch of simulations
             # Run every simulation
-            for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.world_definition["N_iter"] + 1):
+            for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.hyperparameters["N_iter"] + 1):
                 try:
                     ### Initialization for each simulation
                     # Set ROS param of current simulation id
-                    rospy.set_param('world_definition/n_simulation', n_simulation)
+                    rospy.set_param('magna_hyperparameters/n_simulation', n_simulation)
                     print('n_simulation',n_simulation)
 
                     self.GSSpawner()   # Start Ground Station node. It will be in charge of this particuar mission
@@ -120,7 +117,7 @@ class Master(object):
                     while not rospy.is_shutdown() and (self.simulation_finished == False):
                         time.sleep(2)
                         # Control of exceeded simulation duration
-                        # if (time.time() - timer_start) > self.world_definition["path_length"]*600:
+                        # if (time.time() - timer_start) > self.hyperparameters["path_length"]*600:
                         #     self.GS_launch.shutdown()     # Terminate Ground Station
                         #     self.simulation_finished = True    # Activate end flag
                 except:
@@ -140,7 +137,7 @@ class Master(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\
-            "{0}/Code/launch/gazebo_spawner_JA.launch".format(self.world_definition["home_path"])])
+            "{0}/Code/launch/gazebo_spawner_JA.launch".format(self.hyperparameters["home_path"])])
 
         self.Gazebo_launch.start()
         time.sleep(0.5)
@@ -150,13 +147,13 @@ class Master(object):
         uuid1 = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid1)
 
-        launch_path = "{0}/Code/launch/GS_spawner_JA.launch".format(self.world_definition['home_path'])
+        launch_path = "{0}/Code/launch/GS_spawner_JA.launch".format(self.hyperparameters['home_path'])
 
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
         if self.rviz_gui == True:
             root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "{0}/Code/Rviz_configs/{1}.rviz".format(self.world_definition['home_path'],self.world_definition["world"])
+            root[1][0].attrib["args"] = "{0}/Code/Rviz_configs/{1}.rviz".format(self.hyperparameters['home_path'],self.hyperparameters["world"])
         else:
             root[1].attrib["if"] = "false"
         et.write(launch_path)
@@ -169,11 +166,11 @@ class Master(object):
 
         # Build path from definition
         self.first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
-                                 .format(self.world_definition["home_path"],self.world_definition["world"],self.world_definition["subworld"],
-                                 self.world_definition["mission"],self.world_definition["submission"],self.world_definition['N_uav'],
-                                 self.world_definition['N_obs'])
+                                 .format(self.hyperparameters["home_path"],self.hyperparameters["world"],self.hyperparameters["subworld"],
+                                 self.hyperparameters["mission"],self.hyperparameters["submission"],self.hyperparameters['N_uav'],
+                                 self.hyperparameters['N_obs'])
 
-        self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.world_definition["n_dataset"])
+        self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.hyperparameters["n_dataset"])
 
         # Ask user if the new simulation already exists
         if os.path.exists(self.second_folder_path):
@@ -186,7 +183,7 @@ class Master(object):
 
             # No saving option, deactivate its flag
             elif selected == "n":
-                self.world_definition['save_flag'] = False
+                self.hyperparameters['save_flag'] = False
                 return "n"
 
             # Add option, from existing number of dataset
@@ -195,7 +192,7 @@ class Master(object):
                 n_prior_simulations = len(os.walk(self.second_folder_path).next()[1])
 
                 # Create a bias to add it to the new simulation pointer
-                if self.world_definition["N_iter"] != 0:
+                if self.hyperparameters["N_iter"] != 0:
                     shutil.rmtree(self.second_folder_path + "/simulation_{}".format(n_prior_simulations))
                     self.n_simulation_bias = n_prior_simulations -1
                 else:
@@ -234,14 +231,14 @@ class Master(object):
         self.performance_info.to_csv(self.second_folder_path + '/performance_info.csv', sep=',')
         with open(self.second_folder_path + '/dataset_definition.csv','wb') as f:
             w = csv.writer(f)
-            w.writerows(self.world_definition.items())
+            w.writerows(self.hyperparameters.items())
 
     # Close and start Gazebo for every simulation
     def GazeboRestart(self):
         self.Gazebo_launch.shutdown()
         time.sleep(1)
         self.GazeboLauncher()
-        rospy.set_param('world_definition', self.world_definition)
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)
         time.sleep(5)
 
     # After a simulation, some processes stay alive nut must be closed
@@ -253,7 +250,7 @@ class Master(object):
     #### listener functions ####
     # Master only listens to Ground Station for the end of simulation message
     def MasterListener(self):
-        rospy.Service('/pydag/GS/simulation_termination', DieCommand, self.handle_simulation_termination)
+        rospy.Service('/magna/GS/simulation_termination', DieCommand, self.handle_simulation_termination)
 
     def handle_simulation_termination(self,data):
         self.simulation_finished = True

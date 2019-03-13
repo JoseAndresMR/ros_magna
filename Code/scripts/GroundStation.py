@@ -56,7 +56,7 @@ from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
 
 import utils
-from pydag.srv import *
+from magna.srv import *
 from GroundStation_SM import GroundStation_SM
 
 class GroundStation(object):
@@ -64,7 +64,7 @@ class GroundStation(object):
         # Global parameters inizialization.
         self.GettingWorldDefinition()
 
-        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+        self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         ### Initializations
 
@@ -92,9 +92,9 @@ class GroundStation(object):
         for n_uav in self.mission_def["UAVs_Config"]:
             self.uav_models.append(n_uav["model"])
 
-        self.world_definition["uav_models"] = self.uav_models
+        self.hyperparameters["uav_models"] = self.uav_models
         
-        rospy.set_param('world_definition', self.world_definition)
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)
 
         self.Listener()     # Start subscribers
 
@@ -118,14 +118,14 @@ class GroundStation(object):
 
 
         # Actualize own world definition with role list
-        self.world_definition["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
+        self.hyperparameters["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
 
         # Add tag to role if depth camera is used
         if self.depth_camera_use == True:
             for n_uav in range(self.N_uav):
-                self.world_definition["roles_list"][n_uav] = self.world_definition["roles_list"][n_uav] \
+                self.hyperparameters["roles_list"][n_uav] = self.hyperparameters["roles_list"][n_uav] \
                                                             + "_depth"
-        rospy.set_param('world_definition',self.world_definition)       # Set the ROS param
+        rospy.set_param('magna_hyperparameters',self.hyperparameters)       # Set the ROS param
 
 
     # Function to set UAV's ROSparameters. Launched by State Machine
@@ -282,21 +282,21 @@ class GroundStation(object):
 
     # Function to update ROS parameters about simulation performance and store them
     def SavingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.world_definition['criticals_event_list'] = self.critical_events_list
-        self.world_definition['simulation_succeed'] = self.simulation_succeed
-        rospy.set_param('world_definition',self.world_definition)
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.hyperparameters['criticals_event_list'] = self.critical_events_list
+        self.hyperparameters['simulation_succeed'] = self.simulation_succeed
+        rospy.set_param('magna_hyperparameters',self.hyperparameters)
         file_path = self.third_folder_path + '/world_definition.csv'
         with open(file_path,'wb') as f:
             w = csv.writer(f)
-            w.writerows(self.world_definition.items())
+            w.writerows(self.hyperparameters.items())
 
     # Function to close UAV Ground Station process.In the furure would be done by GS
     def UAVKiller(self):
         for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('/pydag/GS_UAV_{}/die_command'.format(n_uav+1))
+            rospy.wait_for_service('/magna/GS_UAV_{}/die_command'.format(n_uav+1))
             try:
-                die_command = rospy.ServiceProxy('/pydag/GS_UAV_{}/die_command'.format(n_uav+1), DieCommand)
+                die_command = rospy.ServiceProxy('/magna/GS_UAV_{}/die_command'.format(n_uav+1), DieCommand)
                 die_command(True)
                 time.sleep(0.1)
             except rospy.ServiceException, e:
@@ -320,9 +320,9 @@ class GroundStation(object):
 
     # Function to send termination instruction to each UAV
     def SimulationTerminationCommand(self):
-        rospy.wait_for_service('/pydag/GS/simulation_termination')
+        rospy.wait_for_service('/magna/GS/simulation_termination')
         try:
-            instruction_command = rospy.ServiceProxy('/pydag/GS/simulation_termination', DieCommand)
+            instruction_command = rospy.ServiceProxy('/magna/GS/simulation_termination', DieCommand)
             instruction_command(True)
             return
 
@@ -337,9 +337,9 @@ class GroundStation(object):
             uavs_list = [uavs_list]
         
         for uav in uavs_list:
-            rospy.wait_for_service('/pydag/GS/notification_command_to_{}'.format(uav+1))
+            rospy.wait_for_service('/magna/GS/notification_command_to_{}'.format(uav+1))
             try:
-                instruction_command = rospy.ServiceProxy('/pydag/GS/notification_command_to_{}'.format(uav+1), StateActualization)
+                instruction_command = rospy.ServiceProxy('/magna/GS/notification_command_to_{}'.format(uav+1), StateActualization)
                 instruction_command(0,"tbd",message)
                 return
 
@@ -353,16 +353,16 @@ class GroundStation(object):
     def Listener(self):
 
         # Start service for UAVs to actualize its state
-        rospy.Service('/pydag/GS/state_actualization', StateActualization, self.handle_uav_status)
+        rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_uav_status)
 
         # Start listening to topics stored on rosbag
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 
         # for n_uav in range(self.N_uav):
-        #     rospy.Subscriber('/pydag/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/path'.format(n_uav+1))
-        #     rospy.Subscriber('/pydag/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path'.format(n_uav+1))
-        #     rospy.Subscriber('/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/pydag/uav_{0}/goal_path_smooth'.format(n_uav+1))
+        #     rospy.Subscriber('/magna/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/path'.format(n_uav+1))
+        #     rospy.Subscriber('/magna/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/goal_path'.format(n_uav+1))
+        #     rospy.Subscriber('/magna/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/goal_path_smooth'.format(n_uav+1))
 
         # rospy.Subscriber('/visualization_marker', Marker, self.visualization_marker_callback)
 
@@ -419,18 +419,18 @@ class GroundStation(object):
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.smach_view = self.world_definition['smach_view']
-        self.depth_camera_use = self.world_definition['depth_camera_use']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
+        self.n_simulation = self.hyperparameters['n_simulation']
+        self.N_uav = self.hyperparameters['N_uav']
+        self.N_obs = self.hyperparameters['N_obs']
+        self.n_dataset = self.hyperparameters['n_dataset']
+        self.solver_algorithm = self.hyperparameters['solver_algorithm']
+        self.smach_view = self.hyperparameters['smach_view']
+        self.depth_camera_use = self.hyperparameters['depth_camera_use']
 
 def main():
     GroundStation()

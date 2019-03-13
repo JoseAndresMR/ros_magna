@@ -40,8 +40,8 @@ from sensor_msgs.msg import Image, BatteryState
 from std_msgs.msg import String
 from nav_msgs.msg import Path
 from uav_abstraction_layer.msg import State
-from pydag.srv import *
-from pydag.msg import *
+from magna.srv import *
+from magna.msg import *
 # from ADSB import ADSB
 # from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
@@ -80,15 +80,15 @@ class UAV_Data(object):
             self.own_path = Path()
             self.own_path.header.stamp = rospy.Time.now()
             self.own_path.header.frame_id = "map"
-            self.path_pub = rospy.Publisher('/pydag/uav_{}/path'.format(self.ID), Path, queue_size = 1)
-            self.velocity_on_uav_pub = rospy.Publisher('/pydag/uav_{}/velocity_on_uav'.format(self.ID), TwistStamped, queue_size = 1)
+            self.path_pub = rospy.Publisher('/magna/uav_{}/path'.format(self.ID), Path, queue_size = 1)
+            self.velocity_on_uav_pub = rospy.Publisher('/magna/uav_{}/velocity_on_uav'.format(self.ID), TwistStamped, queue_size = 1)
 
             marker_def = {"shape" : "cylinder"}
             marker_def["origin"] = [[0,0,0],[0,0,0]]
             marker_def["parent_name"] = "map"
             marker_def["name"] = "uav_{0}".format(self.ID)
             marker_def["id"] = 1
-            marker_def["scale"] = [self.uav_config.security_radius,self.uav_config.security_radius,self.uav_config.security_radius*0.7]
+            marker_def["scale"] = [self.uav_config.safety_radius,self.uav_config.safety_radius,self.uav_config.safety_radius*0.7]
             marker_def["color"] = self.uav_config.marker_color
 
             self.marker = RvizMarker(marker_def)
@@ -123,7 +123,7 @@ class UAV_Data(object):
         # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
         # In the future this will be implemented to wrap different roles and different IDs
         if self.ID == self.main_uav:
-            rospy.Service('/pydag/GS/notification_command_to_{}'.format(self.main_uav), StateActualization, self.handle_GS_notification_command)
+            rospy.Service('/magna/GS/notification_command_to_{}'.format(self.main_uav), StateActualization, self.handle_GS_notification_command)
 
     ## Callbacks
 
@@ -249,20 +249,20 @@ class UAV_Data(object):
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.uav_models = self.world_definition['uav_models']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.communications = self.world_definition['communications']
-        self.depth_camera_use = self.world_definition['depth_camera_use']
-        self.obs_pose_list = self.world_definition['obs_pose_list']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
+        self.n_simulation = self.hyperparameters['n_simulation']
+        self.N_uav = self.hyperparameters['N_uav']
+        self.N_obs = self.hyperparameters['N_obs']
+        self.uav_models = self.hyperparameters['uav_models']
+        self.n_dataset = self.hyperparameters['n_dataset']
+        self.solver_algorithm = self.hyperparameters['solver_algorithm']
+        self.communications = self.hyperparameters['communications']
+        self.depth_camera_use = self.hyperparameters['depth_camera_use']
+        self.obs_pose_list = self.hyperparameters['obs_pose_list']
 
 # if __name__ == '__main__':
 #     uav = UAV("485020",True,[0,0])

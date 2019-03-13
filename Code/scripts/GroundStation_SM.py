@@ -38,7 +38,7 @@ import json
 import copy
 
 from Worlds import *
-from pydag.msg import *
+from magna.msg import *
 
 class GroundStation_SM(object):
     # At init, the State Machine receives as "heritage" the hole "self" of GS
@@ -58,7 +58,7 @@ class GroundStation_SM(object):
 
             # If flag to view the sm is arised, start the introspector
             if heritage.smach_view == True:
-                sis = smach_ros.IntrospectionServer('pydag/GS_introspection', self.gs_sm, '/GS')
+                sis = smach_ros.IntrospectionServer('magna/GS_introspection', self.gs_sm, '/GS')
                 sis.start()
 
     # Function to add to current State Machine depending on step in sm defining steps list
@@ -96,7 +96,7 @@ class GroundStation_SM(object):
                 self.params = params        ### AHORRARME SELF
 
                 sm.add('{0}_{1}'.format(ids,mission_part_def["name"]),
-                        SimpleActionState('/pydag/GS_UAV_{0}/{1}_command'.format(params["uav"],mission_part_def["state_type"]),
+                        SimpleActionState('/magna/GS_UAV_{0}/{1}_command'.format(params["uav"],mission_part_def["state_type"]),
                                             self.SASMsgTypeDic[mission_part_def["state_type"]],
                                             goal_cb=self.SASGoalCBDic[mission_part_def["state_type"]],
                                             result_cb=self.SASResultCBDic[mission_part_def["state_type"]],
@@ -328,10 +328,10 @@ class GroundStation_SM(object):
         # print("result",result)
         # print("heritage",heritage)
         # for uav in range(1,heritage.N_uav):
-        #     rospy.wait_for_service('/pydag/GS/preemption_command_to_{}'.format(uav))
+        #     rospy.wait_for_service('/magna/GS/preemption_command_to_{}'.format(uav))
         #     try:
         #         # print "path for uav {} command".format(ID)
-        #         PreemptCommander = rospy.ServiceProxy('/pydag/GS/preemption_command_to_{}'.format(uav), StateActualization)
+        #         PreemptCommander = rospy.ServiceProxy('/magna/GS/preemption_command_to_{}'.format(uav), StateActualization)
         #         PreemptCommander(1,"preempt",False)
         #         return
         #     except rospy.ServiceException, e:

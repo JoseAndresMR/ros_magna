@@ -53,7 +53,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Int8
 
 from UAV_Brain import *
-from pydag.srv import *
+from magna.srv import *
 from UAV_Data import UAV_Data
 from UAV_Config import UAV_Config
 from UAV_Manager_SM import UAV_Manager_SM
@@ -68,7 +68,7 @@ class UAV_Manager(object):
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
 
-        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+        self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         self.brain = UAV_Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
 
@@ -106,8 +106,8 @@ class UAV_Manager(object):
         # Publishers initialisation
         self.pose_pub = rospy.Publisher(self.uavs_config_list[self.ID-1].top_pub_addr['go_to_waypoint'], PoseStamped, queue_size=1)
         self.velocity_pub= rospy.Publisher(self.uavs_config_list[self.ID-1].top_pub_addr['set_velocity'], TwistStamped, queue_size=1)
-        self.path_pub = rospy.Publisher('/pydag/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
-        self.path_pub_smooth = rospy.Publisher('/pydag/uav_{}/goal_path_smooth'.format(self.ID), Path, queue_size = 1)
+        self.path_pub = rospy.Publisher('/magna/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
+        self.path_pub_smooth = rospy.Publisher('/magna/uav_{}/goal_path_smooth'.format(self.ID), Path, queue_size = 1)
 
         # # Creation of a list with every UAVs' home frame
         # self.uav_frame_list = []
@@ -145,7 +145,7 @@ class UAV_Manager(object):
     def GroundStationListener(self):
 
         # Service to listen to the Ground Station if demands termination
-        rospy.Service('/pydag/GS_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
+        rospy.Service('/magna/GS_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
     # Function to accomplish end of this node
     def handle_die(self,req):
@@ -615,8 +615,8 @@ class UAV_Manager(object):
     def Evaluator(self):
 
         # Thresholds of separation acceptance
-        min_distance_uav = self.uavs_config_list[self.ID-1].security_radius*3
-        min_distance_obs = self.uavs_config_list[self.ID-1].security_radius*3
+        min_distance_uav = self.uavs_config_list[self.ID-1].safety_radius*3
+        min_distance_obs = self.uavs_config_list[self.ID-1].safety_radius*3
 
         # Initialize collision as no occurred
         collision_uav = False
@@ -790,10 +790,10 @@ class UAV_Manager(object):
     def GSStateActualization(self):
         self.uavs_data_list[self.ID-1].changed_state = True       # Actualization of the state to the main UAV object
 
-        rospy.wait_for_service('/pydag/GS/state_actualization')
+        rospy.wait_for_service('/magna/GS/state_actualization')
         try:
             # print "path for uav {} command".format(ID)
-            GS_state_actualization = rospy.ServiceProxy('/pydag/GS/state_actualization', StateActualization)
+            GS_state_actualization = rospy.ServiceProxy('/magna/GS/state_actualization', StateActualization)
             GS_state_actualization(self.ID, self.state, self.critical_event)
             return
             
@@ -841,23 +841,23 @@ class UAV_Manager(object):
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.uav_models = self.world_definition['uav_models']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list = self.world_definition['obs_pose_list']
-        self.depth_camera_use = self.world_definition['depth_camera_use']
-        self.smach_view = self.world_definition['smach_view']
-        self.save_flag = self.world_definition['save_flag']
-        self.role = self.world_definition['roles_list'][self.ID-1]
-        self.world_boundaries = self.world_definition['world_boundaries']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
+        self.n_simulation = self.hyperparameters['n_simulation']
+        self.N_uav = self.hyperparameters['N_uav']
+        self.N_obs = self.hyperparameters['N_obs']
+        self.uav_models = self.hyperparameters['uav_models']
+        self.n_dataset = self.hyperparameters['n_dataset']
+        self.solver_algorithm = self.hyperparameters['solver_algorithm']
+        self.obs_pose_list = self.hyperparameters['obs_pose_list']
+        self.depth_camera_use = self.hyperparameters['depth_camera_use']
+        self.smach_view = self.hyperparameters['smach_view']
+        self.save_flag = self.hyperparameters['save_flag']
+        self.role = self.hyperparameters['roles_list'][self.ID-1]
+        self.world_boundaries = self.hyperparameters['world_boundaries']
 
 
 def main():                #### No estoy seguro de toda esta estructura

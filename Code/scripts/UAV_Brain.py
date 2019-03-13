@@ -328,15 +328,15 @@ class UAV_Brain(object):
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
-        self.n_simulation = self.world_definition['n_simulation']
-        self.N_uav = self.world_definition['N_uav']
-        self.N_obs = self.world_definition['N_obs']
-        self.n_dataset = self.world_definition['n_dataset']
-        self.solver_algorithm = self.world_definition['solver_algorithm']
-        self.obs_pose_list = self.world_definition['obs_pose_list']
-        self.heading_use = self.world_definition['heading_use']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
+        self.n_simulation = self.hyperparameters['n_simulation']
+        self.N_uav = self.hyperparameters['N_uav']
+        self.N_obs = self.hyperparameters['N_obs']
+        self.n_dataset = self.hyperparameters['n_dataset']
+        self.solver_algorithm = self.hyperparameters['solver_algorithm']
+        self.obs_pose_list = self.hyperparameters['obs_pose_list']
+        self.heading_use = self.hyperparameters['heading_use']

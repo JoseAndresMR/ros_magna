@@ -45,7 +45,7 @@ class UAV_Config(object):
 
         self.GettingWorldDefinition()
 
-        self.home_path = rospkg.RosPack().get_path('pydag')[:-5]
+        self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
                             .format(self.home_path,self.mission_name,self.submission_name)
@@ -64,7 +64,7 @@ class UAV_Config(object):
 
         self.autopilot = self.config_def["autopilot"]
         self.ual_use = bool(self.config_def["ual_use"])
-        self.security_radius = self.config_def["security_radius"]
+        self.safety_radius = self.config_def["safety_radius"]
         self.max_speed = self.config_def["max_speed"]
         self.mode = self.config_def["mode"]
         self.marker_color = self.config_def["marker_color"]
@@ -118,19 +118,19 @@ class UAV_Config(object):
 
 
     def model_iris(self):
-        # self.security_radius = 0.3
+        # self.safety_radius = 0.3
         pass
 
     def model_crazyflie(self):
-        # self.security_radius = 0.1
+        # self.safety_radius = 0.1
         pass
 
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
-        self.world_definition = rospy.get_param('world_definition')
-        self.mission_name = self.world_definition['mission']
-        self.submission_name = self.world_definition['submission']
-        self.world_name = self.world_definition['world']
-        self.subworld_name = self.world_definition['subworld']
+        self.hyperparameters = rospy.get_param('magna_hyperparameters')
+        self.mission_name = self.hyperparameters['mission']
+        self.submission_name = self.hyperparameters['submission']
+        self.world_name = self.hyperparameters['world']
+        self.subworld_name = self.hyperparameters['subworld']
 

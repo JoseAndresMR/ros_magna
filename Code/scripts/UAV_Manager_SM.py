@@ -36,7 +36,7 @@ import smach_ros
 import rospy, time
 from smach_ros import ActionServerWrapper
 
-from pydag.msg import *
+from magna.msg import *
 
 class UAV_Manager_SM(object):
     # At init, the State Machine receives as "heriage" the hole "self" of the Ground Station
@@ -66,7 +66,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['take_off'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/take_off_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/take_off_command'.format(heritage.ID),
                         TakeOffAction,
                         self.take_off_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -87,7 +87,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['land'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/land_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/land_command'.format(heritage.ID),
                         LandAction,
                         self.land_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -109,7 +109,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['basic_move'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/basic_move_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/basic_move_command'.format(heritage.ID),
                         BasicMoveAction,
                         self.basic_move_sm,
                         ['completed'], ['failed'],['collision','low_battery','GS_critical_event'],
@@ -133,7 +133,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['save_csv'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/save_csv_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/save_csv_command'.format(heritage.ID),
                         SaveCSVAction,
                         self.save_csv_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -153,7 +153,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_path'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/follow_path_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/follow_path_command'.format(heritage.ID),
                         FollowPathAction,
                         self.follow_path_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
@@ -180,7 +180,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_uav_ad'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
                         FollowUAVADAction,
                         self.follow_uav_ad_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
@@ -203,7 +203,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_uav_ap'] = ActionServerWrapper(
-                        '/pydag/GS_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
+                        '/magna/GS_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
                         FollowUAVAPAction,
                         self.follow_uav_ap_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
@@ -222,7 +222,7 @@ class UAV_Manager_SM(object):
                                   'GS_critical_event':'GS_critical_event'})
 
             if heritage.smach_view == True:
-                sis = smach_ros.IntrospectionServer('pydag/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
+                sis = smach_ros.IntrospectionServer('magna/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
                 sis.start()
 
     #### STATE CALLBACKS ####

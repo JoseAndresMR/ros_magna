@@ -10,17 +10,17 @@
         },
         {
             "ID":2,
-            "model":"f550",
-            "mode": "real",
-            "marker_color": [0,255,0,0.5],
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [255,0,0,0.5],
             "ual_use": true,
-            "uav_manager_on_gs": false
+            "uav_manager_on_gs": true
         },
         {
             "ID":3,
             "model":"iris",
-            "mode": "real",
-            "marker_color": [255,255,0,0.5],
+            "mode": "sitl",
+            "marker_color": [255,0,0,0.5],
             "ual_use": true,
             "uav_manager_on_gs": true
         }

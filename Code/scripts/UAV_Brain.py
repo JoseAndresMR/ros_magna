@@ -49,10 +49,9 @@ from sensor_msgs.msg import *
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
 class UAV_Brain(object):
-    def __init__(self,ID,role):
+    def __init__(self,ID):
         # Local parameters inizialization from arguments
         self.ID = ID
-        self.role = role
 
         self.smooth_path_mode = 0
 

@@ -140,8 +140,7 @@ class FwQgc(object):
             home_pose_req_updt_mode = rospy.ServiceProxy(
                 '{0}/mavros/set_mode'.format(self.ual_prefix), Trigger)
             response = home_pose_req_updt_mode()
-            print(response)
-
+            
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             print "error in HomePosReqUpd"
@@ -203,7 +202,6 @@ class FwQgc(object):
             params["type"] = "waypoint"
    
         if params["type"] == "by_waypoint" and wp_mini != []:
-            print(wp_mini)
             wp.x_lat,wp.y_long,wp.z_alt = wp_mini[0][0],wp_mini[0][1],wp_mini[0][2]
 
         elif params["type"] == "by_angle":
@@ -422,7 +420,6 @@ class FwQgc(object):
 
         newWpList = []
         for wp in poses_list:
-            print type(wp),wp
 
             newWpList.append([wp.position.x,wp.position.y,wp.position.z])
         # newWpList = poses_list
@@ -454,7 +451,6 @@ class FwQgc(object):
         # print(wpList)
         # self.clearMission()
         # time.sleep(1)
-        print(wpList)
         self.WpListSrvCall(wpList)
         time.sleep(0.5)
         self.setArmed(True)

@@ -2,9 +2,17 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"iris",
+            "model":"plane",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "uav_manager_on_gs": true
+        },
+        {
+            "ID":2,
+            "model":"plane",
+            "mode": "sitl",
+            "marker_color": [0,255,0,0.5],
             "ual_use": true,
             "uav_manager_on_gs": true
         }
@@ -85,26 +93,72 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,0.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,100.0,20.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,4.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[-100.0,0.0,10.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,-100.0,20.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,2.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[100.0,0.0,10.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,0.0,2.0],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,0.0,2.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,0.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
-                                "dynamic": "position"
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "completed",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcomes":{
+                        "completed": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "low_battery": "low_battery"
+                    }
+                },
+                {
+                    "type": "StateMachine",
+                    "name": "flight",
+                    "ids": 2,
+                    "occurrencies": [
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "flight",
+                            "ids": 2,
+                            "ids_var": "uav",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,200.0,20.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[-200.0,0.0,10.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,-200.0,20.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[200.0,0.0,10.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,0.0],[0,0,0,1]]]
+                                    }
+                                ],
+                                "smooth_path_mode": 0,
+                                "dynamic": "velocity"
                             },
                             "outcomes":{
                                 "succeeded": "completed",

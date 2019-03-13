@@ -70,7 +70,7 @@ class UAV_Manager(object):
 
         self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
-        self.brain = UAV_Brain(self.ID,self.role)   # Creation of an utility to treat depth camera topic data
+        self.brain = UAV_Brain(self.ID)   # Creation of an utility to treat depth camera topic data
 
         # Local variables initialization
         self.global_data_frame = pd.DataFrame()     # Data frame where to store this UAV dynamical simulation data for future dump into a csv
@@ -213,11 +213,9 @@ class UAV_Manager(object):
 
             time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
-            main_role = self.role.split("_")[0]     # Parse the main role of the drone
-
             # Control if data must be stored depending on role, time elapsed from last save and actual state
-            if ((main_role == "path" and self.state.split(" ")[0] == "to")
-                or main_role == "uav_ad" or main_role == "uav_ap"
+            if ((self.role == "path" and self.state.split(" ")[0] == "to")
+                or self.role == "uav_ad" or self.role == "uav_ap"
                 ) and time_condition >= 1 and self.save_flag:
                 # self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
                 self.last_saved_time == time.time()     # Restart time since last save
@@ -245,8 +243,7 @@ class UAV_Manager(object):
     def TakeOffCommand(self,heigth, blocking):
 
         if self.uav_models[self.ID-1] == "plane":
-            self.TakeOffCommand_FW(heigth, blocking)
-            return
+            return self.TakeOffCommand_FW(heigth, blocking)
 
         time.sleep(3)
         rospy.wait_for_service(self.uavs_config_list[self.ID-1].ser_cli_addr['take_off'])
@@ -262,19 +259,26 @@ class UAV_Manager(object):
         while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
             time.sleep(0.1)
 
+        # Function to inform Ground Station about actual UAV's state
+        self.state = "inizializating"
+        self.GSStateActualization()
+
+        return "completed"
+
     def TakeOffCommand_FW(self,heigth, blocking):
 
         takeoff_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
         takeoff_pose.position = Point(takeoff_pose.position.x,takeoff_pose.position.y,takeoff_pose.position.z + heigth)
         self.fw_qgc.MoveCommand("takeoff",[takeoff_pose],0,{"type":"by_angle","height": 10.0,"distance":200})
 
+        return "completed"
+
     # Function to deal with UAL server Land
     def LandCommand(self,blocking):
 
         if self.uav_models[self.ID-1] == "plane":
-            self.LandCommand_FW()
-            return
-
+            return self.LandCommand_FW()
+            
         rospy.wait_for_service(self.uavs_config_list[self.ID-1].ser_cli_addr['land'])
         try:
             ual_land = rospy.ServiceProxy(self.uavs_config_list[self.ID-1].ser_cli_addr['land'], Land)
@@ -287,12 +291,20 @@ class UAV_Manager(object):
         while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
             time.sleep(0.1)
 
+        # Function to inform Ground Station about actual UAV's state
+        self.state = "landed"
+        self.GSStateActualization()
+
+        return "completed"
+
     def LandCommand_FW(self, land_point = []):
 
         # actual_position = self.uavs_data_list[self.ID-1].position.pose.position
         takeoff_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
         land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,1))
         self.fw_qgc.MoveCommand("land",[land_pose],0,{"loiter_to_alt":{"type":"by_angle","height": 10.0,"distance":200}})
+
+        return "completed"
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
@@ -344,27 +356,15 @@ class UAV_Manager(object):
     # Function to model the target of role follow static waypoint path
     def PathFollower(self,dynamic):
 
-        if self.uav_models[self.ID-1] == "plane":
-            self.PathFollower_FW()
-            return
+        self.role = "path"
+        self.brain.role = self.role
 
-        self.goal_path = Path()
-        self.goal_path.header.stamp = rospy.Time.now()
-        self.goal_path.header.frame_id = "map"
-        self.changed_state = False
-        posestamped = PoseStamped()
-        posestamped.header.stamp = rospy.Time.now()
-        posestamped.header.frame_id = "map"
-        posestamped.pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
-        self.goal_path.poses = [posestamped]
-        for pose in copy.deepcopy(self.goal_path_poses_list):
-            posestamped = PoseStamped()
-            posestamped.header.stamp = rospy.Time.now()
-            posestamped.header.frame_id = "map"
-            posestamped.pose = pose
-            self.goal_path.poses.append(posestamped)
-
+        self.goal_path = self.PoseslistToGlobalPath([copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)]+copy.deepcopy(self.goal_path_poses_list))
         self.path_pub.publish(self.goal_path)
+        self.changed_state = False
+
+        if self.uav_models[self.ID-1] == "plane":
+            return self.PathFollower_FW()
 
         self.brain.smooth_path_mode = self.smooth_path_mode
         self.uavs_data_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
@@ -434,12 +434,20 @@ class UAV_Manager(object):
 
         self.fw_qgc.MoveCommand("pass",self.goal_path_poses_list,0)
 
+        return 'succeeded'
+
     # Function to model the target of role UAV Follower AD
     def UAVFollowerAtDistance(self,target_ID,distance,action_time):
 
+        self.role = "uav_ad"
+        self.brain.role = self.role
+
+        # Tell the GS the identity of its new target
+        self.state = "following UAV {0}".format(target_ID)
+        self.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
+
         if self.uav_models[self.ID-1] == "plane":
-            self.PathFollower_FW()
-            return
+            return self.PathFollower_FW()
 
         action_start_time = rospy.Time.now()
 
@@ -498,6 +506,14 @@ class UAV_Manager(object):
 
     # Function to model the target of role UAV Follower AP
     def UAVFollowerAtPosition(self,target_ID,pos,action_time):
+
+        self.role = uav_ap
+        self.brain.role = self.role
+
+        # Tell the GS the identity of its new target
+        self.state = "following UAV {0}".format(target_ID)
+        self.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
+
 
         self.queue_of_followers_ap_pos = pos        # Save the position requiered
 
@@ -697,19 +713,17 @@ class UAV_Manager(object):
                 obs_list.append(self.parse_4CSV(self.uavs_data_list[self.ID-1].obs_poses_rel2main[obs_neighbor],"pose"))
             single_frame["obs_neigh"] = [obs_list]
 
-        main_role = self.role.split("_")[0]     # Parse of main role
-
         # Addition of information into single frame depending on role.
         # In the future, this will be defined in a separate document and a for loop will add each member
-        if main_role == "path":
+        if self.role == "path":
             single_frame["goal"] = [[{"Pose" : self.parse_4CSV(self.SubstractPoses(self.goal_WP_pose,self.uavs_data_list[self.ID-1].position.pose),"pose")}]]
             single_frame["goal"][0][0]["Twist"] = [[0,0,0],[0,0,0]]
 
-        elif main_role == "uav_ad":
+        elif self.role == "uav_ad":
             single_frame["goal"] = [[self.parse_4CSV([self.uavs_data_list[self.ID - 2]],"uavs_data_list")[0]]]
             single_frame["goal"][0][0]["distance"] = self.queue_of_followers_at_distance
 
-        elif main_role == "uav_ap":
+        elif self.role == "uav_ap":
             single_frame["goal"] = [[self.parse_4CSV([self.uavs_data_list[self.ID - 2]],"uavs_data_list")[0]]]
             single_frame["goal"][0][0]["Pose"][0] = list(np.array(single_frame["goal"][0][0]["Pose"][0]) + np.array(self.queue_of_followers_ap_pos))
 
@@ -838,6 +852,27 @@ class UAV_Manager(object):
                 checks[i] = True 
 
         return checks
+    
+    def PoseslistToGlobalPath(self,waypoints_list):
+
+        path = Path()
+        path.header.stamp = rospy.Time.now()
+        path.header.frame_id = "map"
+        self.changed_state = False
+        # posestamped = PoseStamped()
+        # posestamped.header.stamp = rospy.Time.now()
+        # posestamped.header.frame_id = "map"
+        # posestamped.pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
+        path.poses = []
+        for pose in waypoints_list:
+            posestamped = PoseStamped()
+            posestamped.header.stamp = rospy.Time.now()
+            posestamped.header.frame_id = "map"
+            posestamped.pose = pose
+            path.poses.append(posestamped)
+
+        return path
+
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -856,7 +891,6 @@ class UAV_Manager(object):
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
         self.smach_view = self.hyperparameters['smach_view']
         self.save_flag = self.hyperparameters['save_flag']
-        self.role = self.hyperparameters['roles_list'][self.ID-1]
         self.world_boundaries = self.hyperparameters['world_boundaries']
 
 

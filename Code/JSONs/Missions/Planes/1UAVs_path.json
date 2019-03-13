@@ -2,7 +2,7 @@
     "UAVs_Config": [
         {
             "ID":1,
-            "model":"iris",
+            "model":"plane",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
@@ -85,22 +85,19 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,0.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,100.0,20.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,4.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[-100.0,0.0,10.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,4.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,-100.0,20.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,2.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[100.0,0.0,10.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["Ground_Station","volume","coordinates",[[4.0,0.0,2.0],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["Ground_Station","volume","coordinates",[[0.0,0.0,2.0],[0,0,0,1]]]
+                                        "definition":["Ground_Station","volume","coordinates",[[4.0,4.0,0.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

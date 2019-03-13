@@ -58,16 +58,16 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "Delivery",                    # Type of the world or sceneario created
-        'subworld'           :                   "Delivery",
-        'mission'            :                   "Delivery",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "2UAVs_follow_ad_safe",
+        'world'              :                   "Empty",                    # Type of the world or sceneario created
+        'subworld'           :                   "Empty",
+        'mission'            :                   "Planes",                    # Global mission that characterizes every UAV's role
+        'submission'         :                   "2UAVs_path",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
         'N_obs'              :                       1,                       # Number of obstacles placed onto some kind of scenarios
-        'path_length'        :                       10,                       # Length of the path for roles that follow one
-        'solver_algorithm'   :                    "simple",                    # Algorithm for path-avoiding
+        'path_length'        :                       10,                      # Length of the path for roles that follow one
+        'solver_algorithm'   :                    "simple",                   # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'communications'     :                    "direct",                   # Kind of communications between UAVs
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
@@ -76,13 +76,13 @@ class Master(object):
         }
 
 
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
         self.rviz_gui = True
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
-        self.hyperparameters["save_flag"] = True
+        self.hyperparameters["save_flag"] = False
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
@@ -165,7 +165,7 @@ class Master(object):
     def DatasetExistanceChecker(self):
 
         # Build path from definition
-        self.first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        self.first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}"\
                                  .format(self.hyperparameters["home_path"],self.hyperparameters["world"],self.hyperparameters["subworld"],
                                  self.hyperparameters["mission"],self.hyperparameters["submission"],self.hyperparameters['N_uav'],
                                  self.hyperparameters['N_obs'])

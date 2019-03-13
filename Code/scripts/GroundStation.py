@@ -58,17 +58,17 @@ from visualization_msgs.msg import Marker
 import utils
 from magna.srv import *
 from GroundStation_SM import GroundStation_SM
+from Worlds import *
 
 class GroundStation(object):
     def __init__(self):
         # Global parameters inizialization.
-        self.GettingWorldDefinition()
+        self.GetHyperparameters()
 
         self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         ### Initializations
 
-        self.setRoles()     # Decompose mision into rules
         self.simulation_succeed = True      # Initialize succeed flag of this single simulation
 
         # Start by landed the state of every UAV
@@ -80,6 +80,8 @@ class GroundStation(object):
         self.critical_events_list = []
         for i in np.arange(self.N_uav):
             self.critical_events_list.append('nothing')
+
+        self.CreatingSimulationDataStorage()
 
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
@@ -107,26 +109,38 @@ class GroundStation(object):
 
     #### Starter functions ####
 
-    # Function to decompose each mission on a role for each UAV and set its param
-    def setRoles(self):
-        # Definition of decomposing dictionary
-        mission_to_role_dicc = {"safety":["path","path","path"],
-                                "SolarPlant":["path","uav_ad","uav_ad"],
-                                "TestCrazyflieLPS":["path","uav_ap","uav_ap"],
-                                "Delivery":["path","uav_ap","uav_ap"],
-                                "TestDJI":["path","uav_ap","uav_ap"]}
+    def SpawnUAVs(self):
+
+        for i in range(self.N_uav):     # Do it for every UAV
+            # first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
+            first_pose = self.world.getFSPoseGlobal(["Ground_Station","UAVs_take_off","matrix",[i,0,0]])
+            # Change spawn features so it spawns under its first waypoint
+            yaw = tf.transformations.euler_from_quaternion((first_pose.orientation.x,
+                                                           first_pose.orientation.y,
+                                                           first_pose.orientation.z,
+                                                           first_pose.orientation.w))[2]
+            self.SetUavSpawnFeatures(i+1,self.uav_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
+            time.sleep(2)
+            self.UAVSpawner(i)      # Call service to spawn the UAV
+
+            # Wait until the UAV is in ready state
+            while not rospy.is_shutdown() and self.states_list[i] != "waiting for action command":
+                time.sleep(0.5)
 
 
-        # Actualize own world definition with role list
-        self.hyperparameters["roles_list"] = mission_to_role_dicc[self.mission_name][:self.N_uav]
+            print("Ground Station: uav {} is ready!".format(i))
+            # time.sleep(5)
+        # time.sleep(20 * heritage.N_uav)
 
-        # Add tag to role if depth camera is used
-        if self.depth_camera_use == True:
-            for n_uav in range(self.N_uav):
-                self.hyperparameters["roles_list"][n_uav] = self.hyperparameters["roles_list"][n_uav] \
-                                                            + "_depth"
-        rospy.set_param('magna_hyperparameters',self.hyperparameters)       # Set the ROS param
+        return "completed"
 
+    def CreateWorld(self):
+
+        # Local parameters inizialization
+        self.world = Worlds(1)      # Create a World of id 1
+        self.GetHyperparameters()       # Get ROS param of definitions
+
+        return "completed"
 
     # Function to set UAV's ROSparameters. Launched by State Machine
     def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
@@ -418,7 +432,7 @@ class GroundStation(object):
             
 
     # Function to get Global ROS parameters
-    def GettingWorldDefinition(self):
+    def GetHyperparameters(self):
         self.hyperparameters = rospy.get_param('magna_hyperparameters')
         self.mission_name = self.hyperparameters['mission']
         self.submission_name = self.hyperparameters['submission']

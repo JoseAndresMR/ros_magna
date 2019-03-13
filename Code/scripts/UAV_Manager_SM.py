@@ -245,36 +245,18 @@ class UAV_Manager_SM(object):
 
     @cb_interface(outcomes=['completed','failed'])
     def take_off_stcb(self,heritage):
-        print("TAKE OFF COMMAND")
 
+        outcome = heritage.TakeOffCommand(self.action_goal.height,True)     # Tell GS to take off
 
-        heritage.TakeOffCommand(self.action_goal.height,True)     # Tell GS to take off
-
-        # Function to inform Ground Station about actual UAV's state
-        heritage.state = "inizializating"
-        heritage.GSStateActualization()
-
-        return 'completed'
+        return outcome
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_path_stcb(self,heritage):
-        # print(self._preempt_requested)
+
         # Copy the goal path to follow into GS's variable
         heritage.smooth_path_mode = self.action_goal.smooth_path_mode
         heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
         output = heritage.PathFollower(self.action_goal.dynamic)     # Tell the GS to execute that function
-
-        # response = FollowPathActionResponse()
-        # response.output = output
-
-        # class Response(object):
-        #     def __init__(self):
-        #         self.output = ""
-        # response = Response()
-        # response.output = output
-
-        # return response
-        # self.as.set_succeeded = 'collision'
 
         self.action_result.output = output
 
@@ -282,11 +264,6 @@ class UAV_Manager_SM(object):
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_uav_ad_stcb(self,heritage):
-
-        # Tell the GS the identity of its new target
-        heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
-
-        heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAD role with at the required distance
         output = heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
@@ -297,11 +274,6 @@ class UAV_Manager_SM(object):
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_uav_ap_stcb(self,heritage):
-
-        # Tell the GS the identity of its new target
-        heritage.state = "following UAV {0}".format(self.action_goal.target_ID)
-
-        heritage.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
 
         # Tell the GS to execute UAVFollowerAP role with the required bias
         output = heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
@@ -319,14 +291,10 @@ class UAV_Manager_SM(object):
 
     @cb_interface(outcomes=['completed','failed'])
     def land_stcb(self,heritage):
-        print "landing"
-        heritage.LandCommand(True)        # Tell the GS to land
 
-        # Function to inform Ground Station about actual UAV's state
-        heritage.state = "landed"
-        heritage.GSStateActualization()
+        outcome = heritage.LandCommand(True)        # Tell the GS to land
 
-        return 'completed'
+        return outcome
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def basic_move_stcb(self,heritage):

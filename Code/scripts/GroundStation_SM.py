@@ -29,7 +29,7 @@ Created on Mon Feb 21 2018
 """
 
 from smach import StateMachine, State, CBState, cb_interface,Concurrence, Sequence
-import smach_ros
+import smach_ros, rospy
 import time
 from smach_ros import SimpleActionState
 import numpy as np
@@ -37,7 +37,6 @@ import tf
 import json
 import copy
 
-from Worlds import *
 from magna.msg import *
 
 class GroundStation_SM(object):
@@ -227,13 +226,10 @@ class GroundStation_SM(object):
     # State callback to create a new world
     @cb_interface(outcomes=['completed','failed'])
     def new_world_stcb(self,heritage):
-        # Local parameters inizialization
-        heritage.CreatingSimulationDataStorage()        # Create storage forders if do not exist
-        heritage.world = Worlds(1)      # Create a World of id 1
-        heritage.GettingWorldDefinition()       # Get ROS param of definitions
-        heritage.uavs_goal_paths_list = []      # Initialize path list
+        
+        outcome = heritage.CreateWorld()
 
-        return "completed"
+        return outcome
 
     # State callback to wait one second. In future will fuse with next callback
     @cb_interface(outcomes=['completed','failed'])
@@ -247,29 +243,9 @@ class GroundStation_SM(object):
     @cb_interface(outcomes=['completed','failed'])
     def spawn_uavs_stcb(self,heritage):
 
-        for i in range(heritage.N_uav):     # Do it for every UAV
-            # first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
-            first_pose = heritage.world.getFSPoseGlobal(["Ground_Station","UAVs_take_off","matrix",[i,0,0]])
-            # Change spawn features so it spawns under its first waypoint
-            yaw = tf.transformations.euler_from_quaternion((first_pose.orientation.x,
-                                                           first_pose.orientation.y,
-                                                           first_pose.orientation.z,
-                                                           first_pose.orientation.w))[2]
-            heritage.SetUavSpawnFeatures(i+1,heritage.uav_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
-            time.sleep(2)
-            heritage.UAVSpawner(i)      # Call service to spawn the UAV
+        outcome = heritage.SpawnUAVs()
 
-            # Wait until the UAV is in ready state
-            while not rospy.is_shutdown() and heritage.states_list[i] != "waiting for action command":
-                time.sleep(0.5)
-                # print(heritage.states_list[i])
-                # print("UAV {} with state".format(i+1), heritage.states_list[i])
-
-            print("Ground Station: uav {} is ready!".format(i))
-            # time.sleep(5)
-        # time.sleep(20 * heritage.N_uav)
-
-        return "completed"
+        return outcome
 
     def DictionarizeCBStateCallbacks(self):
         self.CBStateCBDic = {}
@@ -321,34 +297,9 @@ class GroundStation_SM(object):
 
     # Result callback for follow path service. In the future should be implemented out of SM
     def follow_path_result_cb(self, ud, status, result):
-        print(result.output)
-        ### CONSEGUIR METER HERITAGE
-        # print("ud",ud)
-        # print("status",status)
-        # print("result",result)
-        # print("heritage",heritage)
-        # for uav in range(1,heritage.N_uav):
-        #     rospy.wait_for_service('/magna/GS/preemption_command_to_{}'.format(uav))
-        #     try:
-        #         # print "path for uav {} command".format(ID)
-        #         PreemptCommander = rospy.ServiceProxy('/magna/GS/preemption_command_to_{}'.format(uav), StateActualization)
-        #         PreemptCommander(1,"preempt",False)
-        #         return
-        #     except rospy.ServiceException, e:
-        #         print "Service call failed: %s"%e
-        #         print "error in state_actualization"
+
         return result.output
 
-    # Goal callback for follow wp service
-    # def follow_wp_goal_cb(self, ud, goal, params):
-    #     # Select UAV wp from ID and wp number and give it as goal
-    #     goal.goal_path_poses_list = [params["heritage"].uavs_goal_paths_list[params["id"]-1][params["n_wp"]]]
-
-    #     return goal
-
-    # # Result callback for follow wp service
-    # def follow_wp_result_cb(self, ud, result, heritage):
-    #     return "succeeded"
 
     # Goal callback for follow uav ad service
     def follow_uav_ad_goal_cb(self, ud, goal, params):

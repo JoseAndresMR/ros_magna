@@ -2,7 +2,7 @@
     <node name="ground_station" output="screen" pkg="magna" type="GroundStation.py" />
     
     <group if="true">
-        <node args="/home/joseandresmr/catkin_ws/src/magna/Code/Rviz_configs/Delivery.rviz" name="rviz" pkg="rviz" type="rviz" />
+        <node args="/home/joseandresmr/catkin_ws/src/magna/Code/Rviz_configs/Empty.rviz" name="rviz" pkg="rviz" type="rviz" />
     </group>
 
 </launch>

@@ -1,0 +1,256 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "volumes": [
+            {
+                "name": "Ground_Station_4",
+                "prefix": "GS4",
+                "origin": [[800.0,415.0,0.0],[0.0,0.0,-1.5708]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,15.0],[0,0,0]],
+                        "dimensions": [30,30,30],
+                        "color": [0,255,255],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Home_limits",
+                        "prefix": "HL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "above_take_off",
+                        "prefix": "aTO",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Aerogenerator",
+                "prefix": "AGen",
+                "origin": [[800,400.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "dimensions": [20.0,[[0,-70,0],[70,-20,0],[70,80,0],[0,130,0],[-70,80,0],[-70,-20,0]]],
+                        "color": [170,0,127],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Base",
+                        "prefix": "base",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,20.0],[0,0,0]],
+                        "dimensions": [5.0,5.0,40.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [4, 4, 40.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Motor",
+                        "prefix": "mot",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,42.5],[0,1.57,0]],
+                        "dimensions": [5.0,5.0,10.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [4, 4, 10.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Axis",
+                        "prefix": "ax",
+                        "shape": "sphere",
+                        "id": 0,
+                        "origin": [[5.0,0.0,42.5],[0,1.57,0]],
+                        "dimensions": [5.0,5.0,5.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["sphere"],
+                                "obstacles_dimensions": [4,4,4],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Shovel1",
+                        "prefix": "ax1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[5.0,0.0,27.5],[0,0,0]],
+                        "dimensions": [3.0,5.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [2.0,4.0,30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Shovel2",
+                        "prefix": "ax2",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[5.0,13.0,50.0],[2.0944,0,0]],
+                        "dimensions": [3.0,5.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [2.0,4.0,30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Shovel3",
+                        "prefix": "ax3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[5.0,-13.0,50.0],[-2.0944,0,0]],
+                        "dimensions": [3.0,5.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [2.0,4.0,30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Inspection",
+                        "prefix": "ins",
+                        "id": 0,
+                        "origin": [[13.0,0.0,42.5],[0,1.57,0]],
+                        "shape": "prism",
+                        "dimensions": [3.0,[[-20.0,-30.0,0],[-20.0,30.0,0],[35.0,30.0,0],[35.0,-30.0,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.5,
+                                "spacing": [5,5],
+                                "sweep_angle":1.5708,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

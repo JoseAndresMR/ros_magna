@@ -58,21 +58,18 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "Empty",                    # Type of the world or sceneario created
-        'subworld'           :                   "Empty",
-        'mission'            :                   "Planes",                    # Global mission that characterizes every UAV's role
-        'submission'         :                   "2UAVs_path",
+        'world'              :                   "GAUSSUseCase1",                    # Type of the world or sceneario created
+        'subworld'           :                   "Complete",
+        'mission'            :                   "GAUSSUseCase1",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "Complete",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_uav'              :                       2,                       # Number of aerial vehicles that take part in the simulations
-        'N_obs'              :                       1,                       # Number of obstacles placed onto some kind of scenarios
-        'path_length'        :                       10,                      # Length of the path for roles that follow one
-        'solver_algorithm'   :                    "simple",                   # Algorithm for path-avoiding
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
-        'communications'     :                    "direct",                   # Kind of communications between UAVs
+        'algorithms_list'    :                    ["simple"],
+        'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
         }
 
 
@@ -82,7 +79,7 @@ class Master(object):
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
-        self.hyperparameters["save_flag"] = False
+        self.hyperparameters["save_flag"] = True
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
@@ -153,7 +150,7 @@ class Master(object):
         root = et.getroot()
         if self.rviz_gui == True:
             root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "{0}/Code/Rviz_configs/{1}.rviz".format(self.hyperparameters['home_path'],self.hyperparameters["world"])
+            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
         else:
             root[1].attrib["if"] = "false"
         et.write(launch_path)
@@ -167,8 +164,7 @@ class Master(object):
         # Build path from definition
         self.first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}"\
                                  .format(self.hyperparameters["home_path"],self.hyperparameters["world"],self.hyperparameters["subworld"],
-                                 self.hyperparameters["mission"],self.hyperparameters["submission"],self.hyperparameters['N_uav'],
-                                 self.hyperparameters['N_obs'])
+                                 self.hyperparameters["mission"],self.hyperparameters["submission"])
 
         self.second_folder_path = self.first_folder_path + "/dataset_{}".format(self.hyperparameters["n_dataset"])
 

@@ -1,0 +1,117 @@
+{
+    "scenario": {
+        "world_boundaries": [[-900,900],[-900,900],[-900,900]],
+        "volumes": [
+            {
+                "name": "Ground_Station_5",
+                "prefix": "GS5",
+                "origin": [[-750,-250,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,15.0],[0,0,0]],
+                        "dimensions": [30,30,30],
+                        "color": [255,170,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Home_limits",
+                        "prefix": "HL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "above_take_off",
+                        "prefix": "aTO",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "CropField",
+                "prefix": "CF",
+                "origin": [[850.0,-350,0.0],[0.0,0.0,-0.78539816339]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "dimensions": [80.0,[[-210,-125,0],[210,-125,0],[210,125,0],[-210,125,0]]],
+                        "color": [170,0,127],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Inspection",
+                        "prefix": "ins",
+                        "id": 0,
+                        "origin": [[0.0,0.0,70],[0,0,0]],
+                        "shape": "prism",
+                        "dimensions": [20.0,[[-210,-125,0],[210,-125,0],[210,125,0],[-210,125,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.5,
+                                "spacing": [200,200],
+                                "sweep_angle":-1.5708,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

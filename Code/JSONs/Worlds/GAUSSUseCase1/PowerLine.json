@@ -1,0 +1,493 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "volumes": [
+            {
+                "name": "Ground_Station_3",
+                "prefix": "GS3",
+                "origin": [[825.0,250.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,15.0],[0,0,0]],
+                        "dimensions": [30,30,30],
+                        "color": [255,255,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Home_limits",
+                        "prefix": "HL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "above_take_off",
+                        "prefix": "aTO",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "PowerLine",
+                "prefix": "PL",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,250.0,30.0],[0,1.5707963,0]],
+                        "dimensions": [50,50,1600],
+                        "color": [255,255,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Base1",
+                        "prefix": "base1",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-800.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires1",
+                        "prefix": "wir1",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-700.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base2",
+                        "prefix": "base2",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-600.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires2",
+                        "prefix": "wir2",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-500.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base3",
+                        "prefix": "base3",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-400.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires3",
+                        "prefix": "wir3",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-300.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base4",
+                        "prefix": "base4",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-200.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires4",
+                        "prefix": "wir4",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-100.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base5",
+                        "prefix": "base5",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[800.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base5",
+                        "prefix": "base5",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires6",
+                        "prefix": "wir6",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[100.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base6",
+                        "prefix": "base6",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[200.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires7",
+                        "prefix": "wir7",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[300.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base7",
+                        "prefix": "base7",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[400.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires8",
+                        "prefix": "wir8",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[500.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base8",
+                        "prefix": "base8",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[600.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Wires9",
+                        "prefix": "wir9",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[700.0,250.0,25.0],[0,1.5707963,0]],
+                        "dimensions": [4.0,4.0,200.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "coordinates",
+                                "use" : "obstacles",
+                                "coordinates": [[[0,1,0],[0,0,0]],[[0,-1,0],[0,0,0]]],
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.3, 0.3, 200],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Base9",
+                        "prefix": "base9",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[800.0,250.0,15.0],[0,0,0]],
+                        "dimensions": [4.0,4.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [3.0, 3.0, 30.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

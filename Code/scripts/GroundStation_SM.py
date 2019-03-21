@@ -95,7 +95,7 @@ class GroundStation_SM(object):
                 self.params = params        ### AHORRARME SELF
 
                 sm.add('{0}_{1}'.format(ids,mission_part_def["name"]),
-                        SimpleActionState('/magna/GS_UAV_{0}/{1}_command'.format(params["uav"],mission_part_def["state_type"]),
+                        SimpleActionState('/magna/GS_Agent_{0}/{1}_command'.format(params["agent"],mission_part_def["state_type"]),
                                             self.SASMsgTypeDic[mission_part_def["state_type"]],
                                             goal_cb=self.SASGoalCBDic[mission_part_def["state_type"]],
                                             result_cb=self.SASResultCBDic[mission_part_def["state_type"]],
@@ -239,18 +239,18 @@ class GroundStation_SM(object):
 
         return outcome
 
-    # State callback to spawn UAVs
+    # State callback to spawn Agents
     @cb_interface(outcomes=['completed','failed'])
-    def spawn_uavs_stcb(self,heritage):
+    def spawn_agents_stcb(self,heritage,initial_poses):
 
-        outcome = heritage.SpawnUAVs()
+        outcome = heritage.SpawnAgents(initial_poses)
 
         return outcome
 
     def DictionarizeCBStateCallbacks(self):
         self.CBStateCBDic = {}
         self.CBStateCBDic["new_world"] = self.new_world_stcb
-        self.CBStateCBDic["spawn_uavs"] = self.spawn_uavs_stcb
+        self.CBStateCBDic["spawn_agents"] = self.spawn_agents_stcb
         self.CBStateCBDic["wait"] = self.wait_stcb
 
     #### ACTIONS CALLBACKS ####
@@ -301,8 +301,8 @@ class GroundStation_SM(object):
         return result.output
 
 
-    # Goal callback for follow uav ad service
-    def follow_uav_ad_goal_cb(self, ud, goal, params):
+    # Goal callback for follow agent ad service
+    def follow_agent_ad_goal_cb(self, ud, goal, params):
         # Build the goal from arguments
         goal.target_ID = params["target_ID"]
         goal.distance = params["distance"]
@@ -310,12 +310,12 @@ class GroundStation_SM(object):
 
         return goal
 
-    # Result callback for follow uav ad service
-    def follow_uav_ad_result_cb(self, ud, status, result):
+    # Result callback for follow agent ad service
+    def follow_agent_ad_result_cb(self, ud, status, result):
         return result.output
 
-    # Goal callback for follow uav ap service
-    def follow_uav_ap_goal_cb(self, ud, goal, params):
+    # Goal callback for follow agent ap service
+    def follow_agent_ap_goal_cb(self, ud, goal, params):
         # Build the goal from arguments
         goal.target_ID = params["target_ID"]
         goal.pos = params["pos"]
@@ -323,8 +323,8 @@ class GroundStation_SM(object):
 
         return goal
 
-    # Result callback for follow uav ap service
-    def follow_uav_ap_result_cb(self, ud, status, result):
+    # Result callback for follow agent ap service
+    def follow_agent_ap_result_cb(self, ud, status, result):
         return result.output
 
     # Goal callback for land service
@@ -354,8 +354,8 @@ class GroundStation_SM(object):
         self.SASGoalCBDic["take_off"] = self.take_off_goal_cb
         self.SASGoalCBDic["basic_move"] = self.basic_move_goal_cb
         self.SASGoalCBDic["follow_path"] = self.follow_path_goal_cb
-        self.SASGoalCBDic["follow_uav_ad"] = self.follow_uav_ad_goal_cb
-        self.SASGoalCBDic["follow_uav_ap"] = self.follow_uav_ap_goal_cb
+        self.SASGoalCBDic["follow_agent_ad"] = self.follow_agent_ad_goal_cb
+        self.SASGoalCBDic["follow_agent_ap"] = self.follow_agent_ap_goal_cb
         self.SASGoalCBDic["land"] = self.land_goal_cb
         self.SASGoalCBDic["save_csv"] = self.save_csv_goal_cb
 
@@ -363,8 +363,8 @@ class GroundStation_SM(object):
         self.SASResultCBDic["take_off"] = self.take_off_result_cb
         self.SASResultCBDic["basic_move"] = self.basic_move_result_cb
         self.SASResultCBDic["follow_path"] = self.follow_path_result_cb
-        self.SASResultCBDic["follow_uav_ad"] = self.follow_uav_ad_result_cb
-        self.SASResultCBDic["follow_uav_ap"] = self.follow_uav_ap_result_cb
+        self.SASResultCBDic["follow_agent_ad"] = self.follow_agent_ad_result_cb
+        self.SASResultCBDic["follow_agent_ap"] = self.follow_agent_ap_result_cb
         self.SASResultCBDic["land"] = self.land_result_cb
         self.SASResultCBDic["save_csv"] = self.save_csv_result_cb
 
@@ -372,8 +372,8 @@ class GroundStation_SM(object):
         self.SASMsgTypeDic["take_off"] = TakeOffAction
         self.SASMsgTypeDic["basic_move"] = BasicMoveAction
         self.SASMsgTypeDic["follow_path"] = FollowPathAction
-        self.SASMsgTypeDic["follow_uav_ad"] = FollowUAVADAction
-        self.SASMsgTypeDic["follow_uav_ap"] = FollowUAVAPAction
+        self.SASMsgTypeDic["follow_agent_ad"] = FollowAgentADAction
+        self.SASMsgTypeDic["follow_agent_ap"] = FollowAgentAPAction
         self.SASMsgTypeDic["land"] = LandAction
         self.SASMsgTypeDic["save_csv"] = LandAction
 
@@ -417,11 +417,11 @@ class GroundStation_SM(object):
 
         elif mission_part_def["ids"] == "all":
 
-            if mission_part_def["ids_var"] == "uav":
-                ids = range(1, heritage.N_uav + 1)
+            if mission_part_def["ids_var"] == "agent":
+                ids = range(1, heritage.N_agents + 1)
 
             elif mission_part_def["ids_var"] == "wp":
-                ids = range(1, heritage.path_length + 1)
+                ids = range(1, len(mission_part_def["params"]["path"]) + 1)
 
         mission_part_def["ids"] = ids
 

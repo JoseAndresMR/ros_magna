@@ -42,7 +42,6 @@ import json
 import copy
 import random
 import rospkg
-from uav_abstraction_layer.srv import *
 from std_msgs.msg import Header, ColorRGBA
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
@@ -67,25 +66,11 @@ class Worlds(object):
 
         print "creating world",ID
 
-        world_def_path = "{0}/Code/JSONs/Worlds/{1}/{2}.json"\
-                            .format(self.home_path,self.world_name,self.subworld_name)
-
-        with open(world_def_path) as f:
-            self.world_def = json.load(f)
+        self.world_def = self.ReadJSON("{0}/Code/JSONs/Worlds/{1}/{2}.json"\
+                            .format(self.home_path,self.world_name,self.subworld_name))
 
         self.hyperparameters["world_boundaries"] = self.world_def["scenario"]["world_boundaries"]
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
-
-        if self.mission_name != 'basic_movement':
-
-            # Save world definition params
-            self.N_uav = self.hyperparameters['N_uav']
-            self.N_obs = self.hyperparameters['N_obs']
-            self.path_length = self.hyperparameters['path_length']         # In the future would be interesting to be able to decide this for every path generatoiion
-
-        self.obstacleGeneratorGeneric()        # Decide position and spawn the obstacles
-
-    def obstacleGeneratorGeneric(self): 
 
         self.scenario_def = self.world_def["scenario"]
 
@@ -100,16 +85,37 @@ class Worlds(object):
 
         self.volumes = {}
 
-        for volume_def in self.scenario_def["volumes"]:
+        self.addVolumes(self.scenario_def["volumes"])
 
-            self.volumes[volume_def["name"]] = Volume(volume_def,self.transforms_list)
-            self.transforms_list = self.volumes[volume_def["name"]].getTransforms()
-            if self.volumes[volume_def["name"]].obs_pose_list != []:
-                [self.obs_pose_list.append(obs) for obs in self.volumes[volume_def["name"]].obs_pose_list]
-
+        self.hyperparameters["N_obs"] = len(self.obs_pose_list)
         self.hyperparameters["obs_shape"] = []
         self.hyperparameters["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
+
+    def addVolumes(self,volumes_def_list):
+
+        for volume_def in volumes_def_list:
+
+            if volume_def["name"] == "JSON":
+
+                extra_world_def = self.ReadJSON("{0}/Code/JSONs/Worlds/{1}/{2}.json"\
+                            .format(self.home_path,volume_def["world"],volume_def["subworld"]))
+                self.addVolumes(extra_world_def["scenario"]["volumes"])
+
+            else:
+
+                self.volumes[volume_def["name"]] = Volume(volume_def,self.transforms_list)
+                self.transforms_list = self.volumes[volume_def["name"]].getTransforms()
+                if self.volumes[volume_def["name"]].obs_pose_list != []:
+                    [self.obs_pose_list.append(obs) for obs in self.volumes[volume_def["name"]].obs_pose_list]
+
+    def ReadJSON(self,path):
+
+        with open(path) as f:
+            content = json.load(f)
+
+        return content
+
 
     def getFSPoseGlobal(self,params):
 
@@ -134,11 +140,7 @@ class Worlds(object):
         self.world_name = self.hyperparameters['world']
         self.subworld_name = self.hyperparameters['subworld']
         self.n_simulation = self.hyperparameters['n_simulation']
-        self.N_uav = self.hyperparameters['N_uav']
-        self.N_obs = self.hyperparameters['N_obs']
         self.n_dataset = self.hyperparameters['n_dataset']
-        self.path_length = self.hyperparameters['path_length']
-        self.solver_algorithm = self.hyperparameters['solver_algorithm']
         self.smach_view = self.hyperparameters['smach_view']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
 
@@ -158,13 +160,14 @@ class Volume(object):
         self.origin = volume_def["origin"]
 
         self.transforms_list = transforms_list
-        print("on volume",len(self.transforms_list))
+        print("on volume", self.name)
+        # print("on volume",len(self.transforms_list))
         self.obs_pose_list = []
         self.fsp_list = []
 
         tfbroadcaster = StaticTfBroadcaster(self.name,"map",self.origin,self.transforms_list)
         self.transforms_list = tfbroadcaster.getTransforms()
-        print("on volume",len(self.transforms_list))
+        # print("on volume",len(self.transforms_list))
 
         self.geometry_classes = {"cube" : Cube, "sphere" : Sphere, "cylinder" : Cylinder,
                                  "prism": Prism}
@@ -175,7 +178,7 @@ class Volume(object):
 
             self.geometries[geometry_def["name"]] = self.geometry_classes[geometry_def["shape"]](geometry_def,self.name,self.prefix,self.transforms_list)
             # self.transforms_list = self.geometries[geometry_def["name"]].getTransforms()
-            print("on volume",len(self.transforms_list))
+            # print("on volume",len(self.transforms_list))
 
             if self.geometries[geometry_def["name"]].obs_pose_list != []:
                 [self.obs_pose_list.append(obs) for obs in self.geometries[geometry_def["name"]].obs_pose_list]
@@ -460,6 +463,24 @@ class GenericGeometry:
 
             self.poses = self.GenerateFreeSpacePosesFromPosesList(random_poses)
 
+    def GeneratePosesSetCoordinates(self,poses_set_def):
+
+        poses_list = [self.PoseFromArray(coordinates) for coordinates in poses_set_def["coordinates"]]
+
+        # for coordinates in poses_set_def["coordinates"]:
+
+        #     poses_list.append(self.PoseFromArray(coordinates))
+            
+        if poses_set_def["use"] == "obstacles":
+
+            self.obstacles = self.GenerateObstacleFromPosesList(poses_list,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
+
+        elif poses_set_def["use"] == "poses":
+
+            self.path = self.GenerateFreeSpacePosesFromPosesList(poses_list)
+
+        return poses_list
+
     def GeneratePosesSetZigZag(self,poses_set_def):
 
         poses = self.ZigZagOnPerimeter(self.base_vertexes_pose_list,poses_set_def["height"],poses_set_def["sweep_angle"],poses_set_def["spacing"],poses_set_def["margins"],poses_set_def["initial_sense"])
@@ -501,7 +522,10 @@ class Cube(GenericGeometry):
 
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
-                if poses_set_def["type"] == "matrix":
+                if poses_set_def["type"] == "coordinates":
+                    self.GeneratePosesSetCoordinates(poses_set_def)
+
+                elif poses_set_def["type"] == "matrix":
                     self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
@@ -555,6 +579,8 @@ class Cube(GenericGeometry):
 
         return random_poses
 
+        
+
 
 
     def GeneratePosesSetZigZag(self,poses_set_def):
@@ -594,7 +620,10 @@ class Sphere(GenericGeometry):
 
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
-                if poses_set_def["type"] == "matrix":
+                if poses_set_def["type"] == "coordinates":
+                    self.GeneratePosesSetCoordinates(poses_set_def)
+
+                elif poses_set_def["type"] == "matrix":
                     self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
@@ -614,9 +643,9 @@ class Sphere(GenericGeometry):
             for j in np.arange(poses_set_def["dimensions"][1]):
                 for k in np.arange(poses_set_def["dimensions"][2]):
 
-                    angle1 = (0.5+i)*(2*np.pi)/poses_set_def["dimensions"][0]
+                    angle1 = (0.5+i)*(np.pi)/poses_set_def["dimensions"][0]
                     angle2 = (0.5+j)*(np.pi)/poses_set_def["dimensions"][1]
-                    radius = (0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]/2      # Esfera de radio [,,R]
+                    radius = (0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]-self.dimensions[2]/2      # Esfera de radio [,,R]
 
 
                     pose = self.PoseFromArray([[np.cos(angle1)*np.sin(angle2)*radius,\
@@ -659,7 +688,10 @@ class Cylinder(GenericGeometry):
 
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
-                if poses_set_def["type"] == "matrix":
+                if poses_set_def["type"] == "coordinates":
+                    self.GeneratePosesSetCoordinates(poses_set_def)
+
+                elif poses_set_def["type"] == "matrix":
                     self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
@@ -679,8 +711,8 @@ class Cylinder(GenericGeometry):
             for j in np.arange(poses_set_def["dimensions"][1]):
                 for k in np.arange(poses_set_def["dimensions"][2]):
 
-                    angle1 = (0.5+i)*(2*np.pi)/poses_set_def["dimensions"][0]
-                    radius = (0.5+j)*self.dimensions[1]/poses_set_def["dimensions"][1]/2      # Esfera de radio [,,R]
+                    angle1 = (0.5+i)*(np.pi)/poses_set_def["dimensions"][0]
+                    radius = (0.5+j)*self.dimensions[1]/poses_set_def["dimensions"][1]-self.dimensions[1]/2      # Esfera de radio [,,R]
                     height = -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]
 
 
@@ -731,7 +763,10 @@ class Prism(GenericGeometry):
 
         if "poses_sets" in geometry_def.keys():
             for poses_set_def in geometry_def["poses_sets"]:
-                if poses_set_def["type"] == "matrix":
+                if poses_set_def["type"] == "coordinates":
+                    self.GeneratePosesSetCoordinates(poses_set_def)
+
+                elif poses_set_def["type"] == "matrix":
                     self.GeneratePosesSetDimensionMatrix(poses_set_def)
 
                 elif poses_set_def["type"] == "random":
@@ -773,17 +808,17 @@ class Prism(GenericGeometry):
 
             self.polygon_array_poses.append(polygon_poses)
 
-        # # Bottom face
-        # polygon_poses = []
-        # for vertex_index in range(n_vertexes-2,-2,-2):
-        #     polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
-        # self.polygon_array_poses.append(polygon_poses)
+        # Bottom face
+        polygon_poses = []
+        for vertex_index in range(n_vertexes-2,-2,-2):
+            polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        self.polygon_array_poses.append(polygon_poses)
 
-        # # Top face
-        # polygon_poses = []
-        # for vertex_index in range(1,n_vertexes,2):
-        #     polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
-        # self.polygon_array_poses.append(polygon_poses)
+        # Top face
+        polygon_poses = []
+        for vertex_index in range(1,n_vertexes,2):
+            polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        self.polygon_array_poses.append(polygon_poses)
 
 
     def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
@@ -1066,8 +1101,13 @@ class Obstacle(object):
             root[0][1][0][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
             root[0][1][1][0][0][0].text = '{0} {1} {2}'.format(dimensions[0],dimensions[1],dimensions[2])
         elif shape == "sphere":
-            root[0][1][0][0][0][0].text = str(dimensions[0])
-            root[0][1][1][0][0][0].text = str(dimensions[0])
+            root[0][1][0][0][0][0].text = str(dimensions[0]/2)
+            root[0][1][1][0][0][0].text = str(dimensions[0]/2)
+        elif shape == "cylinder":
+            root[0][1][0][0][0][0].text = str(dimensions[0]/2)
+            root[0][1][0][0][0][1].text = str(dimensions[2])
+            root[0][1][1][0][0][0].text = str(dimensions[0]/2)
+            root[0][1][1][0][0][1].text = str(dimensions[2])
 
         et.write(product_xml_path_dict[shape])
 
@@ -1087,7 +1127,6 @@ class Obstacle(object):
            
         # Get ROS params
         self.hyperparameters = rospy.get_param('magna_hyperparameters')
-        self.N_obs = self.hyperparameters['N_obs']
 
         # Start service proxis to spawn and delete obstacles
         self.spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
@@ -1287,7 +1326,6 @@ class RvizPolygonArray(object):
 
 class StaticTfBroadcaster(object):
     def __init__(self,name,parent_name = "map",poses = [],transforms_list = []):
-
         self.pose = poses
         self.name = name
         self.transforms_list = copy.deepcopy(transforms_list)
@@ -1300,7 +1338,6 @@ class StaticTfBroadcaster(object):
 
         if type(poses) == list:
             poses = np.array(poses)
-
             if len(poses.shape) == 2: 
                 transformStamped.child_frame_id = name
                 transformStamped.transform.translation = Point(poses[0][0],poses[0][1],poses[0][2])

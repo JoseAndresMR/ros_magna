@@ -38,7 +38,7 @@ import json
 import rospkg
 from copy import deepcopy
 
-class UAV_Config(object):
+class Agent_Config(object):
     def __init__(self,ID):
 
         self.ID = ID
@@ -52,15 +52,15 @@ class UAV_Config(object):
         with open(mission_def_path) as f:
             mission_def = json.load(f)
 
-        self.model = mission_def["UAVs_Config"][self.ID-1]["model"]
+        self.model = mission_def["Agents_Config"][self.ID-1]["model"]
         
 
-        config_def_path = "{0}/Code/JSONs/UAV_Configurations/{1}.json"\
+        config_def_path = "{0}/Code/JSONs/Agent_Configurations/{1}.json"\
                             .format(self.home_path,self.model)
         with open(config_def_path) as f:
             self.config_def = json.load(f)
 
-        self.config_def.update(mission_def["UAVs_Config"][self.ID-1])
+        self.config_def.update(mission_def["Agents_Config"][self.ID-1])
 
         self.autopilot = self.config_def["autopilot"]
         self.ual_use = bool(self.config_def["ual_use"])

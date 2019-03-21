@@ -38,13 +38,13 @@ from smach_ros import ActionServerWrapper
 
 from magna.msg import *
 
-class UAV_Manager_SM(object):
+class Agent_Manager_SM(object):
     # At init, the State Machine receives as "heriage" the hole "self" of the Ground Station
     def __init__(self,heritage):
         # Creation of State Machine and definition of its outcomes
-        self.uav_sm = StateMachine(outcomes=['completed', 'failed'])
+        self.agent_sm = StateMachine(outcomes=['completed', 'failed'])
 
-        with self.uav_sm:
+        with self.agent_sm:
             # Initialization of the dictionary containing every Action Service Wrapper
             self.asw_dicc = {}
 
@@ -66,7 +66,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['take_off'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/take_off_command'.format(heritage.ID),
+                        '/magna/GS_Agent_{}/take_off_command'.format(heritage.ID),
                         TakeOffAction,
                         self.take_off_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -87,7 +87,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['land'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/land_command'.format(heritage.ID),
+                        '/magna/GS_Agent_{}/land_command'.format(heritage.ID),
                         LandAction,
                         self.land_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -109,7 +109,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['basic_move'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/basic_move_command'.format(heritage.ID),
+                        '/magna/GS_Agent_{}/basic_move_command'.format(heritage.ID),
                         BasicMoveAction,
                         self.basic_move_sm,
                         ['completed'], ['failed'],['collision','low_battery','GS_critical_event'],
@@ -133,7 +133,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal'])
 
             self.asw_dicc['save_csv'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/save_csv_command'.format(heritage.ID),
+                        '/magna/GS_Agent_{}/save_csv_command'.format(heritage.ID),
                         SaveCSVAction,
                         self.save_csv_sm,
                         ['completed'], ['failed'], ['preempted'],
@@ -153,7 +153,7 @@ class UAV_Manager_SM(object):
                                          input_keys=['action_goal','action_result'])
 
             self.asw_dicc['follow_path'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/follow_path_command'.format(heritage.ID),
+                        '/magna/GS_Agent_{}/follow_path_command'.format(heritage.ID),
                         FollowPathAction,
                         self.follow_path_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
@@ -175,22 +175,22 @@ class UAV_Manager_SM(object):
             # StateMachine.add('to_wp', self.follow_path_sm,
             #                         {'completed':'action_server_advertiser'})
 
-            ### FOLLOW UAV AD STATE MACHINE  & WRAPPER###
-            self.follow_uav_ad_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
+            ### FOLLOW Agent AD STATE MACHINE  & WRAPPER###
+            self.follow_agent_ad_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
                                          input_keys=['action_goal','action_result'])
 
-            self.asw_dicc['follow_uav_ad'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/follow_uav_ad_command'.format(heritage.ID),
-                        FollowUAVADAction,
-                        self.follow_uav_ad_sm,
+            self.asw_dicc['follow_agent_ad'] = ActionServerWrapper(
+                        '/magna/GS_Agent_{}/follow_agent_ad_command'.format(heritage.ID),
+                        FollowAgentADAction,
+                        self.follow_agent_ad_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
-            with self.follow_uav_ad_sm:
+            with self.follow_agent_ad_sm:
 
-                StateMachine.add('follow_uav_ad',
-                                 CBState(self.follow_uav_ad_stcb,
+                StateMachine.add('follow_agent_ad',
+                                 CBState(self.follow_agent_ad_stcb,
                                          input_keys=['action_goal','action_result','_preempt_requested'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed',
@@ -198,22 +198,22 @@ class UAV_Manager_SM(object):
                                   'low_battery':'low_battery',
                                   'GS_critical_event':'GS_critical_event'})
 
-            ### FOLLOW UAV AP STATE MACHINE  & WRAPPER###
-            self.follow_uav_ap_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
+            ### FOLLOW Agent AP STATE MACHINE  & WRAPPER###
+            self.follow_agent_ap_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
                                          input_keys=['action_goal','action_result'])
 
-            self.asw_dicc['follow_uav_ap'] = ActionServerWrapper(
-                        '/magna/GS_UAV_{}/follow_uav_ap_command'.format(heritage.ID),
-                        FollowUAVAPAction,
-                        self.follow_uav_ap_sm,
+            self.asw_dicc['follow_agent_ap'] = ActionServerWrapper(
+                        '/magna/GS_Agent_{}/follow_agent_ap_command'.format(heritage.ID),
+                        FollowAgentAPAction,
+                        self.follow_agent_ap_sm,
                         ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
                         goal_key = 'action_goal',
                         result_key = 'action_result' )
 
-            with self.follow_uav_ap_sm:
+            with self.follow_agent_ap_sm:
 
-                StateMachine.add('follow_uav_ap',
-                                 CBState(self.follow_uav_ap_stcb,
+                StateMachine.add('follow_agent_ap',
+                                 CBState(self.follow_agent_ap_stcb,
                                          input_keys=['action_goal','action_result','_preempt_requested'],
                                          cb_kwargs={'heritage':heritage}),
                                  {'completed':'completed',
@@ -222,7 +222,7 @@ class UAV_Manager_SM(object):
                                   'GS_critical_event':'GS_critical_event'})
 
             if heritage.smach_view == True:
-                sis = smach_ros.IntrospectionServer('magna/UAV_{}_introspection'.format(heritage.ID), self.uav_sm, '/UAV_{}'.format(heritage.ID))
+                sis = smach_ros.IntrospectionServer('magna/Agent_{}_introspection'.format(heritage.ID), self.agent_sm, '/Agent_{}'.format(heritage.ID))
                 sis.start()
 
     #### STATE CALLBACKS ####
@@ -233,7 +233,7 @@ class UAV_Manager_SM(object):
         for key in asw_dicc.keys():     # Run every ASW stored
             asw_dicc[key].run_server()
 
-        # Function to inform Ground Station about actual UAV's state
+        # Function to inform Ground Station about actual Agent's state
         heritage.state = "waiting for action command"
         heritage.GSStateActualization()
 
@@ -263,20 +263,20 @@ class UAV_Manager_SM(object):
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
-    def follow_uav_ad_stcb(self,heritage):
+    def follow_agent_ad_stcb(self,heritage):
 
-        # Tell the GS to execute UAVFollowerAD role with at the required distance
-        output = heritage.UAVFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
+        # Tell the GS to execute AgentFollowerAD role with at the required distance
+        output = heritage.AgentFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
 
         self.action_result.output = output
 
         return 'completed'
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
-    def follow_uav_ap_stcb(self,heritage):
+    def follow_agent_ap_stcb(self,heritage):
 
-        # Tell the GS to execute UAVFollowerAP role with the required bias
-        output = heritage.UAVFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
+        # Tell the GS to execute AgentFollowerAP role with the required bias
+        output = heritage.AgentFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
 
         self.action_result.output = output
 

@@ -71,30 +71,34 @@ class GroundStation(object):
 
         self.simulation_succeed = True      # Initialize succeed flag of this single simulation
 
-        # Start by landed the state of every UAV
+        mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
+                            .format(self.home_path,self.mission_name,self.submission_name)
+        with open(mission_def_path) as f:
+            self.mission_def = json.load(f)
+
+        self.N_agents = len(self.mission_def["Agents_Config"])
+        self.hyperparameters["N_agents"] = self.N_agents
+        rospy.set_param('magna_hyperparameters', self.hyperparameters)
+
+        # Start by landed the state of every Agent
         self.states_list = []
-        for i in np.arange(self.N_uav):
+        for i in np.arange(self.N_agents):
             self.states_list.append("landed")
 
-        # Start by not collisioned the the list within all UAVs
+        # Start by not collisioned the the list within all Agents
         self.critical_events_list = []
-        for i in np.arange(self.N_uav):
+        for i in np.arange(self.N_agents):
             self.critical_events_list.append('nothing')
 
         self.CreatingSimulationDataStorage()
 
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
-        mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
-                            .format(self.home_path,self.mission_name,self.submission_name)
-        with open(mission_def_path) as f:
-            self.mission_def = json.load(f)
+        self.agent_models = []
+        for N_agents in self.mission_def["Agents_Config"]:
+            self.agent_models.append(N_agents["model"])
 
-        self.uav_models = []
-        for n_uav in self.mission_def["UAVs_Config"]:
-            self.uav_models.append(n_uav["model"])
-
-        self.hyperparameters["uav_models"] = self.uav_models
+        self.hyperparameters["agent_models"] = self.agent_models
         
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
 
@@ -109,28 +113,32 @@ class GroundStation(object):
 
     #### Starter functions ####
 
-    def SpawnUAVs(self):
+    def SpawnAgents(self,initial_poses):
 
-        for i in range(self.N_uav):     # Do it for every UAV
-            # first_pose = uav_goal_path[0]       # Select first waypoint. It will determinate where it spawns
-            first_pose = self.world.getFSPoseGlobal(["Ground_Station","UAVs_take_off","matrix",[i,0,0]])
-            # Change spawn features so it spawns under its first waypoint
-            yaw = tf.transformations.euler_from_quaternion((first_pose.orientation.x,
-                                                           first_pose.orientation.y,
-                                                           first_pose.orientation.z,
-                                                           first_pose.orientation.w))[2]
-            self.SetUavSpawnFeatures(i+1,self.uav_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
+        for i in range(self.N_agents):     # Do it for every Agent
+            # first_pose = agent_goal_path[0]       # Select first waypoint. It will determinate where it spawns
+            first_pose = self.world.getFSPoseGlobal(initial_poses[i])
+            if len(initial_poses[i]) > 4:
+                yaw = initial_poses[i][4]
+
+            else:
+                # Change spawn features so it spawns under its first waypoint
+                yaw = tf.transformations.euler_from_quaternion((first_pose.orientation.x,
+                                                            first_pose.orientation.y,
+                                                            first_pose.orientation.z,
+                                                            first_pose.orientation.w))[2]
+            self.SetAgentSpawnFeatures(i+1,self.agent_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
             time.sleep(2)
-            self.UAVSpawner(i)      # Call service to spawn the UAV
+            self.AgentSpawner(i)      # Call service to spawn the Agent
 
-            # Wait until the UAV is in ready state
+            # Wait until the Agent is in ready state
             while not rospy.is_shutdown() and self.states_list[i] != "waiting for action command":
                 time.sleep(0.5)
 
 
-            print("Ground Station: uav {} is ready!".format(i))
+            print("Ground Station: agent {} is ready!".format(i))
             # time.sleep(5)
-        # time.sleep(20 * heritage.N_uav)
+        # time.sleep(20 * heritage.N_agents)
 
         return "completed"
 
@@ -142,24 +150,24 @@ class GroundStation(object):
 
         return "completed"
 
-    # Function to set UAV's ROSparameters. Launched by State Machine
-    def SetUavSpawnFeatures(self,ID,model,position,yaw=0):
-        # uav_frame = rospy.get_param( 'uav_{}_home'.format(ID))      # Read from ROS param the home position
-        uav_frame = {}
-        uav_frame['translation'] = position
+    # Function to set Agent's ROSparameters. Launched by State Machine
+    def SetAgentSpawnFeatures(self,ID,model,position,yaw=0):
+        # agent_frame = rospy.get_param( 'agent_{}_home'.format(ID))      # Read from ROS param the home position
+        agent_frame = {}
+        agent_frame['translation'] = position
         # if model == "typhoon_h480":     # If typhoon, change yaw ????? CHANGE FOR ALL. Updated on UAL
         #     yaw = 0.5
-        uav_frame['gz_initial_yaw'] =  yaw # radians
-        uav_frame['model'] = model      # Actualize on received param info
-        rospy.set_param('uav_{}_home'.format(ID), uav_frame)        # Set the modified ROS param
+        agent_frame['gz_initial_yaw'] =  yaw # radians
+        agent_frame['model'] = model      # Actualize on received param info
+        rospy.set_param('uav_{}_home'.format(ID), agent_frame)        # Set the modified ROS param
 
         rospy.set_param('uav_{}/ual/home_pose'.format(ID),position)
 
         rospy.set_param('uav_{}/ual/pose_frame_id'.format(ID),"map")
         time.sleep(1)
 
-    # Function to spawn each new UAV (GAZEBO model, UAL server and dedicated Ground Station)
-    def UAVSpawner(self,ID):
+    # Function to spawn each new Agent (GAZEBO model, UAL server and dedicated Ground Station)
+    def AgentSpawner(self,ID):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
@@ -168,12 +176,12 @@ class GroundStation(object):
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
 
-        config_def_path = "{0}/Code/JSONs/UAV_Configurations/{1}.json"\
-                            .format(self.home_path,self.mission_def["UAVs_Config"][ID]["model"])
+        config_def_path = "{0}/Code/JSONs/Agent_Configurations/{1}.json"\
+                            .format(self.home_path,self.mission_def["Agents_Config"][ID]["model"])
         with open(config_def_path) as f:
             config_def = json.load(f)
 
-        config_def.update(copy.deepcopy(self.mission_def["UAVs_Config"][ID]))
+        config_def.update(copy.deepcopy(self.mission_def["Agents_Config"][ID]))
 
         # sitl
         root[2].attrib["default"] = config_def["mode"]
@@ -187,8 +195,8 @@ class GroundStation(object):
         # autopilot
         root[8].attrib["default"] = config_def["autopilot"]
 
-        # uav manager embedded
-        if config_def["uav_manager_on_gs"] == True:
+        # agent manager embedded
+        if config_def["agent_manager_on_gs"] == True:
             root[9].attrib["default"] = 'true'
         else:
             root[9].attrib["default"] = 'false'
@@ -228,8 +236,8 @@ class GroundStation(object):
             # root[12][0][7].attrib["value"] = config_def["laser_altimeter"]
             # root[12][0][8].attrib["value"] = config_def["self_arming"]
 
-        # uav manager
-        root[12][0].attrib["name"] = 'uav_{}'.format(ID+1)
+        # agent manager
+        root[12][0].attrib["name"] = 'agent_{}'.format(ID+1)
         root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
 
         # if smooth path
@@ -238,16 +246,16 @@ class GroundStation(object):
 
         et.write(launch_path)
 
-        self.uav_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
-        self.uav_spawner_launch.start()
+        self.agent_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        self.agent_spawner_launch.start()
 
     # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
 
         # Definition of root path
-        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}"\
                                  .format(self.home_path,self.world_name,self.subworld_name,
-                                 self.mission_name,self.submission_name,self.N_uav,self.N_obs)
+                                 self.mission_name,self.submission_name)
 
         # Check existance of root path. Create in case
         if not os.path.exists(first_folder_path):
@@ -287,7 +295,7 @@ class GroundStation(object):
     # Function to close active child processess
     def Die(self):
         self.SavingWorldDefinition()        # Update ROS params
-        self.UAVKiller()        # Terminate UAVs nodes
+        self.AgentKiller()        # Terminate Agents nodes
         self.GazeboModelsKiller()       # Delete robot models from Gazebo
         # self.world.eraseAllObstacles()      # Delete obstacles from Gazebo
         self.SimulationTerminationCommand()     # Send to Master message of simulation ended
@@ -305,12 +313,12 @@ class GroundStation(object):
             w = csv.writer(f)
             w.writerows(self.hyperparameters.items())
 
-    # Function to close UAV Ground Station process.In the furure would be done by GS
-    def UAVKiller(self):
-        for n_uav in np.arange(self.N_uav):
-            rospy.wait_for_service('/magna/GS_UAV_{}/die_command'.format(n_uav+1))
+    # Function to close Agent Ground Station process.In the furure would be done by GS
+    def AgentKiller(self):
+        for n_agent in np.arange(self.N_agents):
+            rospy.wait_for_service('/magna/GS_Agent_{}/die_command'.format(n_agent+1))
             try:
-                die_command = rospy.ServiceProxy('/magna/GS_UAV_{}/die_command'.format(n_uav+1), DieCommand)
+                die_command = rospy.ServiceProxy('/magna/GS_Agent_{}/die_command'.format(n_agent+1), DieCommand)
                 die_command(True)
                 time.sleep(0.1)
             except rospy.ServiceException, e:
@@ -320,19 +328,19 @@ class GroundStation(object):
 
     # Function to close GAZEBO process
     def GazeboModelsKiller(self):
-        for n_uav in np.arange(self.N_uav):
+        for n_agent in np.arange(self.N_agents):
             rospy.wait_for_service('gazebo/delete_model')
             try:
                 del_model_prox = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
-                model_name = "{0}_{1}".format(self.uav_models[n_uav],n_uav+1)
+                model_name = "{0}_{1}".format(self.agent_models[n_agent],n_agent+1)
                 del_model_prox(model_name)
                 time.sleep(0.1)
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
-                print "error in delete_model uav"
+                print "error in delete_model agent"
         return
 
-    # Function to send termination instruction to each UAV
+    # Function to send termination instruction to each Agent
     def SimulationTerminationCommand(self):
         rospy.wait_for_service('/magna/GS/simulation_termination')
         try:
@@ -346,14 +354,14 @@ class GroundStation(object):
 
     #### Commander functions ####
 
-    def sendNotificationsToUAVs(self,uavs_list,message):
-        if type(uavs_list) == int:
-            uavs_list = [uavs_list]
+    def sendNotificationsToAgents(self,agents_list,message):
+        if type(agents_list) == int:
+            agents_list = [agents_list]
         
-        for uav in uavs_list:
-            rospy.wait_for_service('/magna/GS/notification_command_to_{}'.format(uav+1))
+        for agent in agents_list:
+            rospy.wait_for_service('/magna/GS/notification_command_to_{}'.format(agent+1))
             try:
-                instruction_command = rospy.ServiceProxy('/magna/GS/notification_command_to_{}'.format(uav+1), StateActualization)
+                instruction_command = rospy.ServiceProxy('/magna/GS/notification_command_to_{}'.format(agent+1), StateActualization)
                 instruction_command(0,"tbd",message)
                 return
 
@@ -366,41 +374,41 @@ class GroundStation(object):
     # Function to start subscribing and offering
     def Listener(self):
 
-        # Start service for UAVs to actualize its state
-        rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_uav_status)
+        # Start service for Agents to actualize its state
+        rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_agent_status)
 
         # Start listening to topics stored on rosbag
         rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
         rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 
-        # for n_uav in range(self.N_uav):
-        #     rospy.Subscriber('/magna/uav_{0}/path'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/path'.format(n_uav+1))
-        #     rospy.Subscriber('/magna/uav_{0}/goal_path'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/goal_path'.format(n_uav+1))
-        #     rospy.Subscriber('/magna/uav_{0}/goal_path_smooth'.format(n_uav+1), Path, self.path_callback,'/magna/uav_{0}/goal_path_smooth'.format(n_uav+1))
+        # for n_agent in range(self.N_agents):
+        #     rospy.Subscriber('/magna/agent_{0}/path'.format(n_agent+1), Path, self.path_callback,'/magna/agent_{0}/path'.format(n_agent+1))
+        #     rospy.Subscriber('/magna/agent_{0}/goal_path'.format(n_agent+1), Path, self.path_callback,'/magna/agent_{0}/goal_path'.format(n_agent+1))
+        #     rospy.Subscriber('/magna/agent_{0}/goal_path_smooth'.format(n_agent+1), Path, self.path_callback,'/magna/agent_{0}/goal_path_smooth'.format(n_agent+1))
 
         # rospy.Subscriber('/visualization_marker', Marker, self.visualization_marker_callback)
 
-    # Function to update and local parameters of UAVs status
-    def handle_uav_status(self,data):
+    # Function to update and local parameters of Agents status
+    def handle_agent_status(self,data):
 
-        # Store UAV status into UAVs state list
+        # Store Agent status into Agents state list
         self.states_list[data.id-1] = data.state
 
-        # Check collisions to update it UAVs collision list
+        # Check collisions to update it Agents collision list
         if data.critical_event != 'nothing':
             
             if self.critical_events_list[data.id-1] != data.critical_event:
                 self.critical_events_list[data.id-1] = data.critical_event
-                rospy.loginfo_throttle(0,"UAV {0} reported {1}".format(data.id,data.critical_event))
+                rospy.loginfo_throttle(0,"Agent {0} reported {1}".format(data.id,data.critical_event))
             
                 if data.critical_event == "collision":
-                    uavs_to_inform = range(self.N_uav)
-                    uavs_to_inform = uavs_to_inform[:data.id-1] + uavs_to_inform[data.id:]
+                    agents_to_inform = range(self.N_agents)
+                    agents_to_inform = agents_to_inform[:data.id-1] + agents_to_inform[data.id:]
 
                     # Change succeed information if a collision has been reported
                     self.simulation_succeed = False
 
-                    self.sendNotificationsToUAVs(uavs_to_inform,"GS_critical_event")
+                    self.sendNotificationsToAgents(agents_to_inform,"GS_critical_event")
 
         print self.states_list
         return True
@@ -439,10 +447,7 @@ class GroundStation(object):
         self.world_name = self.hyperparameters['world']
         self.subworld_name = self.hyperparameters['subworld']
         self.n_simulation = self.hyperparameters['n_simulation']
-        self.N_uav = self.hyperparameters['N_uav']
-        self.N_obs = self.hyperparameters['N_obs']
         self.n_dataset = self.hyperparameters['n_dataset']
-        self.solver_algorithm = self.hyperparameters['solver_algorithm']
         self.smach_view = self.hyperparameters['smach_view']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
 

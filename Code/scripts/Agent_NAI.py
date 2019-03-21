@@ -48,27 +48,31 @@ from sensor_msgs.msg import *
 # import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
-class UAV_Brain(object):
+class Agent_NAI(object):
     def __init__(self,ID):
         # Local parameters inizialization from arguments
         self.ID = ID
 
         self.smooth_path_mode = 0
 
+        self.N_neighbors_aware = 2
+
+        self.algorithms_list = ["simple"]
+
         self.GettingWorldDefinition()    # Global ROS parameters inizialization
         # self.timer_start = time.time()
 
         # If the solver is a neural network, make some additional initializations
-        if self.solver_algorithm == "neural_network":
+        if self.algorithms_list[0] == "neural_network":
             self.session = tflow.Session()      # Start a TensorFlow session
 
             # Import the metagraph from specific path. In the future will be better path management
-            new_saver = tflow.train.import_meta_graph("/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nuav{2}_Nobs{3}/model.meta"\
-                                                      .format(self.role,self.world_name,self.N_uav,self.N_obs))
+            new_saver = tflow.train.import_meta_graph("/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nagent{2}_Nobs{3}/model.meta"\
+                                                      .format(self.role,self.world_name,self.N_agents,self.N_obs))
 
             # Restore to the last chechpoint
-            new_saver.restore(self.session,tflow.train.latest_checkpoint('/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nuav{2}_Nobs{3}'\
-                                                                         .format(self.role,self.world_name,self.N_uav,self.N_obs)))
+            new_saver.restore(self.session,tflow.train.latest_checkpoint('/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nagent{2}_Nobs{3}'\
+                                                                         .format(self.role,self.world_name,self.N_agents,self.N_obs)))
 
             # Initialize inputs and outputs from graph
             self.graph_inputs = tflow.get_default_graph().get_tensor_by_name("single_input:0")
@@ -86,16 +90,16 @@ class UAV_Brain(object):
         # print "loop time", time.time() - self.timer_start
         # self.timer_start = time.time()
 
-        if self.solver_algorithm == "simple":
+        if self.algorithms_list[0] == "simple":
             return self.SimpleGuidance()
 
-        elif self.solver_algorithm == "neural_network":
+        elif self.algorithms_list[0] == "neural_network":
             return self.NeuralNetwork()
 
-        # elif self.solver_algorithm == "orca":
+        # elif self.algorithms_list[0] == "orca":
         #     return self.ORCA()
 
-        elif self.solver_algorithm == "orca3":
+        elif self.algorithms_list[0] == "orca3":
             return self.ORCA3()
 
     # Function to set new velocity using a Neural Network
@@ -104,35 +108,35 @@ class UAV_Brain(object):
         # Definition of neural network's inputs and outputs for every role.
         # In the future this will be imported from a common place
         if self.role == "path":
-            input_dicc = ['own_vel','goal_pose_rel','others_pos_rel','others_vel','obs_pos_rel']
+            input_dicc = ['own_vel','goal_pose_rel','others_pos_rel','others_vel']
             output_dicc = ["sel_vel"]
-        elif self.role == "uav_ad":
-            input_dicc = ['own_vel','goal_pose_rel','goal_vel','distance','others_pos_rel','others_vel','obs_pos_rel']
+        elif self.role == "agent_ad":
+            input_dicc = ['own_vel','goal_pose_rel','goal_vel','distance','others_pos_rel','others_vel']
             output_dicc = ["sel_vel"]
-        elif self.role == "uav_ap":
-            input_dicc = ['own_vel','goal_pose_rel','goal_vel','others_pos_rel','others_vel','obs_pos_rel']
+        elif self.role == "agent_ap":
+            input_dicc = ['own_vel','goal_pose_rel','goal_vel','others_pos_rel','others_vel']
 
         output_dicc = ["sel_vel"]
 
         # Initialization of pos and vel that will be taken as inputs
         inputs = []
-        main_uav_pos = self.uavs_data_list[self.ID-1].position.pose.position
-        main_uav_vel = self.uavs_data_list[self.ID-1].velocity.twist.linear
+        main_agent_pos = self.agents_data_list[self.ID-1].position.pose.position
+        main_agent_vel = self.agents_data_list[self.ID-1].velocity.twist.linear
 
         # For every input in the dictionary, crate if needed and add it to inputs
         for n_input in input_dicc:
 
             # own vel
             if n_input == "own_vel":
-                inputs.append(main_uav_vel.x)
-                inputs.append(main_uav_vel.y)
-                inputs.append(main_uav_vel.z)
+                inputs.append(main_agent_vel.x)
+                inputs.append(main_agent_vel.y)
+                inputs.append(main_agent_vel.z)
 
             # own goal
             elif n_input == "goal_pose_rel":
-                inputs.append(self.goal["pose"].position.x-main_uav_pos.x)
-                inputs.append(self.goal["pose"].position.y-main_uav_pos.y)
-                inputs.append(self.goal["pose"].position.z-main_uav_pos.z)
+                inputs.append(self.goal["pose"].position.x-main_agent_pos.x)
+                inputs.append(self.goal["pose"].position.y-main_agent_pos.y)
+                inputs.append(self.goal["pose"].position.z-main_agent_pos.z)
 
             elif n_input == "goal_vel":
                 inputs.append(self.goal["vel"].linear.x)
@@ -143,26 +147,26 @@ class UAV_Brain(object):
                 inputs.append(self.goal["dist"])
 
             elif n_input == "others_pos_rel":
-                for n_uav in range(self.N_uav):
-                    if n_uav+1 != self.ID:
+                for n_agent in range(self.N_agents):
+                    if n_agent+1 != self.ID:
                         #pos
-                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.x-main_uav_pos.x)
-                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.y-main_uav_pos.y)
-                        inputs.append(self.uavs_data_list[n_uav].position.pose.position.z-main_uav_pos.z)
+                        inputs.append(self.agents_data_list[n_agent].position.pose.position.x-main_agent_pos.x)
+                        inputs.append(self.agents_data_list[n_agent].position.pose.position.y-main_agent_pos.y)
+                        inputs.append(self.agents_data_list[n_agent].position.pose.position.z-main_agent_pos.z)
 
             elif n_input == "others_vel":
-                for n_uav in range(self.N_uav):
-                    if n_uav+1 != self.ID:
+                for n_agent in range(self.N_agents):
+                    if n_agent+1 != self.ID:
                         #vel
-                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.x)
-                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.y)
-                        inputs.append(self.uavs_data_list[n_uav].velocity.twist.linear.z)
+                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.x)
+                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.y)
+                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.z)
 
-            elif n_input == "obs_pos_rel":
-                for n_obs in range(self.N_obs):
-                    inputs.append(self.obs_pose_list[n_obs][0]-main_uav_pos.x)
-                    inputs.append(self.obs_pose_list[n_obs][1]-main_uav_pos.y)
-                    inputs.append(self.obs_pose_list[n_obs][2]-main_uav_pos.z)
+            # elif n_input == "obs_pos_rel":
+            #     for n_obs in range(self.N_obs):
+            #         inputs.append(self.obs_pose_list[n_obs][0]-main_agent_pos.x)
+            #         inputs.append(self.obs_pose_list[n_obs][1]-main_agent_pos.y)
+            #         inputs.append(self.obs_pose_list[n_obs][2]-main_agent_pos.z)
 
         # Reshape the inputs to a single row
         inputs_trans = np.asarray(inputs)
@@ -193,43 +197,55 @@ class UAV_Brain(object):
         neighborDist = 4.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
         maxNeighbors = 10        # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
         timeHorizon = 10       # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
-        uav_radius = 0.5        # 2      float   The radius of the agent. Must be non-negative
+        agent_radius = 0.5        # 2      float   The radius of the agent. Must be non-negative
         maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
         velocity = (1, 1, 1)
 
         obs_radius = 2
 
         # Create an object of orca3 solver class and give the above defined parameters
-        sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, velocity)
+        sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, velocity)
 
-        # Select nearest UAVs and Neighbors
-        agent_list = []
+        # Select nearest Agents and Neighbors
+        orca_agent_list = []
 
         prefered_velocity = self.SimpleGuidance() # Select a velocity directly to goal as if there weren't exist neighbors
 
         # Add to orca3 and to own list every agent created by own params
-        agent_list = [sim.addAgent((self.uavs_data_list[self.ID-1].position.pose.position.x, self.uavs_data_list[self.ID-1].position.pose.position.y,self.uavs_data_list[self.ID-1].position.pose.position.z),
-            neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0))]
-        for n_uas in self.uav_near_neighbors_sorted:
-            agent_list.append(sim.addAgent((self.uavs_data_list[n_uas].position.pose.position.x, self.uavs_data_list[n_uas].position.pose.position.y,self.uavs_data_list[n_uas].position.pose.position.z),
-            neighborDist, maxNeighbors, timeHorizon, uav_radius, maxSpeed, (0, 0, 0)))
+        position_array = self.ArrayFromPose(self.agents_data_list[0].position.pose)[0]
+        velocity_array = self.ArrayFromTwist(self.agents_data_list[0].velocity.twist)[0]
+        prefered_velocity_array = self.ArrayFromTwist(prefered_velocity)[0]
 
-        # Set the preferred velocity of own UAV as decided avobe
-        sim.setAgentPrefVelocity(agent_list[0],(prefered_velocity.linear.x,prefered_velocity.linear.y,prefered_velocity.linear.z))
+        orca_agent_list = [sim.addAgent((position_array[0],position_array[1],position_array[2]),
+            neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, (velocity_array[0],velocity_array[1],velocity_array[2]))]
+        # Set the preferred velocity of own Agent as decided avobe
+        sim.setAgentPrefVelocity(orca_agent_list[0],(prefered_velocity_array[0],prefered_velocity_array[1],prefered_velocity_array[2]))
         
-        # Set the preferred velocity of the rest of UAVs as the actual
-        for n_uas in range(1,len(self.uav_near_neighbors_sorted)):
-            sim.setAgentPrefVelocity(agent_list[n_uas],(self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.x,self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.y,self.uavs_data_list[self.uav_near_neighbors_sorted[n_uas]].velocity.twist.linear.z))
+        for n_neighbor in range(len(self.near_neighbors_sorted["ids"])):
 
-        # Add to orca3 and to own list every obstacle created by own params
-        for n_obs in self.obs_near_neighbors_sorted:
-            obs_pose = self.obs_pose_list[n_obs]
-            agent_list.append(sim.addAgent((obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),
-            neighborDist, maxNeighbors, timeHorizon, obs_radius, 0.0, (0, 0, 0)))
+            if self.near_neighbors_sorted["types"][n_neighbor] == "agent":
+                n_agent = self.near_neighbors_sorted["ids"][n_neighbor]
+                position_array = self.ArrayFromPose(self.agents_data_list[n_agent].position.pose)[0]
+                velocity_array = self.ArrayFromTwist(self.agents_data_list[n_agent].velocity.twist)[0]
+                orca_agent_list.append(sim.addAgent((position_array[0],position_array[1],position_array[2]),
+                                        neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed,
+                                        (velocity_array[0],velocity_array[1],velocity_array[2])))
+
+                sim.setAgentPrefVelocity(orca_agent_list[-1],(velocity_array[0],velocity_array[1],velocity_array[2]))
+
+            # Add to orca3 and to own list every obstacle created by own params
+            elif self.near_neighbors_sorted["types"][n_neighbor] == "obs":
+                n_obs = self.near_neighbors_sorted["ids"][n_neighbor]
+
+                obs_pose = self.obs_pose_list[n_obs]
+                orca_agent_list.append(sim.addAgent((obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),
+                neighborDist, maxNeighbors, timeHorizon, obs_radius, 0.0, (0, 0, 0)))
+
+                sim.setAgentPrefVelocity(orca_agent_list[-1],(0,0,0))
 
         sim.doStep()        # Perform a step of orca3
 
-        selected_velocity = sim.getAgentVelocity(agent_list[0])     # Extract own velocity decided by orca3
+        selected_velocity = sim.getAgentVelocity(orca_agent_list[0])     # Extract own velocity decided by orca3
 
         # Become that velocity in a twist
         new_velocity_twist = Twist(Vector3(0,0,0),Vector3(0,0,0))
@@ -247,16 +263,16 @@ class UAV_Brain(object):
     def SimpleGuidance(self):
         
         if self.smooth_path_mode != 0:
-            return self.uavs_data_list[self.ID-1].smooth_velocity
+            return self.agents_data_list[self.ID-1].smooth_velocity
         
         # Set algorithm params
         desired_speed_at_goal = 0
         aprox_distance = 3
 
         # Create a vector from actual position to goal position
-        relative_distance = np.asarray([self.goal["pose"].position.x-self.uavs_data_list[self.ID-1].position.pose.position.x,\
-                                self.goal["pose"].position.y-self.uavs_data_list[self.ID-1].position.pose.position.y,\
-                                self.goal["pose"].position.z-self.uavs_data_list[self.ID-1].position.pose.position.z])
+        relative_distance = np.asarray([self.goal["pose"].position.x-self.agents_data_list[self.ID-1].position.pose.position.x,\
+                                self.goal["pose"].position.y-self.agents_data_list[self.ID-1].position.pose.position.y,\
+                                self.goal["pose"].position.z-self.agents_data_list[self.ID-1].position.pose.position.z])
 
         distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
 
@@ -277,7 +293,7 @@ class UAV_Brain(object):
                                 np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
 
         # Transform the orientation from Eurler angles to quaternions
-        orientation_list = [self.uavs_data_list[self.ID-1].position.pose.orientation.x, self.uavs_data_list[self.ID-1].position.pose.orientation.y, self.uavs_data_list[self.ID-1].position.pose.orientation.z, self.uavs_data_list[self.ID-1].position.pose.orientation.w]
+        orientation_list = [self.agents_data_list[self.ID-1].position.pose.orientation.x, self.agents_data_list[self.ID-1].position.pose.orientation.y, self.agents_data_list[self.ID-1].position.pose.orientation.z, self.agents_data_list[self.ID-1].position.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(orientation_list)
 
         # Create the velocity twist with calculated data
@@ -309,21 +325,57 @@ class UAV_Brain(object):
         return value
 
     def NeighborSelector(self):
-        uav_distances = []
-        for n_uav in range(self.N_uav):
-            if n_uav != self.ID-1:
-                uav_distances.append(self.uavs_data_list[n_uav].distance_rel2main)
+        agent_distances = []
+        for n_agent in range(self.N_agents):
+            if n_agent != self.ID-1:
+                agent_distances.append(self.agents_data_list[n_agent].distance_rel2main)
             else:
-                uav_distances.append(0)
+                agent_distances.append(0)
 
-        self.uav_near_neighbors_sorted_distances = sorted(uav_distances)[1:self.N_uav]
-        self.uav_near_neighbors_sorted = list(np.argsort(uav_distances))[1:self.N_uav]
+        obs_distances = self.agents_data_list[self.ID-1].obs_distances_rel2main
 
-        obs_distances = self.uavs_data_list[self.ID-1].obs_distances_rel2main
-        self.obs_near_neighbors_sorted_distances = sorted(obs_distances)
-        self.obs_near_neighbors_sorted = list(np.argsort(obs_distances))[:self.N_obs]
+        all_distances = agent_distances + obs_distances
+        self.near_neighbors_sorted = {"distances" : sorted(all_distances)[1:self.N_neighbors_aware+1]}
+        
+        ids_list = []
+        types_list = []
+        for neigh in list(np.argsort(all_distances))[1:self.N_neighbors_aware+1]:
 
-        return self.uav_near_neighbors_sorted, self.obs_near_neighbors_sorted
+            if neigh < self.N_agents:
+                neigh_type = "agent"
+                neith_id = neigh
+            else:
+                neigh_type = "obs"
+                neith_id = neigh - self.N_agents
+
+            types_list.append(neigh_type)
+            ids_list.append(neith_id)
+
+
+        self.near_neighbors_sorted["ids"] = ids_list
+        self.near_neighbors_sorted["types"] = types_list
+
+
+        return self.near_neighbors_sorted
+
+    def PoseFromArray(self,Array):
+        quat = tf.transformations.quaternion_from_euler(Array[1][0],Array[1][1],Array[1][2])
+
+        return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
+
+    def ArrayFromPose(self,pose):
+        euler = [0,0,0]
+        # euler = tf.transformations.euler_from_quaternion(pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orienation.w)
+
+        return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
+
+    def TwistFromArray(self,Array):
+
+        return Twist(Vector3(Array[0][0],Array[0][1],Array[0][2]),Vector3(Array[1][0],Array[1][1],Array[1][2]))
+
+    def ArrayFromTwist(self,twist):
+
+        return [[twist.linear.x,twist.linear.y,twist.linear.z],[twist.angular.x,twist.angular.y,twist.angular.z]]
 
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
@@ -333,9 +385,9 @@ class UAV_Brain(object):
         self.world_name = self.hyperparameters['world']
         self.subworld_name = self.hyperparameters['subworld']
         self.n_simulation = self.hyperparameters['n_simulation']
-        self.N_uav = self.hyperparameters['N_uav']
+        self.N_agents = self.hyperparameters['N_agents']
         self.N_obs = self.hyperparameters['N_obs']
         self.n_dataset = self.hyperparameters['n_dataset']
-        self.solver_algorithm = self.hyperparameters['solver_algorithm']
         self.obs_pose_list = self.hyperparameters['obs_pose_list']
         self.heading_use = self.hyperparameters['heading_use']
+        self.algorithms_list = self.hyperparameters['algorithms_list']

@@ -46,12 +46,12 @@ from magna.msg import *
 # from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
 
-class UAV_Data(object):
-    def __init__(self,ID,main_uav,uav_config,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
+class Agent_Data(object):
+    def __init__(self,ID,main_agent,agent_config,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):
         # Local parameters inizialization
         self.ID = ID
-        self.main_uav = main_uav
-        self.uav_config = uav_config
+        self.main_agent = main_agent
+        self.agent_config = agent_config
 
         self.ICAO = ICAO
         self.with_ref = with_ref
@@ -65,7 +65,7 @@ class UAV_Data(object):
 
         self.distance_rel2main = 9999
 
-        self.main_uav_position = []
+        self.main_agent_position = []
 
         self.GettingWorldDefinition()
 
@@ -76,20 +76,20 @@ class UAV_Data(object):
         self.smooth_path_mode = 0
         self.smooth_velocity = Twist(Vector3(0,0,0),Vector3(0,0,0))
 
-        if self.Rviz_flag == True and self.ID == self.main_uav:
+        if self.Rviz_flag == True and self.ID == self.main_agent:
             self.own_path = Path()
             self.own_path.header.stamp = rospy.Time.now()
             self.own_path.header.frame_id = "map"
-            self.path_pub = rospy.Publisher('/magna/uav_{}/path'.format(self.ID), Path, queue_size = 1)
-            self.velocity_on_uav_pub = rospy.Publisher('/magna/uav_{}/velocity_on_uav'.format(self.ID), TwistStamped, queue_size = 1)
+            self.path_pub = rospy.Publisher('/magna/agent_{}/path'.format(self.ID), Path, queue_size = 1)
+            self.velocity_on_agent_pub = rospy.Publisher('/magna/agent_{}/velocity_on_agent'.format(self.ID), TwistStamped, queue_size = 1)
 
             marker_def = {"shape" : "cylinder"}
             marker_def["origin"] = [[0,0,0],[0,0,0]]
             marker_def["parent_name"] = "map"
-            marker_def["name"] = "uav_{0}".format(self.ID)
+            marker_def["name"] = "agent_{0}".format(self.ID)
             marker_def["id"] = 1
-            marker_def["scale"] = [self.uav_config.safety_radius,self.uav_config.safety_radius,self.uav_config.safety_radius*0.7]
-            marker_def["color"] = self.uav_config.marker_color
+            marker_def["scale"] = [self.agent_config.safety_radius,self.agent_config.safety_radius,self.agent_config.safety_radius*0.7]
+            marker_def["color"] = self.agent_config.marker_color
 
             self.marker = RvizMarker(marker_def)
 
@@ -100,12 +100,12 @@ class UAV_Data(object):
     # Function to decide where to subscribe
     def listener(self):
 
-        # Subscribe to position and velocity of every UAV if comms are direct or is own UAV
-        if self.main_uav == self.ID or (self.main_uav != self.ID and self.communications == "direct"):
-            rospy.Subscriber(self.uav_config.top_sub_addr['pose'], PoseStamped, self.uav_pose_callback, queue_size=1)
-            rospy.Subscriber(self.uav_config.top_sub_addr['velocity'], TwistStamped, self.uav_vel_callback, queue_size=1)
-            rospy.Subscriber(self.uav_config.top_sub_addr['state'], State, self.ual_state_callback, queue_size=1)
-            rospy.Subscriber(self.uav_config.top_sub_addr['battery_level'], BatteryState, self.battery_callback, queue_size=1)
+        # Subscribe to position and velocity of every Agent if comms are direct or is own Agent
+        if self.main_agent == self.ID or (self.main_agent != self.ID and self.communications == "direct"):
+            rospy.Subscriber(self.agent_config.top_sub_addr['pose'], PoseStamped, self.agent_pose_callback, queue_size=1)
+            rospy.Subscriber(self.agent_config.top_sub_addr['velocity'], TwistStamped, self.agent_vel_callback, queue_size=1)
+            rospy.Subscriber(self.agent_config.top_sub_addr['state'], State, self.ual_state_callback, queue_size=1)
+            rospy.Subscriber(self.agent_config.top_sub_addr['battery_level'], BatteryState, self.battery_callback, queue_size=1)
             rospy.Subscriber('/uav_path_manager/follower/uav_{}/output_vel'.format(self.ID), TwistStamped, self.smooth_path_vel_callback, queue_size=1)
             
             # Subscribe to depth camera if its use flag is activated
@@ -113,39 +113,39 @@ class UAV_Data(object):
                 rospy.Subscriber('/typhoon_h480_{}/r200/r200/depth/image_raw'.format(self.ID), Image, self.image_raw_callback, queue_size=1)
 
 
-        if self.main_uav != self.ID:
-            rospy.Subscriber('/uav_{}/ual/pose'.format(self.main_uav), PoseStamped, self.main_uav_pose_callback, queue_size=1)
+        if self.main_agent != self.ID:
+            rospy.Subscriber('/uav_{}/ual/pose'.format(self.main_agent), PoseStamped, self.main_agent_pose_callback, queue_size=1)
 
             # Subscribe to ADSB's raw info if comms are ADSB. This part of the project is not still implemented
             if self.communications == "ADSB":
                 rospy.Subscriber('/Environment/ADSB/raw', String, self.incoming_ADSB_msg_callback, queue_size=1)
             
-        # Subcribe to preemption command if this is GS for UAV 1 and the UAV 1 object
+        # Subcribe to preemption command if this is GS for Agent 1 and the Agent 1 object
         # In the future this will be implemented to wrap different roles and different IDs
-        if self.ID == self.main_uav:
-            rospy.Service('/magna/GS/notification_command_to_{}'.format(self.main_uav), StateActualization, self.handle_GS_notification_command)
+        if self.ID == self.main_agent:
+            rospy.Service('/magna/GS/notification_command_to_{}'.format(self.main_agent), StateActualization, self.handle_GS_notification_command)
 
     ## Callbacks
 
     # Function to deal with pose data
-    def uav_pose_callback(self,data):
-        self.position = data        # Store the received position into the position of the UAV
-        if self.Rviz_flag == True and self.ID == self.main_uav:
-
+    def agent_pose_callback(self,data):
+        self.position = data        # Store the received position into the position of the Agent
+        if self.Rviz_flag == True and self.ID == self.main_agent:
+            
             self.marker.Actualize(self.position)        # NO FUNCTIONA AQUI
 
             self.own_path.poses.append(data)
             self.path_pub.publish(self.own_path)
 
         # If pose has been received via ADSB, pubish TF of it
-        if self.main_uav != self.ID and self.communications == "ADSB":
+        if self.main_agent != self.ID and self.communications == "ADSB":
             self.PoseBroadcast()
 
-        if self.main_uav != self.ID and self.main_uav_position !=[]:
-            self.position_rel2main = self.SubstractPoses(self.position.pose,self.main_uav_position.pose)
+        if self.main_agent != self.ID and self.main_agent_position !=[]:
+            self.position_rel2main = self.SubstractPoses(self.position.pose,self.main_agent_position.pose)
             self.distance_rel2main = self.PoseModule(self.position_rel2main)
 
-        if self.main_uav == self.ID:
+        if self.main_agent == self.ID:
             self.obs_poses_rel2main = []
             self.obs_distances_rel2main = []
             for obs_pose in self.obs_pose_list:
@@ -156,24 +156,24 @@ class UAV_Data(object):
                 
         time.sleep(0.1)
 
-    def main_uav_pose_callback(self,data):
-        self.main_uav_position = data
+    def main_agent_pose_callback(self,data):
+        self.main_agent_position = data
 
     # Function to deal with velocity data
-    def uav_vel_callback(self,data):
+    def agent_vel_callback(self,data):
 
-        self.velocity = data        # Store the received velocity into the position of the UAV
+        self.velocity = data        # Store the received velocity into the position of the Agent
 
-        if self.Rviz_flag == True and self.ID == self.main_uav:
-            data.header.frame_id = "uav_{}".format(self.ID)
-            self.velocity_on_uav_pub.publish(data)
+        if self.Rviz_flag == True and self.ID == self.main_agent:
+            data.header.frame_id = "agent_{}".format(self.ID)
+            self.velocity_on_agent_pub.publish(data)
 
         time.sleep(0.1)
 
     # Function to deal with velocity data
     def ual_state_callback(self,data):
 
-        self.ual_state = data.state        # Store the received velocity into the position of the UAV
+        self.ual_state = data.state        # Store the received velocity into the position of the Agent
 
         time.sleep(0.1)
 
@@ -231,7 +231,7 @@ class UAV_Data(object):
         self.br.sendTransform((self.position.pose.position.x,self.position.pose.position.y,self.position.pose.position.z),
                         (self.position.pose.orientation.x,self.position.pose.orientation.y,self.position.pose.orientation.z,self.position.pose.orientation.w),
                         rospy.Time.now(),
-                        "uav_{}_by_{}".format(self.ID,self.main_uav),
+                        "agent_{}_by_{}".format(self.ID,self.main_agent),
                         "map")
         time.sleep(0.1)
 
@@ -255,15 +255,14 @@ class UAV_Data(object):
         self.world_name = self.hyperparameters['world']
         self.subworld_name = self.hyperparameters['subworld']
         self.n_simulation = self.hyperparameters['n_simulation']
-        self.N_uav = self.hyperparameters['N_uav']
+        self.N_agents = self.hyperparameters['N_agents']
         self.N_obs = self.hyperparameters['N_obs']
-        self.uav_models = self.hyperparameters['uav_models']
+        self.agent_models = self.hyperparameters['agent_models']
         self.n_dataset = self.hyperparameters['n_dataset']
-        self.solver_algorithm = self.hyperparameters['solver_algorithm']
         self.communications = self.hyperparameters['communications']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
         self.obs_pose_list = self.hyperparameters['obs_pose_list']
 
 # if __name__ == '__main__':
-#     uav = UAV("485020",True,[0,0])
-#     uav.incoming_ADSB_msg_callback("8D485020994409940838175B284F")
+#     agent = Agent("485020",True,[0,0])
+#     agent.incoming_ADSB_msg_callback("8D485020994409940838175B284F")

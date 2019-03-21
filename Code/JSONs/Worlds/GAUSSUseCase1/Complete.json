@@ -1,0 +1,32 @@
+{
+    "scenario": {
+        "world_boundaries": [[-900,900],[-900,900],[-900,900]],
+        "volumes": [
+            {
+                "name": "JSON",
+                "world": "GAUSSUseCase1",
+                "subworld": "Forest"
+            },
+            {
+                "name": "JSON",
+                "world": "GAUSSUseCase1",
+                "subworld": "Event"
+            },
+            {
+                "name": "JSON",
+                "world": "GAUSSUseCase1",
+                "subworld": "PowerLine"
+            },
+            {
+                "name": "JSON",
+                "world": "GAUSSUseCase1",
+                "subworld": "Aerogenerator"
+            },
+            {
+                "name": "JSON",
+                "world": "GAUSSUseCase1",
+                "subworld": "CropField"
+            }
+        ]
+    }
+}

@@ -19,6 +19,7 @@ class FwQgc(object):
     def __init__(self,robot_id = 1,ual_use = False, pose_frame_id = "", ns_prefix = "uav_",
                  position_th_param = 0.33, orientation_th_param = 0.65):
 
+        self.ID = robot_id
         self.ual_use = ual_use
         if self.ual_use == True:
             self.ual_prefix = "/{0}{1}".format(ns_prefix,robot_id)
@@ -27,6 +28,8 @@ class FwQgc(object):
 
         rospy.init_node('fw_qgc', anonymous=True)
         self.waypoint_reached = -1
+
+        self.setFCUParam('MIS_DIST_WPS',2000.0)   # Distancia minima entre wps. default 900m
 
         self.listener()
         time.sleep(1)
@@ -37,7 +40,7 @@ class FwQgc(object):
             # self.TrialMission()
 
             raw_input("next")
-            self.MoveCommand("takeoff",[200.0,0.0,10.0],0,{"type":"by_angle","angle": 0,"height": 10.0,"distance":200})
+            self.MoveCommand("takeoff",[100.0,0.0,10.0],0,{"type":"by_angle","angle": 0,"height": 10.0,"distance":100})
             raw_input("next")
             # self.MoveCommand("loiter",[[200.0,200.0,10.0]],0)
             # raw_input("next")
@@ -71,7 +74,6 @@ class FwQgc(object):
         rospy.Subscriber('{0}/mavros/extended_state'.format(self.ual_prefix), ExtendedState, self.extended_state_callback)
         rospy.Subscriber('{0}/mavros/mission/reached'.format(self.ual_prefix), WaypointReached, self.waypoint_reached_callback)
         rospy.Subscriber('{0}/mavros/mission/waypoints'.format(self.ual_prefix), WaypointList, self.current_mission_list_callback)
-
 
     def local_pose_callback(self,data):
         self.cur_local_pose = data
@@ -166,7 +168,6 @@ class FwQgc(object):
 
     def ClearMissionSrvCall(self):
         print("Trying to clear mission")
-        print(self.ual_prefix)
         rospy.wait_for_service(
             '{0}/mavros/mission/clear'.format(self.ual_prefix))
         try:
@@ -421,7 +422,10 @@ class FwQgc(object):
         newWpList = []
         for wp in poses_list:
 
-            newWpList.append([wp.position.x,wp.position.y,wp.position.z])
+            newWpList.append([wp.position.x-self.ual_start_positon[0],
+                              wp.position.y-self.ual_start_positon[1],
+                              wp.position.z])
+
         # newWpList = poses_list
 
         wpList = self.WpListMixer(add_pos)
@@ -492,7 +496,8 @@ class FwQgc(object):
             self.setArmed(False)
         self.setArmed(True)
     
-        self.setFCUParam('NAV_DLL_ACT',0)
+        self.setFCUParam('NAV_DLL_ACT',0)   # Para poder cambiarlo de modo
+        self.setFCUParam('MIS_DIST_WPS',2000.0)   # Distancia minima entre wps. default 900m
         # time.sleep(1)
         self.setHome()
 
@@ -543,9 +548,21 @@ class FwQgc(object):
     def setFCUParam(self,param,value):
         rospy.wait_for_service('{0}/mavros/param/set'.format(self.ual_prefix))
         try:
+            # request = ParamGetRequest()
+            # request.param_id = "MIS_DIST_WPS"
+            # proxy = rospy.ServiceProxy('{0}/mavros/param/get'.format(self.ual_prefix), ParamGet)
+            # response = proxy(request)
+            # print(response)
+
+
             request = ParamSetRequest()
             request.param_id = param
-            request.value.integer = value
+            if type(value) == int:
+                request.value.integer = value
+            elif type(value) == float:
+                request.value.integer = int(value)
+                request.value.real = round(value-int(value),1)
+                
             proxy = rospy.ServiceProxy('{0}/mavros/param/set'.format(self.ual_prefix), ParamSet)
             response = proxy(request)
             if response.success == True:
@@ -553,6 +570,13 @@ class FwQgc(object):
             else:
                 print("{} param could not be set".format(param))
                 # print("response received:", response)
+
+            # request = ParamGetRequest()
+            # request.param_id = "MIS_DIST_WPS"
+            # proxy = rospy.ServiceProxy('{0}/mavros/param/get'.format(self.ual_prefix), ParamGet)
+            # response = proxy(request)
+            # print(response)
+            
             return
 
         except rospy.ServiceException, e:
@@ -582,6 +606,7 @@ class FwQgc(object):
 
         self.local_start_pos = self.cur_local_pose
         self.global_start_pos = self.cur_global_pose
+        self.ual_start_positon = rospy.get_param('uav_{}/ual/home_pose'.format(self.ID))
 
     def toGlobal(self,wp):
 

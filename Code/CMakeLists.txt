@@ -77,8 +77,8 @@ add_service_files(
    Land.action
    SaveCSV.action
    FollowPath.action
-   FollowUAVAD.action
-   FollowUAVAP.action
+   FollowAgentAD.action
+   FollowAgentAP.action
    BasicMove.action
 )
 

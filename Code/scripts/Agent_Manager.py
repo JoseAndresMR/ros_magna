@@ -52,15 +52,15 @@ from sensor_msgs.msg import Image
 from nav_msgs.msg import Path
 from std_msgs.msg import Int8
 
-from UAV_Brain import *
+from Agent_NAI import *
 from magna.srv import *
-from UAV_Data import UAV_Data
-from UAV_Config import UAV_Config
-from UAV_Manager_SM import UAV_Manager_SM
+from Agent_Data import Agent_Data
+from Agent_Config import Agent_Config
+from Agent_Manager_SM import Agent_Manager_SM
 from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
 
 from FwQgc import FwQgc
-class UAV_Manager(object):
+class Agent_Manager(object):
 
     ### Initialiations ###
     def __init__(self,ID):
@@ -70,15 +70,16 @@ class UAV_Manager(object):
 
         self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
-        self.brain = UAV_Brain(self.ID)   # Creation of an utility to treat depth camera topic data
+        self.nai = Agent_NAI(self.ID)   # Creation of an utility to treat depth camera topic data
 
         # Local variables initialization
-        self.global_data_frame = pd.DataFrame()     # Data frame where to store this UAV dynamical simulation data for future dump into a csv
-        self.global_frame_depth = []        # Data frame where to store this UAV depth image simulation data for future dump into a csv
+        self.global_data_frame = pd.DataFrame()     # Data frame where to store this Agent dynamical simulation data for future dump into a csv
+        self.global_frame_depth = []        # Data frame where to store this Agent depth image simulation data for future dump into a csv
 
         self.distance_to_goal = 10000
         self.goal = {}      # Structure to store goal specifications
-        self.brain.goal = self.goal
+        self.nai.goal = self.goal
+        
         self.smooth_path_mode = 0
         self.start_time_to_target = time.time()     # Counter to check elapsed time to achieve a goal
 
@@ -90,50 +91,50 @@ class UAV_Manager(object):
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
 
 
-        if self.uav_models[self.ID-1] != "plane":
-            rospy.init_node('uav_{}'.format(self.ID), anonymous=True)        # Start the node
+        if self.agent_models[self.ID-1] != "plane":
+            rospy.init_node('agent_{}'.format(self.ID), anonymous=True)        # Start the node
         else:
             self.fw_qgc = FwQgc(self.ID,ual_use = True)
             
-        # Creation of a list within objects of UAV class. They deal with the information of every UAV in the simu.
-        # Own ID is given for the object to know if is treating any other UAV or the one dedicated for this GroundStation
-        self.uavs_data_list = []
-        self.uavs_config_list = []
-        for n_uav in range(1,self.N_uav+1):
-            self.uavs_config_list.append(UAV_Config(n_uav))
-            self.uavs_data_list.append(UAV_Data(n_uav,self.ID,self.uavs_config_list[n_uav-1]))
+        # Creation of a list within objects of Agent class. They deal with the information of every Agent in the simu.
+        # Own ID is given for the object to know if is treating any other Agent or the one dedicated for this GroundStation
+        self.agents_data_list = []
+        self.agents_config_list = []
+        for n_agent in range(1,self.N_agents+1):
+            self.agents_config_list.append(Agent_Config(n_agent))
+            self.agents_data_list.append(Agent_Data(n_agent,self.ID,self.agents_config_list[n_agent-1]))
         
         # Publishers initialisation
-        self.pose_pub = rospy.Publisher(self.uavs_config_list[self.ID-1].top_pub_addr['go_to_waypoint'], PoseStamped, queue_size=1)
-        self.velocity_pub= rospy.Publisher(self.uavs_config_list[self.ID-1].top_pub_addr['set_velocity'], TwistStamped, queue_size=1)
-        self.path_pub = rospy.Publisher('/magna/uav_{}/goal_path'.format(self.ID), Path, queue_size = 1)
-        self.path_pub_smooth = rospy.Publisher('/magna/uav_{}/goal_path_smooth'.format(self.ID), Path, queue_size = 1)
+        self.pose_pub = rospy.Publisher(self.agents_config_list[self.ID-1].top_pub_addr['go_to_waypoint'], PoseStamped, queue_size=1)
+        self.velocity_pub= rospy.Publisher(self.agents_config_list[self.ID-1].top_pub_addr['set_velocity'], TwistStamped, queue_size=1)
+        self.path_pub = rospy.Publisher('/magna/agent_{}/goal_path'.format(self.ID), Path, queue_size = 1)
+        self.path_pub_smooth = rospy.Publisher('/magna/agent_{}/goal_path_smooth'.format(self.ID), Path, queue_size = 1)
 
-        # # Creation of a list with every UAVs' home frame
-        # self.uav_frame_list = []
-        # for n_uav in np.arange(self.N_uav):
-        #     self.uav_frame_list.append(rospy.get_param( 'uav_{}_home'.format(n_uav+1)))
+        # # Creation of a list with every Agents' home frame
+        # self.agent_frame_list = []
+        # for n_agent in np.arange(self.N_agents):
+        #     self.agent_frame_list.append(rospy.get_param( 'agent_{}_home'.format(n_agent+1)))
 
-        # Assiignation of an ICAO number for every UAV. Used if ADSB communications are active
+        # Assiignation of an ICAO number for every Agent. Used if ADSB communications are active
         self.critical_event = 'nothing'       # Initially there has not been collisions
         self.die_command = False        # Flag later activate from Ground Station to finish simulation
 
-        self.brain.uavs_data_list = self.uavs_data_list
+        self.nai.agents_data_list = self.agents_data_list
 
         # Wait time to let Gazebo's Real Time recover from model spawns
-        if self.uav_models[self.ID-1] != "plane":
-            while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
+        if self.agent_models[self.ID-1] != "plane":
+            while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
                 time.sleep(0.1)
-                # print(self.uavs_data_list[self.ID-1].ual_state)
-        # time.sleep(10 * self.N_uav)
+                # print(self.agents_data_list[self.ID-1].ual_state)
+        # time.sleep(10 * self.N_agents)
         # time.sleep((self.ID-1) * 8)
-        if self.uav_models[self.ID-1] != "plane":
+        if self.agent_models[self.ID-1] != "plane":
             self.GroundStationListener()        # Start listening
 
-        print "UAV",ID,"ready and listening"
+        print "Agent",ID,"ready and listening"
 
-        uav_sm = UAV_Manager_SM(self)     # Create Ground Station State Machine
-        outcome = uav_sm.uav_sm.execute()     # Execute State Machine
+        agent_sm = Agent_Manager_SM(self)     # Create Ground Station State Machine
+        outcome = agent_sm.agent_sm.execute()     # Execute State Machine
 
         # rospy.spin()
 
@@ -145,7 +146,7 @@ class UAV_Manager(object):
     def GroundStationListener(self):
 
         # Service to listen to the Ground Station if demands termination
-        rospy.Service('/magna/GS_UAV_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
+        rospy.Service('/magna/GS_Agent_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
 
     # Function to accomplish end of this node
     def handle_die(self,req):
@@ -163,7 +164,7 @@ class UAV_Manager(object):
         # Fulfill the message
         static_transformStamped.header.stamp = rospy.Time.now()
         static_transformStamped.header.frame_id = "map"
-        static_transformStamped.child_frame_id = "uav_{}_goal".format(self.ID)
+        static_transformStamped.child_frame_id = "agent_{}_goal".format(self.ID)
 
         # Copy goal position to translation field
         static_transformStamped.transform.translation = self.goal_WP_pose.position
@@ -208,23 +209,23 @@ class UAV_Manager(object):
         # Check if hover deactivated
         if hover== False:
 
-            # Ask the Brain to decide the velocity
-            self.new_velocity_twist = self.brain.Guidance(self.uavs_config_list[self.ID-1].max_speed)
+            # Ask the NAI to decide the velocity
+            self.new_velocity_twist = self.nai.Guidance(self.agents_config_list[self.ID-1].max_speed)
 
             time_condition = time.time() - self.last_saved_time     # Control the elapsed time from last save
 
             # Control if data must be stored depending on role, time elapsed from last save and actual state
             if ((self.role == "path" and self.state.split(" ")[0] == "to")
-                or self.role == "uav_ad" or self.role == "uav_ap"
+                or self.role == "agent_ad" or self.role == "agent_ap"
                 ) and time_condition >= 1 and self.save_flag:
-                # self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
+                self.SaveData()     # Function to save the data of the actual instant to the frame of the global simulation
                 self.last_saved_time == time.time()     # Restart time since last save
 
         # Check if hover activated
         elif hover == True:
 
-            # Ask the Brain to give a zero velocity
-            self.new_velocity_twist = self.brain.Hover()
+            # Ask the NAI to give a zero velocity
+            self.new_velocity_twist = self.nai.Hover()
             pass
 
         h = std_msgs.msg.Header()       # Create an empty header
@@ -242,13 +243,13 @@ class UAV_Manager(object):
     # Function to deal with UAL server Take Off
     def TakeOffCommand(self,heigth, blocking):
 
-        if self.uav_models[self.ID-1] == "plane":
+        if self.agent_models[self.ID-1] == "plane":
             return self.TakeOffCommand_FW(heigth, blocking)
 
         time.sleep(3)
-        rospy.wait_for_service(self.uavs_config_list[self.ID-1].ser_cli_addr['take_off'])
+        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['take_off'])
         try:
-            ual_set_velocity = rospy.ServiceProxy(self.uavs_config_list[self.ID-1].ser_cli_addr['take_off'], TakeOff)
+            ual_set_velocity = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['take_off'], TakeOff)
             ual_set_velocity(heigth,blocking)
             
         except rospy.ServiceException, e:
@@ -256,10 +257,10 @@ class UAV_Manager(object):
             print "error in take_off"
 
 
-        while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
+        while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
             time.sleep(0.1)
 
-        # Function to inform Ground Station about actual UAV's state
+        # Function to inform Ground Station about actual Agent's state
         self.state = "inizializating"
         self.GSStateActualization()
 
@@ -267,7 +268,7 @@ class UAV_Manager(object):
 
     def TakeOffCommand_FW(self,heigth, blocking):
 
-        takeoff_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
+        takeoff_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
         takeoff_pose.position = Point(takeoff_pose.position.x,takeoff_pose.position.y,takeoff_pose.position.z + heigth)
         self.fw_qgc.MoveCommand("takeoff",[takeoff_pose],0,{"type":"by_angle","height": 10.0,"distance":200})
 
@@ -276,22 +277,22 @@ class UAV_Manager(object):
     # Function to deal with UAL server Land
     def LandCommand(self,blocking):
 
-        if self.uav_models[self.ID-1] == "plane":
+        if self.agent_models[self.ID-1] == "plane":
             return self.LandCommand_FW()
             
-        rospy.wait_for_service(self.uavs_config_list[self.ID-1].ser_cli_addr['land'])
+        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['land'])
         try:
-            ual_land = rospy.ServiceProxy(self.uavs_config_list[self.ID-1].ser_cli_addr['land'], Land)
+            ual_land = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['land'], Land)
             ual_land(blocking)
-            return
+            
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in land service"
 
-        while not rospy.is_shutdown() and self.uavs_data_list[self.ID-1].ual_state != (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
+        while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
             time.sleep(0.1)
 
-        # Function to inform Ground Station about actual UAV's state
+        # Function to inform Ground Station about actual Agent's state
         self.state = "landed"
         self.GSStateActualization()
 
@@ -299,8 +300,8 @@ class UAV_Manager(object):
 
     def LandCommand_FW(self, land_point = []):
 
-        # actual_position = self.uavs_data_list[self.ID-1].position.pose.position
-        takeoff_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
+        # actual_position = self.agents_data_list[self.ID-1].position.pose.position
+        takeoff_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
         land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,1))
         self.fw_qgc.MoveCommand("land",[land_pose],0,{"loiter_to_alt":{"type":"by_angle","height": 10.0,"distance":200}})
 
@@ -308,16 +309,16 @@ class UAV_Manager(object):
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
-        rospy.wait_for_service(self.uavs_config_list[self.ID-1].ser_cli_addr['set_home'])
+        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['set_home'])
         try:
-            ual_set_velocity = rospy.ServiceProxy(self.uavs_config_list[self.ID-1].ser_cli_addr['set_home'], TakeOff)
+            ual_set_velocity = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['set_home'], TakeOff)
             ual_set_velocity()
             return
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             print "error in set_home"
 
-        # Function to send termination instruction to each UAV
+        # Function to send termination instruction to each Agent
     def SmoothPath(self,raw_path):
         rospy.wait_for_service('/uav_path_manager/generator/generate_path')
         try:
@@ -357,17 +358,17 @@ class UAV_Manager(object):
     def PathFollower(self,dynamic):
 
         self.role = "path"
-        self.brain.role = self.role
+        self.nai.role = self.role
 
-        self.goal_path = self.PoseslistToGlobalPath([copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)]+copy.deepcopy(self.goal_path_poses_list))
+        self.goal_path = self.PoseslistToGlobalPath([copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)]+copy.deepcopy(self.goal_path_poses_list))
         self.path_pub.publish(self.goal_path)
         self.changed_state = False
 
-        if self.uav_models[self.ID-1] == "plane":
+        if self.agent_models[self.ID-1] == "plane":
             return self.PathFollower_FW()
 
-        self.brain.smooth_path_mode = self.smooth_path_mode
-        self.uavs_data_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
+        self.nai.smooth_path_mode = self.smooth_path_mode
+        self.agents_data_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
         if self.smooth_path_mode != 0:
             self.goal_path_smooth = self.SmoothPath(self.goal_path)
             self.path_pub_smooth.publish(self.goal_path_smooth)
@@ -377,7 +378,7 @@ class UAV_Manager(object):
             #     return
 
 
-        self.uavs_data_list[self.ID-1].own_path.poses = []
+        self.agents_data_list[self.ID-1].own_path.poses = []
 
         # Control in every single component of the list
         for i in np.arange(len(self.goal_path_poses_list)):
@@ -404,13 +405,13 @@ class UAV_Manager(object):
 
                 elif dynamic == "velocity":
 
-                    self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                    self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
 
                 self.Evaluator()          # Evaluate the situation
                     
                 time.sleep(0.2)
 
-            self.SetVelocityCommand(True)       # If far, ask brain to give the correct velocity
+            self.SetVelocityCommand(True)       # If far, ask nai to give the correct velocity
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
 
             # Actualize state and send it to Ground Station
@@ -436,28 +437,28 @@ class UAV_Manager(object):
 
         return 'succeeded'
 
-    # Function to model the target of role UAV Follower AD
-    def UAVFollowerAtDistance(self,target_ID,distance,action_time):
+    # Function to model the target of role Agent Follower AD
+    def AgentFollowerAtDistance(self,target_ID,distance,action_time):
 
-        self.role = "uav_ad"
-        self.brain.role = self.role
+        self.role = "agent_ad"
+        self.nai.role = self.role
 
         # Tell the GS the identity of its new target
-        self.state = "following UAV {0}".format(target_ID)
-        self.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
+        self.state = "following Agent {0}".format(target_ID)
+        self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
 
-        if self.uav_models[self.ID-1] == "plane":
+        if self.agent_models[self.ID-1] == "plane":
             return self.PathFollower_FW()
 
         action_start_time = rospy.Time.now()
 
         self.smooth_path_mode = 0
-        self.brain.smooth_path_mode = self.smooth_path_mode
+        self.nai.smooth_path_mode = self.smooth_path_mode
 
         self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
         # Actualize the state and send it to Ground Station
-        self.state = "following UAV {} at distance".format(target_ID)
+        self.state = "following Agent {} at distance".format(target_ID)
         self.GSStateActualization()
 
         # Execute while Ground Station doesn't send another instruction
@@ -467,16 +468,16 @@ class UAV_Manager(object):
                 self.preemption_launched = True
                 return self.critical_event
 
-            # Create an independent copy of the position of the UAV to follow
-            self.goal_WP_pose = copy.deepcopy(self.uavs_data_list[target_ID-1].position.pose)
+            # Create an independent copy of the position of the Agent to follow
+            self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
 
             # If role is orca3, goal wp will be trickered moving it in veolcitywise
-            if self.solver_algorithm == "orca3":
+            if self.nai.algorithms_list[0] == "orca3":
 
-                tar_vel_lin = self.uavs_data_list[target_ID-1].velocity.twist.linear
+                tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
 
-                tar_pos = self.uavs_data_list[target_ID-1].position.pose.position
-                tar_ori = self.uavs_data_list[target_ID-1].position.pose.orientation
+                tar_pos = self.agents_data_list[target_ID-1].position.pose.position
+                tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
 
                 near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
                         np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
@@ -488,13 +489,13 @@ class UAV_Manager(object):
 
             # Fulfil goal variable fields to be later stored
             self.goal["pose"] = self.goal_WP_pose
-            self.goal["vel"] = self.uavs_data_list[target_ID-1].velocity.twist
+            self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
             self.goal["dist"] = distance
 
             # Control distance to goal
             if self.DistanceToGoal() > distance:
 
-                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
                 
             else:
                 self.SetVelocityCommand(True)       # If on goal, hover. In future should still be take care off collisions
@@ -504,15 +505,15 @@ class UAV_Manager(object):
 
         return 'succeeded'
 
-    # Function to model the target of role UAV Follower AP
-    def UAVFollowerAtPosition(self,target_ID,pos,action_time):
+    # Function to model the target of role Agent Follower AP
+    def AgentFollowerAtPosition(self,target_ID,pos,action_time):
 
-        self.role = uav_ap
-        self.brain.role = self.role
+        self.role = "agent_ap"
+        self.nai.role = self.role
 
         # Tell the GS the identity of its new target
-        self.state = "following UAV {0}".format(target_ID)
-        self.GSStateActualization()       # Function to inform Ground Station about actual UAV's state
+        self.state = "following Agent {0}".format(target_ID)
+        self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
 
 
         self.queue_of_followers_ap_pos = pos        # Save the position requiered
@@ -520,10 +521,10 @@ class UAV_Manager(object):
         action_start_time = rospy.Time.now()
 
         self.smooth_path_mode = 0
-        self.brain.smooth_path_mode = self.smooth_path_mode
+        self.nai.smooth_path_mode = self.smooth_path_mode
 
         # Actualize the state and send it to Ground Station
-        self.state = "following UAV {} at position".format(target_ID)
+        self.state = "following Agent {} at position".format(target_ID)
         self.GSStateActualization()
 
         # Execute while Ground Station doesn't send another instruction
@@ -533,8 +534,8 @@ class UAV_Manager(object):
                 self.preemption_launched = True
                 return self.critical_event
 
-            # Create an independent copy of the position of the UAV to follow
-            self.goal_WP_pose = copy.deepcopy(self.uavs_data_list[target_ID-1].position.pose)
+            # Create an independent copy of the position of the Agent to follow
+            self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
 
             # Add to that pose, the bias required
             self.goal_WP_pose.position.x += pos[0]
@@ -542,11 +543,11 @@ class UAV_Manager(object):
             self.goal_WP_pose.position.z += pos[2]
 
             # If role is orca3, goal wp will be trickered moving it in veolcitywise
-            if self.solver_algorithm == "orca3":
-                tar_vel_lin = self.uavs_data_list[target_ID-1].velocity.twist.linear
+            if self.nai.algorithms_list[0] == "orca3":
+                tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
 
                 tar_pos = self.goal_WP_pose.position
-                tar_ori = self.uavs_data_list[target_ID-1].position.pose.orientation
+                tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
 
                 near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
                         np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
@@ -558,11 +559,11 @@ class UAV_Manager(object):
 
             # Fulfil goal variable fields to be later stored. Those are no used, fix in the future.
             self.goal["pose"] = self.goal_WP_pose
-            self.goal["vel"] = self.uavs_data_list[target_ID-1].velocity.twist
+            self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
 
             # Control distance to goal
             if self.DistanceToGoal() > self.accepted_target_radio:
-                self.SetVelocityCommand(False)      # If far, ask brain to give the correct velocity
+                self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
 
             else:
                 self.SetVelocityCommand(True)       # If on goal, hover
@@ -600,7 +601,7 @@ class UAV_Manager(object):
 
             # If position change, add direction, actualize goal and call PathFollower
             if dynamic == "position":
-                goal_WP_pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
+                goal_WP_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
 
                 goal_WP_pose.position.x += change_matrix[0][0]
                 goal_WP_pose.position.y += change_matrix[0][1]
@@ -631,50 +632,53 @@ class UAV_Manager(object):
     def Evaluator(self):
 
         # Thresholds of separation acceptance
-        min_distance_uav = self.uavs_config_list[self.ID-1].safety_radius*3
-        min_distance_obs = self.uavs_config_list[self.ID-1].safety_radius*3
+        safety_distance = self.agents_config_list[self.ID-1].safety_radius*3
 
         # Initialize collision as no occurred
-        collision_uav = False
-        collision_obs = False
+        collision_detected = False
 
-        self.brain.NeighborSelector()
-        # Turn to True the local collision flag if distance threshold has been raised for UAVs or obstacles
-        if self.N_uav > 1:
-            collision_uav = [x for x in self.brain.uav_near_neighbors_sorted_distances if x <= min_distance_uav]
+        self.nai.NeighborSelector()
+        # Turn to True the local collision flag if distance threshold has been raised for Agents or obstacles
 
-        if self.N_obs > 0:
-            collision_obs = [x for x in self.brain.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
+        if len(self.nai.near_neighbors_sorted["distances"]) > 0:
+            if self.nai.near_neighbors_sorted["distances"][0] <= safety_distance:
+                collision_detected = True
 
-        checks = self.CheckFloatsArrayIntoBoundary([self.uavs_data_list[self.ID-1].position.pose.position.x,
-                                                    self.uavs_data_list[self.ID-1].position.pose.position.y,
-                                                    self.uavs_data_list[self.ID-1].position.pose.position.z],
+        # if self.N_agents > 1:
+        #     collision_agent = [x for x in self.nai.agent_near_neighbors_sorted_distances if x <= min_distance_agent]
+
+        # if self.N_obs > 0:
+        #     collision_obs = [x for x in self.nai.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
+
+        checks = self.CheckFloatsArrayIntoBoundary([self.agents_data_list[self.ID-1].position.pose.position.x,
+                                                    self.agents_data_list[self.ID-1].position.pose.position.y,
+                                                    self.agents_data_list[self.ID-1].position.pose.position.z],
                                                     self.world_boundaries)
 
         collision_world_boundaries = not(all(checks))
 
         # If confliction detected, raise the global collision flag for later storage
-        if self.preemption_launched == False and (collision_uav or collision_obs or collision_world_boundaries):
+        if self.preemption_launched == False and (collision_detected or collision_world_boundaries):
             self.critical_event = "collision"
 
-            if collision_uav:
-                print self.ID,"COLLISIONED WITH ANOTHER UAV!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            elif collision_obs:
-                print self.ID,"COLLISIONED WITH AN OBSTACLE!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            if collision_detected:
+                print self.ID,"COLLISIONED!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            # elif collision_obs:
+            #     print self.ID,"COLLISIONED WITH AN OBSTACLE!!!!!!!!!!!!!!!!!!!!!!!!!!"
             elif collision_world_boundaries:
                 print self.ID,"OUT OF WORLD BOUNDARIES!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
             self.GSStateActualization()
 
-        elif self.preemption_launched == False and  self.uavs_data_list[self.ID-1].battery_percentage < 0.2:
+        elif self.preemption_launched == False and  self.agents_data_list[self.ID-1].battery_percentage < 0.2:
             self.critical_event = "low_battery"
 
             print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.GSStateActualization()
 
-        elif self.preemption_launched == False and  self.uavs_data_list[self.ID-1].GS_notification == 'GS_critical_event':
+        elif self.preemption_launched == False and  self.agents_data_list[self.ID-1].GS_notification == 'GS_critical_event':
             print(self.ID, "GROUND STATION CRITICAL EVENT!!!!!!!!!!!!!!!!!!")
-            self.critical_event = self.uavs_data_list[self.ID-1].GS_notification
+            self.critical_event = self.agents_data_list[self.ID-1].GS_notification
 
             self.GSStateActualization()
 
@@ -694,40 +698,49 @@ class UAV_Manager(object):
 
         # Create a single frame for every instant information storage.
         # It will be initialized with information of all UASs seen from this one and the applied velocity
-        single_frame = {"main_uav" : [{"Pose" : self.parse_4CSV(self.uavs_data_list[self.ID-1].position.pose,"pose"),
-                                      "Twist" : self.parse_4CSV(self.uavs_data_list[self.ID-1].velocity.twist,"twist")}],
+        single_frame = {"main_agent" : [{"Pose" : self.parse_4CSV(self.agents_data_list[self.ID-1].position.pose,"pose"),
+                                      "Twist" : self.parse_4CSV(self.agents_data_list[self.ID-1].velocity.twist,"twist")}],
                         "selected_velocity" : [self.parse_4CSV(self.new_velocity_twist,"twist")]}
+        # print(self.agents_data_list[self.ID-1].velocity.twist)
+        # print(single_frame["main_agent"][0]["Twist"])
 
-        uav_near_neighbors_sorted, obs_near_neighbors_sorted = self.brain.uav_near_neighbors_sorted, self.brain.obs_near_neighbors_sorted
+        single_frame["role"] = [self.role]
+        single_frame["N_neigh_aware"] = [self.nai.N_neighbors_aware]
+        single_frame["algorithms_list"] = [self.nai.algorithms_list]
 
-        if self.N_uav > 1:
-            uavs_data_list = []
-            for uav_neighbor in uav_near_neighbors_sorted:
-                uavs_data_list.append({"Pose" : self.parse_4CSV(self.uavs_data_list[uav_neighbor].position_rel2main,"pose"),
-                                  "Twist" : self.parse_4CSV(self.uavs_data_list[uav_neighbor].velocity.twist,"twist")})
-            single_frame["uavs_neigh"] = [uavs_data_list]
+        if self.nai.N_neighbors_aware > 0:
+            neigh_data_list = []
+            for n_neighbor in range(len(self.nai.near_neighbors_sorted["types"])):
 
-        if self.N_obs > 0:
-            obs_list = []
-            for obs_neighbor in obs_near_neighbors_sorted:
-                obs_list.append(self.parse_4CSV(self.uavs_data_list[self.ID-1].obs_poses_rel2main[obs_neighbor],"pose"))
-            single_frame["obs_neigh"] = [obs_list]
+                if self.nai.near_neighbors_sorted["types"][n_neighbor] == "agent":
+                    n_agent = self.nai.near_neighbors_sorted["ids"][n_neighbor]
+
+                    neigh_data_list.append({"Pose" : self.parse_4CSV(self.agents_data_list[n_agent].position_rel2main,"pose"),
+                                    "Twist" : self.parse_4CSV(self.agents_data_list[n_agent].velocity.twist,"twist")})
+                
+                elif self.nai.near_neighbors_sorted["types"][n_neighbor] == "obs":
+                    n_obs = self.nai.near_neighbors_sorted["ids"][n_neighbor]
+
+                    neigh_data_list.append({"Pose": self.parse_4CSV(self.agents_data_list[self.ID-1].obs_poses_rel2main[n_obs],"pose"),
+                                    "Twist" : [[0,0,0],[0,0,0]]})
+
+            single_frame["neigh"] = [neigh_data_list]
 
         # Addition of information into single frame depending on role.
         # In the future, this will be defined in a separate document and a for loop will add each member
         if self.role == "path":
-            single_frame["goal"] = [[{"Pose" : self.parse_4CSV(self.SubstractPoses(self.goal_WP_pose,self.uavs_data_list[self.ID-1].position.pose),"pose")}]]
+            # single_frame["goal"] = [[{"Pose" : self.SubstractPoses(self.goal_WP_pose,self.agents_data_list[self.ID-1].position.pose)}]]
+            # single_frame["goal"][0][0]["Twist"] = self.nai.TwistFromArray([[0,0,0],[0,0,0]])
+            single_frame["goal"] = [[{"Pose" : self.parse_4CSV(self.SubstractPoses(self.goal_WP_pose,self.agents_data_list[self.ID-1].position.pose),"pose")}]]
             single_frame["goal"][0][0]["Twist"] = [[0,0,0],[0,0,0]]
 
-        elif self.role == "uav_ad":
-            single_frame["goal"] = [[self.parse_4CSV([self.uavs_data_list[self.ID - 2]],"uavs_data_list")[0]]]
+        elif self.role == "agent_ad":
+            single_frame["goal"] = [[self.parse_4CSV([self.agents_data_list[self.ID - 2]],"agents_data_list")[0]]]
             single_frame["goal"][0][0]["distance"] = self.queue_of_followers_at_distance
 
-        elif self.role == "uav_ap":
-            single_frame["goal"] = [[self.parse_4CSV([self.uavs_data_list[self.ID - 2]],"uavs_data_list")[0]]]
+        elif self.role == "agent_ap":
+            single_frame["goal"] = [[self.parse_4CSV([self.agents_data_list[self.ID - 2]],"agents_data_list")[0]]]
             single_frame["goal"][0][0]["Pose"][0] = list(np.array(single_frame["goal"][0][0]["Pose"][0]) + np.array(self.queue_of_followers_ap_pos))
-
-        single_frame["role"] = [self.role]
 
         # single_frame["evaluation"] = self.evaluation      # Addition of evaluation dictionary
 
@@ -739,7 +752,7 @@ class UAV_Manager(object):
 
         # If depth camera is in use, add its info to its single frame
         if self.depth_camera_use == True:
-            single_frame_depth = self.uavs_data_list[self.ID-1].image_depth
+            single_frame_depth = self.agents_data_list[self.ID-1].image_depth
 
             # If depth camera is in use, add its single frame to its global frame
             if self.global_frame_depth == []:
@@ -764,35 +777,35 @@ class UAV_Manager(object):
             parsed = [[linear.x,linear.y,linear.z],[angular.x,angular.y,angular.z]]
 
         elif data_type == "obs_pose":
-            main_position = self.uavs_data_list[self.ID-1].position
-            main_orientation = self.uavs_data_list[self.ID-1].orientation
+            main_position = self.agents_data_list[self.ID-1].position
+            main_orientation = self.agents_data_list[self.ID-1].orientation
             main_parsed = [[position.x,position.y,position.z],[orientation.x,orientation.y,orientation.z,orientation.w]]
 
             parsed = [list(np.array(data)-np.array(main_parsed[0])),main_parsed[1]] ### AÑADIR ORIENTACION DE OBSTACULOS
 
-        # For a list of UAVs, for every UAV, separate into pose and twist and recursively parse both
-        elif data_type == "uavs_data_list":
+        # For a list of Agents, for every Agent, separate into pose and twist and recursively parse both
+        elif data_type == "agents_data_list":
             parsed = []
             for i in range(len(data)):
                 position = data[i].position.pose
                 velocity = data[i].velocity.twist
-                dicc = {"Pose":self.parse_4CSV(self.SubstractPoses(position,self.uavs_data_list[self.ID-1].position.pose),"pose"),
+                dicc = {"Pose":self.parse_4CSV(self.SubstractPoses(position,self.agents_data_list[self.ID-1].position.pose),"pose"),
                         "Twist":self.parse_4CSV(velocity,"twist")}
                 parsed.append(dicc)
 
         return parsed
 
-    # Function to create and store UAV information of the whole simulation
+    # Function to create and store Agent information of the whole simulation
     def StoreData(self):
-        print "saving uav",self.ID,"mission data"
+        print "saving agent",self.ID,"mission data"
 
-        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}/Nuav{5}_Nobs{6}"\
+        first_folder_path = "{0}/Data_Storage/Simulations/{1}/{2}/{3}/{4}"\
                                  .format(self.home_path,self.world_name,self.subworld_name,
-                                 self.mission_name,self.submission_name,self.N_uav,self.N_obs)
+                                 self.mission_name,self.submission_name)
 
         third_folder_path = first_folder_path + "/dataset_{0}/simulation_{1}".format(self.n_dataset,self.n_simulation)
 
-        csv_file_path = third_folder_path + '/uav_{0}.csv'.format(self.ID)
+        csv_file_path = third_folder_path + '/agent_{0}.csv'.format(self.ID)
         self.global_data_frame.to_csv(csv_file_path, sep=',', mode='a') #,low_memory=False,     # Dump the global frame into
 
         # Dump the global depth camera frame into
@@ -800,13 +813,13 @@ class UAV_Manager(object):
             with open(folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
                 pickle.dump(self.global_frame_depth, f, pickle.HIGHEST_PROTOCOL)
 
-    # Function to inform Ground Station about actual UAV's state
+    # Function to inform Ground Station about actual Agent's state
     def GSStateActualization(self):
-        self.uavs_data_list[self.ID-1].changed_state = True       # Actualization of the state to the main UAV object
+        self.agents_data_list[self.ID-1].changed_state = True       # Actualization of the state to the main Agent object
 
         rospy.wait_for_service('/magna/GS/state_actualization')
         try:
-            # print "path for uav {} command".format(ID)
+            # print "path for agent {} command".format(ID)
             GS_state_actualization = rospy.ServiceProxy('/magna/GS/state_actualization', StateActualization)
             GS_state_actualization(self.ID, self.state, self.critical_event)
             return
@@ -817,7 +830,7 @@ class UAV_Manager(object):
 
     # Function to calculate the distance from actual position to goal position
     def DistanceToGoal(self):
-        self.distance_to_goal = math.sqrt((self.uavs_data_list[self.ID-1].position.pose.position.x-self.goal_WP_pose.position.x)**2+(self.uavs_data_list[self.ID-1].position.pose.position.y-self.goal_WP_pose.position.y)**2+(self.uavs_data_list[self.ID-1].position.pose.position.z-self.goal_WP_pose.position.z)**2)
+        self.distance_to_goal = math.sqrt((self.agents_data_list[self.ID-1].position.pose.position.x-self.goal_WP_pose.position.x)**2+(self.agents_data_list[self.ID-1].position.pose.position.y-self.goal_WP_pose.position.y)**2+(self.agents_data_list[self.ID-1].position.pose.position.z-self.goal_WP_pose.position.z)**2)
         return self.distance_to_goal
 
     # Function to calculate the distance between two poses
@@ -862,7 +875,7 @@ class UAV_Manager(object):
         # posestamped = PoseStamped()
         # posestamped.header.stamp = rospy.Time.now()
         # posestamped.header.frame_id = "map"
-        # posestamped.pose = copy.deepcopy(self.uavs_data_list[self.ID-1].position.pose)
+        # posestamped.pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
         path.poses = []
         for pose in waypoints_list:
             posestamped = PoseStamped()
@@ -882,11 +895,10 @@ class UAV_Manager(object):
         self.world_name = self.hyperparameters['world']
         self.subworld_name = self.hyperparameters['subworld']
         self.n_simulation = self.hyperparameters['n_simulation']
-        self.N_uav = self.hyperparameters['N_uav']
+        self.N_agents = self.hyperparameters['N_agents']
         self.N_obs = self.hyperparameters['N_obs']
-        self.uav_models = self.hyperparameters['uav_models']
+        self.agent_models = self.hyperparameters['agent_models']
         self.n_dataset = self.hyperparameters['n_dataset']
-        self.solver_algorithm = self.hyperparameters['solver_algorithm']
         self.obs_pose_list = self.hyperparameters['obs_pose_list']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
         self.smach_view = self.hyperparameters['smach_view']
@@ -898,7 +910,7 @@ def main():                #### No estoy seguro de toda esta estructura
     parser = argparse.ArgumentParser(description='Spawn robot in Gazebo for SITL')
     parser.add_argument('-ID', type=str, default="1", help='')
     args, unknown = parser.parse_known_args()
-    UAV_Manager(args.ID)
+    Agent_Manager(args.ID)
 
     return
 

@@ -1,0 +1,8 @@
+string intent
+string action
+int8 agent_id
+string[] params
+string[] values_str
+int8[] values_int
+---
+string[] result

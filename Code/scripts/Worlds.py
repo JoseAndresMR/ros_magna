@@ -48,7 +48,8 @@ from sensor_msgs.msg import *
 from xml.dom import minidom
 from gazebo_msgs.srv import DeleteModel,SpawnModel
 from visualization_msgs.msg import Marker
-from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray, Torus, TorusArray, PolygonArray
+from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray, TorusArray, PolygonArray
+from jsk_recognition_msgs.msg import Torus as jsk_Torus
 from sympy import Point3D, Line3D, Segment3D
 from sympy import Point as Point2D
 from sympy import Polygon as Polygon2D
@@ -120,17 +121,17 @@ class Worlds(object):
     def getFSPoseGlobal(self,params):
 
         if params[2] == "matrix":
-            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromMatrix(params[3])
+            return self.volumes[params[0]].getGeometry(params[1]).getFSPGlobalPosefromMatrix(params[3])
 
         elif params[2] == "random":
 
-            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromList()
+            return self.volumes[params[0]].getGeometry(params[1]).genFSPRandomGlobalPoseList(params[3])
 
         elif params[2] == "path":
-            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromPath()
+            return self.volumes[params[0]].getGeometry(params[1]).getFSPGlobalPosefromPath(params[3])
 
         elif params[2] == "coordinates":
-            return self.volumes[params[0]].getGeometry(params[1]).getFPGlobalPosefromCoordinates(params[3])
+            return self.volumes[params[0]].getGeometry(params[1]).getFSPGlobalPosefromCoordinates(params[3])
 
     
     def GettingWorldDefinition(self):
@@ -170,7 +171,7 @@ class Volume(object):
         # print("on volume",len(self.transforms_list))
 
         self.geometry_classes = {"cube" : Cube, "sphere" : Sphere, "cylinder" : Cylinder,
-                                 "prism": Prism}
+                                 "prism": Prism, "torus": Torus}
 
         self.geometries = {}
 
@@ -183,9 +184,11 @@ class Volume(object):
             if self.geometries[geometry_def["name"]].obs_pose_list != []:
                 [self.obs_pose_list.append(obs) for obs in self.geometries[geometry_def["name"]].obs_pose_list]
 
-    def getFPGlobalPosefromCoordinates(self,coordinates):
+    def getFSPGlobalPosefromCoordinates(self,coordinates):
 
-        return FreeSpacePose(np.random.randint(1000),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose
+        self.fsp_list.append(FreeSpacePose(str(len(self.fsp_list)+1),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose)
+
+        return self.fsp_list[-1]
 
                 
     def getTransforms(self):
@@ -242,13 +245,16 @@ class GenericGeometry:
         self.obs_transforms_list = []
         self.obs_shape_list = []
 
+        self.obstacles_dicc = {}
+        self.fsp_dicc = {"List": [], "Matrix": [], "Path" : {}}
+
         tfbroadcaster = StaticTfBroadcaster(self.name,self.parent_name,self.origin,self.transforms_auxiliar_list)
         self.transforms_auxiliar_list = tfbroadcaster.getTransforms()
         # print("all",len(self.transforms_auxiliar_list))
         self.transforms_list.append(tfbroadcaster.getTransforms()[-1])
         # print("persistent",len(self.transforms_list))
 
-        time.sleep(1)
+        time.sleep(0.05)
         
 
     def MakeRvizMarker(self):
@@ -280,6 +286,16 @@ class GenericGeometry:
 
         self.rviz_polython_array = RvizPolygonArray(self.rviz_polygon_array_def)
 
+    def MakeRvizTrousArray(self):
+
+        self.rviz_torus_array_def = {"parent_name" : self.parent_name}
+        self.rviz_torus_array_def["name"] = self.name
+        self.rviz_torus_array_def["id"] = self.id
+
+        self.rviz_torus_array_def["torus_array_poses"] = [[False,self.PoseFromArray(self.origin),self.dimensions[0]/2,self.dimensions[2]/2]]
+
+        self.rviz_polython_array = RvizTorusArray(self.rviz_torus_array_def)
+
     def EraseRvizPolygonArray(self):
 
         self.rviz_polython_array.Erase()
@@ -292,26 +308,35 @@ class GenericGeometry:
 
         return self.obstacles[indexes[0]][indexes[1]][indexes[2]]
 
-    def getFPGlobalPosefromMatrix(self,indexes):
+    def getFSPGlobalPosefromMatrix(self,indexes):
 
-        return self.poses[indexes[0]][indexes[1]][indexes[2]].global_pose
+        return self.fsp_dicc["Matrix"][indexes[0]][indexes[1]][indexes[2]].global_pose
 
-    def getFPGlobalPosefromList(self):
+    # def getFSPGlobalPosefromList(self):
 
-        pose_def = {"use": "poses","quantity": 1}
+    #     pose_def = {"use": "poses","quantity": 1}
+    #     self.GeneratePosesSetRandom(pose_def)
+    #     return self.fsp_dicc["List"][-1].global_pose
+
+    def genFSPRandomGlobalPoseList(self,quantity):
+        pose_def = {"use": "poses","quantity": quantity}
         self.GeneratePosesSetRandom(pose_def)
+        return self.getFSPGlobalPosefromList(self.fsp_dicc["List"][-quantity:])
 
-        return self.poses[0].global_pose
 
-    def getFPGlobalPosefromPath(self):
+    def getFSPGlobalPosefromPath(self,path_name):
+
+        return self.getFSPGlobalPosefromList(self.fsp_dicc["Path"][path_name])
+
+    def getFSPGlobalPosefromList(self,fsp_list):
 
         global_path = []
-        for pose in self.path:
+        for pose in fsp_list:
             global_path.append(pose.global_pose)
 
         return global_path
     
-    def getFPGlobalPosefromCoordinates(self,coordinates):
+    def getFSPGlobalPosefromCoordinates(self,coordinates):
 
         return self.GenerateFreeSpacePosesFromCoordinates(coordinates).global_pose
 
@@ -407,20 +432,25 @@ class GenericGeometry:
 
     def GenerateFreeSpacePosesFromPosesList(self,selected_positions,make_persistent = True):
 
-        fsposes_list = []
+        if self.fsp_dicc["List"] != []:
+            init_i = len(self.fsp_dicc["List"])-1
+        else:
+            init_i = 0
+
+        fsp_list = []
 
         for i,pose in enumerate(selected_positions):
 
-            fsposes_list.append(FreeSpacePose(str(i),  pose, self.name, self.prefix, self.transforms_auxiliar_list))
+            fsp_list.append(FreeSpacePose(str(init_i+i),  pose, self.name, self.prefix, self.transforms_auxiliar_list))
 
-            self.transforms_auxiliar_list = fsposes_list[-1].getTransforms()
+            self.transforms_auxiliar_list = fsp_list[-1].getTransforms()
             # print("all",len(self.transforms_auxiliar_list))
             if make_persistent == True:
-                self.transforms_list.append(fsposes_list[-1].getTransforms()[-1])
+                self.transforms_list.append(fsp_list[-1].getTransforms()[-1])
                 # print("persistent",len(self.transforms_list))
 
 
-        return fsposes_list
+        return fsp_list
 
     def GenerateFreeSpacePosesFromCoordinates(self,coordinates):
 
@@ -446,7 +476,7 @@ class GenericGeometry:
 
         elif poses_set_def["use"] == "poses":
 
-            self.poses = self.GenerateFreeSpacePosesFromMatrix(selected_positions_matrix,poses_matrix,make_persistent)
+            self.fsp_dicc["Matrix"] = self.GenerateFreeSpacePosesFromMatrix(selected_positions_matrix,poses_matrix,make_persistent)
 
     def GeneratePosesSetRandom(self,poses_set_def):
 
@@ -460,8 +490,7 @@ class GenericGeometry:
             self.obstacles = self.GenerateObstacleFromPosesList(random_poses,poses_set_def["obstacles_shape"],poses_set_def["obstacles_dimensions"])
 
         elif poses_set_def["use"] == "poses":
-
-            self.poses = self.GenerateFreeSpacePosesFromPosesList(random_poses)
+            self.fsp_dicc["List"] = self.fsp_dicc["List"] + self.GenerateFreeSpacePosesFromPosesList(random_poses)
 
     def GeneratePosesSetCoordinates(self,poses_set_def):
 
@@ -477,7 +506,7 @@ class GenericGeometry:
 
         elif poses_set_def["use"] == "poses":
 
-            self.path = self.GenerateFreeSpacePosesFromPosesList(poses_list)
+           self.fsp_dicc["List"] =  self.fsp_dicc["List"] + self.GenerateFreeSpacePosesFromPosesList(poses_list)
 
         return poses_list
 
@@ -491,7 +520,11 @@ class GenericGeometry:
 
         elif poses_set_def["use"] == "poses":
 
-            self.path = self.GenerateFreeSpacePosesFromPosesList(poses)
+            fsp_poses_list = self.GenerateFreeSpacePosesFromPosesList(poses)
+
+            self.fsp_dicc["List"] =  self.fsp_dicc["List"] + fsp_poses_list
+
+            self.fsp_dicc["Path"]["Zigzag"] = fsp_poses_list
 
 
     def GenerateRandomDimensionalValues(self, limits):
@@ -556,7 +589,6 @@ class Cube(GenericGeometry):
         return poses_matrix
 
     def RandomPoses(self,quantity = 1,orientation = [0,0,0]):
-
         random_poses = []
 
         for i in range(quantity):
@@ -583,30 +615,30 @@ class Cube(GenericGeometry):
 
 
 
-    def GeneratePosesSetZigZag(self,poses_set_def):
+    # def GeneratePosesSetZigZag(self,poses_set_def):
 
-        matrix_definition = {"type" : "matrix", "use" : "poses",
-                            "dimensions": poses_set_def["dimensions"], "density": 1,
-                            "orientation": poses_set_def["orientation"]}
+    #     matrix_definition = {"type" : "matrix", "use" : "poses",
+    #                         "dimensions": poses_set_def["dimensions"], "density": 1,
+    #                         "orientation": poses_set_def["orientation"]}
 
-        self.GeneratePosesSetDimensionMatrix(matrix_definition,False)
+    #     self.GeneratePosesSetDimensionMatrix(matrix_definition,False)
 
-        zigzag_path = []
+    #     zigzag_path = []
 
-        for i in np.arange(matrix_definition["dimensions"][0]):
-            for j in np.arange(matrix_definition["dimensions"][1]):
-                for k in np.arange(matrix_definition["dimensions"][2]):
+    #     for i in np.arange(matrix_definition["dimensions"][0]):
+    #         for j in np.arange(matrix_definition["dimensions"][1]):
+    #             for k in np.arange(matrix_definition["dimensions"][2]):
 
-                    if i%2 == 1:
+    #                 if i%2 == 1:
 
-                        J = matrix_definition["dimensions"][1]-1 - j
+    #                     J = matrix_definition["dimensions"][1]-1 - j
 
-                    else:
-                        J=j
+    #                 else:
+    #                     J=j
 
-                    zigzag_path.append(self.poses[i][J][k])
+    #                 zigzag_path.append(self.fsp_dicc["Matrix"][i][J][k])
 
-        self.path = zigzag_path
+    #     self.fsp_dicc["List"] = zigzag_path
 
 
 
@@ -733,8 +765,8 @@ class Cylinder(GenericGeometry):
         for i in range(quantity):
 
             limits = {}
-            limits["lower"] = [0,0,0]
-            limits["upper"] = [2*np.pi,self.dimensions[1],self.dimensions[2]]
+            limits["lower"] = [0,0,-self.dimensions[2]/2]
+            limits["upper"] = [2*np.pi,self.dimensions[1]/2,self.dimensions[2]/2]
 
             [angle1,radius,height] = self.GenerateRandomDimensionalValues(limits)
 
@@ -744,6 +776,77 @@ class Cylinder(GenericGeometry):
 
                 random_orientation = self.GenerateRandomDimensionalValues(limits)
             random_poses.append(self.PoseFromArray([[np.cos(angle1)*radius, np.sin(angle1)*radius, height],
+                                                    [random_orientation[0],random_orientation[1],random_orientation[2]]]))
+
+        return random_poses
+
+class Torus(GenericGeometry):
+    def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
+        GenericGeometry.__init__(self,geometry_def,parent_name,parent_prefix,transforms_list)
+
+        self.MakeRvizTrousArray()
+
+        if "poses_sets" in geometry_def.keys():
+            for poses_set_def in geometry_def["poses_sets"]:
+                if poses_set_def["type"] == "coordinates":
+                    self.GeneratePosesSetCoordinates(poses_set_def)
+
+                elif poses_set_def["type"] == "matrix":
+                    self.GeneratePosesSetDimensionMatrix(poses_set_def)
+
+                elif poses_set_def["type"] == "random":
+                    self.GeneratePosesSetRandom(poses_set_def)
+
+                elif poses_set_def["type"] == "zigzag":
+                    self.GeneratePosesSetZigZag(poses_set_def)
+
+    def TBDPosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):
+
+        # Create a list shaped as the obstacle tube
+        poses_matrix = copy.deepcopy(selected_positions_matrix.tolist())       ### HACERLO MAS FACIL SIN PASAR selected_positions_matrix
+
+        # self.obstacles_matrix[obstacle_positions] = Obstacle(np.arange(obstacle_positions.sum),"sphere",list(obstacle_positions)*2,[0,0,0,1])            SIMPLIFICAR ASÏ
+        # For every position in the three dimesions
+        for i in np.arange(poses_set_def["dimensions"][0]):
+            for j in np.arange(poses_set_def["dimensions"][1]):
+                for k in np.arange(poses_set_def["dimensions"][2]):
+
+                    angle1 = (0.5+i)*(np.pi)/poses_set_def["dimensions"][0]
+                    radius = (0.5+j)*self.dimensions[1]/poses_set_def["dimensions"][1]-self.dimensions[1]/2      # Esfera de radio [,,R]
+                    height = -self.dimensions[2]/2+(0.5+k)*self.dimensions[2]/poses_set_def["dimensions"][2]
+
+
+                    pose = self.PoseFromArray([[np.cos(angle1)*radius,\
+                                                np.sin(angle1)*radius,\
+                                                height],
+                                                poses_set_def["poses_orientation"]])
+
+                    poses_matrix[i][j][k] = pose
+
+        return poses_matrix
+
+
+    def RandomPoses(self,quantity = 1,orientation = [0,0,0]):
+
+        random_poses = []
+
+        for i in range(quantity):
+
+            limits = {}
+            limits["lower"] = [0,0,-self.dimensions[2]/2]
+            limits["upper"] = [2*np.pi,np.pi,self.dimensions[2]/2]
+
+            [angular1,angular2,linear] = self.GenerateRandomDimensionalValues(limits)
+
+            if "orientation" not in orientation:
+                limits["lower"] = [0,0,0]
+                limits["upper"] = [2*np.pi,2*np.pi,2*np.pi]
+
+                random_orientation = self.GenerateRandomDimensionalValues(limits)
+
+            random_poses.append(self.PoseFromArray([[np.cos(angular1)*(self.dimensions[0]/2+np.cos(angular2)*linear),
+                                                     np.sin(angular1)*(self.dimensions[0]/2+np.cos(angular2)*linear),
+                                                     np.sin(angular2)*linear],
                                                     [random_orientation[0],random_orientation[1],random_orientation[2]]]))
 
         return random_poses
@@ -1140,7 +1243,7 @@ class Obstacle(object):
         
         self.global_pose = tfbroadcaster.getGlobalPose()
 
-        # self.Spawner()      # Spawn obstacle with defined data
+        self.Spawner()      # Spawn obstacle with defined data
 
         self.MakeRvizMarker()
 
@@ -1319,6 +1422,44 @@ class RvizPolygonArray(object):
     def Actualize(self,posestamped):
         pass
 
+class RvizTorusArray(object):
+    def __init__(self,rviz_torus_array_def):
+        self.rviz_torus_array_def = rviz_torus_array_def
+        self.torus_array_pub = rospy.Publisher('/visualization_torus_array/{}'.format(rviz_torus_array_def["name"]), TorusArray, queue_size = 1)
+
+        self.Spawner()
+
+    def Spawner(self):
+
+        torus_array = TorusArray()
+        torus_array.header.stamp = rospy.Time.now()
+        torus_array.header.frame_id = "map"
+
+        for i,torus_poses in enumerate(self.rviz_torus_array_def["torus_array_poses"]):
+            header = Header()
+            header.stamp = rospy.Time.now()
+            header.frame_id = "map"
+
+            torus_poses = [header] + torus_poses
+
+            torus = jsk_Torus(*torus_poses)
+
+            torus_array.toruses.append(torus)
+
+        self.torus_array = torus_array
+
+        t = 0
+        while not rospy.is_shutdown() and t < 10:
+            self.torus_array_pub.publish(self.torus_array)
+            t = t+1
+            time.sleep(0.05)
+
+    def Erase(self):
+        pass
+
+    def Actualize(self,posestamped):
+        pass
+
 
 
 
@@ -1385,7 +1526,7 @@ class StaticTfBroadcaster(object):
                 trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
                 exit_flag = True
             except:
-                time.sleep(0.2)
+                time.sleep(0.05)
 
         pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
 
@@ -1462,7 +1603,7 @@ class DynamicTfBroadcaster(object):
                 trans,rot = self.lookup_transform_listener.lookupTransform(frame,self.name, rospy.Time.now())
                 exit_flag = True
             except:
-                time.sleep(0.2)
+                time.sleep(0.05)
 
         pose = Pose(Point(trans[0],trans[1],trans[2]),Quaternion(rot[0],rot[1],rot[2],rot[3]))
 

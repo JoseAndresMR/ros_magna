@@ -127,26 +127,6 @@ class Agent_Manager_SM(object):
                                   'low_battery':'low_battery',
                                   'GS_critical_event':'GS_critical_event'})
 
-            ### SAVE CVS STATE MACHINE & WRAPPER ###
-
-            self.save_csv_sm = StateMachine(outcomes=['completed', 'failed'],
-                                         input_keys=['action_goal'])
-
-            self.asw_dicc['save_csv'] = ActionServerWrapper(
-                        '/magna/GS_Agent_{}/save_csv_command'.format(heritage.ID),
-                        SaveCSVAction,
-                        self.save_csv_sm,
-                        ['completed'], ['failed'], ['preempted'],
-                        goal_key = 'action_goal',
-                        result_key = 'action_result' )
-
-            with self.save_csv_sm:
-
-                StateMachine.add('save_csv',
-                                 CBState(self.save_csv_stcb,
-                                         input_keys=['action_goal'],
-                                         cb_kwargs={'heritage':heritage}),
-                                 {'completed':'completed'})
 
             ### FOLLOW PATH STATE MACHINE & WRAPPER ###
             self.follow_path_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
@@ -281,12 +261,6 @@ class Agent_Manager_SM(object):
         self.action_result.output = output
 
         return 'completed'
-
-    @cb_interface(outcomes=['completed','failed'])
-    def save_csv_stcb(self,heritage):
-        heritage.StoreData()        # Tell the GS to store the data
-
-        return "completed"
 
 
     @cb_interface(outcomes=['completed','failed'])

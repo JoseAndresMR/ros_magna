@@ -55,31 +55,10 @@ class Agent_NAI(object):
 
         self.smooth_path_mode = 0
 
-        self.N_neighbors_aware = 2
-
-        self.algorithms_list = ["simple"]
+        self.algorithms_dicc = {}
 
         self.GettingWorldDefinition()    # Global ROS parameters inizialization
         # self.timer_start = time.time()
-
-        # If the solver is a neural network, make some additional initializations
-        if self.algorithms_list[0] == "neural_network":
-            self.session = tflow.Session()      # Start a TensorFlow session
-
-            # Import the metagraph from specific path. In the future will be better path management
-            new_saver = tflow.train.import_meta_graph("/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nagent{2}_Nobs{3}/model.meta"\
-                                                      .format(self.role,self.world_name,self.N_agents,self.N_obs))
-
-            # Restore to the last chechpoint
-            new_saver.restore(self.session,tflow.train.latest_checkpoint('/home/josmilrom/Libraries/gml/Sessions/{0}/type{1}_Nagent{2}_Nobs{3}'\
-                                                                         .format(self.role,self.world_name,self.N_agents,self.N_obs)))
-
-            # Initialize inputs and outputs from graph
-            self.graph_inputs = tflow.get_default_graph().get_tensor_by_name("single_input:0")
-            self.graph_outputs = tflow.get_default_graph().get_tensor_by_name("vel_posttreated:0")
-
-            # self.single_vel_logits_tensor = tflow.get_default_graph().get_tensor_by_name("single_vel_logits:0")
-
 
     # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,desired_speed):
@@ -90,20 +69,46 @@ class Agent_NAI(object):
         # print "loop time", time.time() - self.timer_start
         # self.timer_start = time.time()
 
-        if self.algorithms_list[0] == "simple":
+        if "simple" in self.algorithms_dicc.keys():
             return self.SimpleGuidance()
 
-        elif self.algorithms_list[0] == "neural_network":
+        if "neural_network" in self.algorithms_dicc.keys():
             return self.NeuralNetwork()
 
-        # elif self.algorithms_list[0] == "orca":
+        # elif self.algorithms_dicc[0] == "orca":
         #     return self.ORCA()
 
-        elif self.algorithms_list[0] == "orca3":
+        if "orca3" in self.algorithms_dicc.keys():
             return self.ORCA3()
 
     # Function to set new velocity using a Neural Network
     def NeuralNetwork(self):
+
+                # If the solver is a neural network, make some additional initializations
+        if not hasattr(self,'nn_loaded'):
+
+            self.nn_loaded = True
+            self.session = tflow.Session()      # Start a TensorFlow session
+
+            self.learning_dataset_def = {"teacher_role" : self.role,
+                                         "teacher_algorithm" : "orca3",
+                                         "N_neighbors_aware" : self.algorithms_dicc["neural_network"]["N_neighbors_aware"]}
+
+            gml_folder_path = "/home/{0}/Libraries/gml".format("joseandresmr")
+            self.session_path = gml_folder_path + "/Sessions/{0}/{1}/{2}".format(self.learning_dataset_def["teacher_role"],self.learning_dataset_def["teacher_algorithm"],self.learning_dataset_def["N_neighbors_aware"])
+
+            # Import the metagraph from specific path. In the future will be better path management
+            new_saver = tflow.train.import_meta_graph(self.session_path + "/model.meta")
+
+            # Restore to the last chechpoint
+            new_saver.restore(self.session,tflow.train.latest_checkpoint(self.session_path))
+
+            # Initialize inputs and outputs from graph
+            self.graph_inputs = tflow.get_default_graph().get_tensor_by_name("single_input:0")
+            self.graph_outputs = tflow.get_default_graph().get_tensor_by_name("vel_posttreated:0")
+
+            # self.single_vel_logits_tensor = tflow.get_default_graph().get_tensor_by_name("single_vel_logits:0")
+
 
         # Definition of neural network's inputs and outputs for every role.
         # In the future this will be imported from a common place
@@ -120,7 +125,7 @@ class Agent_NAI(object):
 
         # Initialization of pos and vel that will be taken as inputs
         inputs = []
-        main_agent_pos = self.agents_data_list[self.ID-1].position.pose.position
+        main_agent_pos = self.agents_data_list[self.ID-1].position.pose
         main_agent_vel = self.agents_data_list[self.ID-1].velocity.twist.linear
 
         # For every input in the dictionary, crate if needed and add it to inputs
@@ -128,45 +133,46 @@ class Agent_NAI(object):
 
             # own vel
             if n_input == "own_vel":
-                inputs.append(main_agent_vel.x)
-                inputs.append(main_agent_vel.y)
-                inputs.append(main_agent_vel.z)
+                inputs += [main_agent_vel.x,main_agent_vel.y,main_agent_vel.z]
 
             # own goal
             elif n_input == "goal_pose_rel":
-                inputs.append(self.goal["pose"].position.x-main_agent_pos.x)
-                inputs.append(self.goal["pose"].position.y-main_agent_pos.y)
-                inputs.append(self.goal["pose"].position.z-main_agent_pos.z)
+                goal_lin_rel = self.OperatePoses(self.goal["pose"],main_agent_pos,'-').position
+                inputs += [goal_lin_rel.x,goal_lin_rel.y,goal_lin_rel.z]
 
             elif n_input == "goal_vel":
-                inputs.append(self.goal["vel"].linear.x)
-                inputs.append(self.goal["vel"].linear.y)
-                inputs.append(self.goal["vel"].linear.z)
+                inputs += [self.goal["vel"].linear.x,self.goal["vel"].linear.y,self.goal["vel"].linear.z]
 
             elif n_input == "distance":
                 inputs.append(self.goal["dist"])
 
             elif n_input == "others_pos_rel":
-                for n_agent in range(self.N_agents):
-                    if n_agent+1 != self.ID:
-                        #pos
-                        inputs.append(self.agents_data_list[n_agent].position.pose.position.x-main_agent_pos.x)
-                        inputs.append(self.agents_data_list[n_agent].position.pose.position.y-main_agent_pos.y)
-                        inputs.append(self.agents_data_list[n_agent].position.pose.position.z-main_agent_pos.z)
+                for n_neighbor in range(self.algorithms_dicc["neural_network"]["N_neighbors_aware"]):
+                    if self.near_neighbors_sorted["types"][n_neighbor] == "agent":
+                        n_agent = self.near_neighbors_sorted["ids"][n_neighbor]
+
+                        other_pos_rel = self.OperatePoses(self.agents_data_list[n_agent].position.pose,main_agent_pos,'-').position
+                        inputs += [other_pos_rel.x,other_pos_rel.y,other_pos_rel.z]
+
+                    elif self.near_neighbors_sorted["types"][n_neighbor] == "obs":
+                        n_obs = self.near_neighbors_sorted["ids"][n_neighbor]
+                        obs_pose = self.obs_pose_list[n_obs]
+
+                        other_pos_rel = self.OperatePoses(self.PoseFromArray(obs_pose),main_agent_pos,'-').position
+
+                        inputs += [other_pos_rel.x,other_pos_rel.y,other_pos_rel.z]
+
 
             elif n_input == "others_vel":
-                for n_agent in range(self.N_agents):
-                    if n_agent+1 != self.ID:
-                        #vel
-                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.x)
-                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.y)
-                        inputs.append(self.agents_data_list[n_agent].velocity.twist.linear.z)
+                for n_neighbor in range(self.algorithms_dicc["neural_network"]["N_neighbors_aware"]):
+                    if self.near_neighbors_sorted["types"][n_neighbor] == "agent":
+                        n_agent = self.near_neighbors_sorted["ids"][n_neighbor]
+                        other_vel_lin = self.agents_data_list[n_agent].velocity.twist.linear
+                        inputs += [other_vel_lin.x,other_vel_lin.y,other_vel_lin.z]
 
-            # elif n_input == "obs_pos_rel":
-            #     for n_obs in range(self.N_obs):
-            #         inputs.append(self.obs_pose_list[n_obs][0]-main_agent_pos.x)
-            #         inputs.append(self.obs_pose_list[n_obs][1]-main_agent_pos.y)
-            #         inputs.append(self.obs_pose_list[n_obs][2]-main_agent_pos.z)
+                    elif self.near_neighbors_sorted["types"][n_neighbor] == "obs":
+
+                        inputs += [0,0,0]
 
         # Reshape the inputs to a single row
         inputs_trans = np.asarray(inputs)
@@ -187,16 +193,17 @@ class Agent_NAI(object):
 
         # print("nn",new_velocity_twist)
         # self.ORCA3()
+        print(new_velocity_twist)
         return new_velocity_twist
 
     # Function to set velocity using ORCA on 3D
     def ORCA3(self):
 
         # Give value to orca algorithm parameters
-        timeStep = 0.3          # 1/60.  float   The time step of the simulation. Must be positive.
-        neighborDist = 4.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
-        maxNeighbors = 10        # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
-        timeHorizon = 10       # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
+        timeStep = 1/60.          # 1/60.  float   The time step of the simulation. Must be positive.
+        neighborDist = 6.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+        maxNeighbors = self.algorithms_dicc["orca3"]["N_neighbors_aware"]  # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
+        timeHorizon = 5.0       # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
         agent_radius = 0.5        # 2      float   The radius of the agent. Must be non-negative
         maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
         velocity = (1, 1, 1)
@@ -210,10 +217,9 @@ class Agent_NAI(object):
         orca_agent_list = []
 
         prefered_velocity = self.SimpleGuidance() # Select a velocity directly to goal as if there weren't exist neighbors
-
         # Add to orca3 and to own list every agent created by own params
-        position_array = self.ArrayFromPose(self.agents_data_list[0].position.pose)[0]
-        velocity_array = self.ArrayFromTwist(self.agents_data_list[0].velocity.twist)[0]
+        position_array = self.ArrayFromPose(self.agents_data_list[self.ID-1].position.pose)[0]
+        velocity_array = self.ArrayFromTwist(self.agents_data_list[self.ID-1].velocity.twist)[0]
         prefered_velocity_array = self.ArrayFromTwist(prefered_velocity)[0]
 
         orca_agent_list = [sim.addAgent((position_array[0],position_array[1],position_array[2]),
@@ -335,11 +341,11 @@ class Agent_NAI(object):
         obs_distances = self.agents_data_list[self.ID-1].obs_distances_rel2main
 
         all_distances = agent_distances + obs_distances
-        self.near_neighbors_sorted = {"distances" : sorted(all_distances)[1:self.N_neighbors_aware+1]}
+        self.near_neighbors_sorted = {"distances" : sorted(all_distances)[1:self.algorithms_dicc[self.algorithms_dicc.keys()[0]]["N_neighbors_aware"]+1]}
         
         ids_list = []
         types_list = []
-        for neigh in list(np.argsort(all_distances))[1:self.N_neighbors_aware+1]:
+        for neigh in list(np.argsort(all_distances))[1:self.algorithms_dicc[self.algorithms_dicc.keys()[0]]["N_neighbors_aware"]+1]:
 
             if neigh < self.N_agents:
                 neigh_type = "agent"
@@ -377,6 +383,38 @@ class Agent_NAI(object):
 
         return [[twist.linear.x,twist.linear.y,twist.linear.z],[twist.angular.x,twist.angular.y,twist.angular.z]]
 
+    def OperatePoses(self,pose1,pose2,op = '+'):
+
+        if op == '+':
+            aux = 1
+        elif op == '-':
+            aux = -1
+
+        result_pose = Pose()
+        result_pose.position.x = pose1.position.x+aux*pose2.position.x
+        result_pose.position.y = pose1.position.y+aux*pose2.position.y
+        result_pose.position.z = pose1.position.z+aux*pose2.position.z
+        result_pose.orientation.x = pose1.orientation.x+aux*pose2.orientation.x
+        result_pose.orientation.y = pose1.orientation.y+aux*pose2.orientation.y
+        result_pose.orientation.z = pose1.orientation.z+aux*pose2.orientation.z
+        result_pose.orientation.w = pose1.orientation.w+aux*pose2.orientation.w
+
+        return result_pose
+
+    def algorithm_control(self, name, action, params_dicc):
+
+        if action == "delete":
+            self.algorithms_dicc.pop(name)
+
+        elif action == "set":
+            if name in self.algorithms_dicc.keys():
+                self.algorithms_dicc[name].update(params_dicc)
+            else:
+                self.algorithms_dicc[name] = params_dicc
+
+
+
+
     # Function to get Global ROS parameters
     def GettingWorldDefinition(self):
         self.hyperparameters = rospy.get_param('magna_hyperparameters')
@@ -390,4 +428,3 @@ class Agent_NAI(object):
         self.n_dataset = self.hyperparameters['n_dataset']
         self.obs_pose_list = self.hyperparameters['obs_pose_list']
         self.heading_use = self.hyperparameters['heading_use']
-        self.algorithms_list = self.hyperparameters['algorithms_list']

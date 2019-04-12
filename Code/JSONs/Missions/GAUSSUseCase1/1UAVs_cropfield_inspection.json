@@ -106,7 +106,7 @@
                                         "definition":["CropField","volume","coordinates",[[-300,0,70.0],[0,0,0,1]]]
                                     },
                                     {
-                                        "definition":["CropField","Inspection","path"]
+                                        "definition":["CropField","Inspection","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 2

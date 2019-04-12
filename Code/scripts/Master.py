@@ -58,14 +58,14 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "GAUSSUseCase1",                    # Type of the world or sceneario created
-        'subworld'           :                   "Complete",
-        'mission'            :                   "GAUSSUseCase1",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "Complete",
+        'world'              :                   "Empty",                    # Type of the world or sceneario created
+        'subworld'           :                   "Empty",
+        'mission'            :                   "safety",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "pruebas",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
-        'algorithms_list'    :                    ["simple"],
+        'N_iter'             :                      400,                      # Bunch of simulations developed in the defined dataset
+        'algorithms_list'    :                    ["orca3"],
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
@@ -79,7 +79,8 @@ class Master(object):
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
-        self.hyperparameters["save_flag"] = True
+        self.hyperparameters["save_flag"] = False
+        self.hyperparameters["rosbag_flag"] = False
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         botton_selected = self.DatasetExistanceChecker()
@@ -114,9 +115,9 @@ class Master(object):
                     while not rospy.is_shutdown() and (self.simulation_finished == False):
                         time.sleep(2)
                         # Control of exceeded simulation duration
-                        # if (time.time() - timer_start) > self.hyperparameters["path_length"]*600:
-                        #     self.GS_launch.shutdown()     # Terminate Ground Station
-                        #     self.simulation_finished = True    # Activate end flag
+                        if (time.time() - timer_start) > 990000:
+                            self.GS_launch.shutdown()     # Terminate Ground Station
+                            self.simulation_finished = True    # Activate end flag
                 except:
                     self.processess_killer(2)       # Kill unwanted processess
 

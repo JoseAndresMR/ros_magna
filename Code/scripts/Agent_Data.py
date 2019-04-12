@@ -58,7 +58,6 @@ class Agent_Data(object):
         self.pos_ref = pos_ref
         # self.ADSB = ADSB(self.ICAO,self.with_ref,self.pos_ref)
 
-        self.GS_notification = 'nothing'
         self.Rviz_flag = True
         self.ual_state = 0
         self.battery_percentage = 1
@@ -122,9 +121,7 @@ class Agent_Data(object):
             
         # Subcribe to preemption command if this is GS for Agent 1 and the Agent 1 object
         # In the future this will be implemented to wrap different roles and different IDs
-        if self.ID == self.main_agent:
-            rospy.Service('/magna/GS/notification_command_to_{}'.format(self.main_agent), StateActualization, self.handle_GS_notification_command)
-
+        
     ## Callbacks
 
     # Function to deal with pose data
@@ -135,6 +132,10 @@ class Agent_Data(object):
             self.marker.Actualize(self.position)        # NO FUNCTIONA AQUI
 
             self.own_path.poses.append(data)
+
+            if len(self.own_path.poses) > 50:
+                self.own_path.poses = self.own_path.poses[-50:]
+
             self.path_pub.publish(self.own_path)
 
         # If pose has been received via ADSB, pubish TF of it
@@ -158,6 +159,8 @@ class Agent_Data(object):
 
     def main_agent_pose_callback(self,data):
         self.main_agent_position = data
+
+        time.sleep(0.1)
 
     # Function to deal with velocity data
     def agent_vel_callback(self,data):
@@ -197,11 +200,7 @@ class Agent_Data(object):
     def smooth_path_vel_callback(self,data):
         self.smooth_velocity = data.twist
 
-    # Function to deal with a preemption command from Ground Station
-    def handle_GS_notification_command(self,data):
-        self.GS_state = data.state 
-        self.GS_notification = data.critical_event        # Set the variable
-        return True
+        time.sleep(0.1)
 
     #### Commander functions ####
 
@@ -225,6 +224,8 @@ class Agent_Data(object):
         elif TC == "status":
             self.sil = extracted_info[0]
             self.nac_p = extracted_info[1]
+
+        time.sleep(0.1)
 
     # Function to broadcast transforms to visualize it on Rviz
     def PoseBroadcast(self):

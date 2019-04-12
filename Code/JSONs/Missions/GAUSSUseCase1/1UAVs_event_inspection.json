@@ -4,7 +4,7 @@
             "ID":1,
             "model":"iris",
             "mode": "sitl",
-            "marker_color": [255,0,0,0.5],
+            "marker_color": [0,0,255,0.5],
             "ual_use": true,
             "agent_manager_on_gs": true
         }
@@ -35,7 +35,7 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station_2","Agents_take_off","matrix",[0,0,0]]]
+                "initial_poses": [["Ground_Station_2","Agents_take_off","matrix",[0,0,0],0]]
             },
             "outcomes": {
                 "completed": "initial_wait"

@@ -67,10 +67,13 @@ class GroundStation_SM(object):
         # For single states, check callback
 
         if mission_part_def["type"] == "CBState":
-
-            ### PONER TAMBIEN LA UNION DE PARAMS
-
+            
             cb_kwargs = {'heritage' : heritage}
+
+            if "ids_var" in mission_part_def.keys():
+                mission_part_def = self.IdsExtractor(mission_part_def,heritage)
+                cb_kwargs.update({"agents_list":mission_part_def["ids"]})
+
             if "parameters" in mission_part_def.keys():
                 cb_kwargs.update(mission_part_def["parameters"])
 
@@ -239,6 +242,21 @@ class GroundStation_SM(object):
 
         return outcome
 
+    @cb_interface(outcomes=['completed','failed'])
+    def save_csv_stcb(self,heritage,agents_list):
+
+        # outcome = heritage.SaveCSVCommand(agents_list)
+        outcome = heritage.sendNotificationsToAgents(agents_list,"save_csv")
+
+        return outcome
+
+    @cb_interface(outcomes=['completed','failed'])
+    def algorithm_control_stcb(self,heritage,agents_list,name,action = "delete", params = [], values = []):
+
+        outcome = heritage.AlgorithmControlCommand(agents_list,name,action, params, values)
+
+        return outcome
+
     # State callback to spawn Agents
     @cb_interface(outcomes=['completed','failed'])
     def spawn_agents_stcb(self,heritage,initial_poses):
@@ -252,12 +270,14 @@ class GroundStation_SM(object):
         self.CBStateCBDic["new_world"] = self.new_world_stcb
         self.CBStateCBDic["spawn_agents"] = self.spawn_agents_stcb
         self.CBStateCBDic["wait"] = self.wait_stcb
+        self.CBStateCBDic["save_csv"] = self.save_csv_stcb
+        self.CBStateCBDic["algorithm_control"] = self.algorithm_control_stcb
 
     #### ACTIONS CALLBACKS ####
 
     # Goal callback for takeoff state service
     def take_off_goal_cb(self, ud, goal, params):
-        goal.height = params["height"]     # Define takeoff height, in future will be received in ud or mission dictionary
+        goal.height = float(params["height"])     # Define takeoff height, in future will be received in ud or mission dictionary
         # time.sleep(3*ud.id)
         return goal
 
@@ -337,16 +357,6 @@ class GroundStation_SM(object):
     def land_result_cb(self, ud, status,result):
         return "succeeded"
 
-    # Goal callback for save csv service
-    def save_csv_goal_cb(self, ud, goal, params):
-        goal.something = True       # In the future should disappear
-
-        return goal
-
-    # Result callback for save csv service
-    def save_csv_result_cb(self, ud, result, something):
-        return "succeeded"
-
 
     def DictionarizeSASCallbacks(self):
 
@@ -357,7 +367,6 @@ class GroundStation_SM(object):
         self.SASGoalCBDic["follow_agent_ad"] = self.follow_agent_ad_goal_cb
         self.SASGoalCBDic["follow_agent_ap"] = self.follow_agent_ap_goal_cb
         self.SASGoalCBDic["land"] = self.land_goal_cb
-        self.SASGoalCBDic["save_csv"] = self.save_csv_goal_cb
 
         self.SASResultCBDic = {}
         self.SASResultCBDic["take_off"] = self.take_off_result_cb
@@ -366,7 +375,6 @@ class GroundStation_SM(object):
         self.SASResultCBDic["follow_agent_ad"] = self.follow_agent_ad_result_cb
         self.SASResultCBDic["follow_agent_ap"] = self.follow_agent_ap_result_cb
         self.SASResultCBDic["land"] = self.land_result_cb
-        self.SASResultCBDic["save_csv"] = self.save_csv_result_cb
 
         self.SASMsgTypeDic = {}
         self.SASMsgTypeDic["take_off"] = TakeOffAction
@@ -375,7 +383,14 @@ class GroundStation_SM(object):
         self.SASMsgTypeDic["follow_agent_ad"] = FollowAgentADAction
         self.SASMsgTypeDic["follow_agent_ap"] = FollowAgentAPAction
         self.SASMsgTypeDic["land"] = LandAction
-        self.SASMsgTypeDic["save_csv"] = LandAction
+
+        self.SASGoalDic = {}
+        self.SASGoalDic["take_off"] = TakeOffGoal
+        self.SASGoalDic["basic_move"] = BasicMoveGoal
+        self.SASGoalDic["follow_path"] = FollowPathGoal
+        self.SASGoalDic["follow_agent_ad"] = FollowAgentADGoal
+        self.SASGoalDic["follow_agent_ap"] = FollowAgentAPGoal
+        self.SASGoalDic["land"] = LandGoal
 
 
     #### CONCURRENCE OUTCOMES CALLBACKS ####

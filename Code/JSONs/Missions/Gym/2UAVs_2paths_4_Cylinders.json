@@ -2,9 +2,17 @@
     "Agents_Config": [
         {
             "ID":1,
-            "model":"plane",
+            "model":"iris",
             "mode": "sitl",
             "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "agent_manager_on_gs": true
+        },
+        {
+            "ID":2,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [0,255,0,0.5],
             "ual_use": true,
             "agent_manager_on_gs": true
         }
@@ -24,7 +32,7 @@
             "name": "world_created_wait",
             "parameters": {
                 "exit_type": "time",
-                "duration":1
+                "duration" : 0.5
             },
             "outcomes": {
                 "completed": "spawn_Agents"
@@ -35,7 +43,8 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station_1","Agents_take_off","matrix",[0,0,0],-1.57]]
+                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0]],
+                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0]]]
             },
             "outcomes": {
                 "completed": "initial_wait"
@@ -47,7 +56,7 @@
             "name": "initial_wait",
             "parameters": {
                 "exit_type": "time",
-                "duration":1
+                "duration" : 0.5
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -78,60 +87,177 @@
                 }
             },
             "outcomes": {
-                "completed": "1_inspection"
+                "completed": "after_takeoff_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "after_takeoff_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration" : 0.5
+            },
+            "outcomes": {
+                "completed": "1_filmed_delivery"
             }
         },
         {
             "type": "Concurrence",
-            "name": "inspection",
+            "name": "filmed_delivery",
             "ids": 1,
             "occurrencies": [
                 {
                     "type": "StateMachine",
-                    "name": "forest_inspection",
+                    "name": "delivery",
                     "ids": 1,
                     "occurrencies": [
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "inspection",
+                            "name": "delivery",
                             "ids": 1,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Forest","Inspection","path","Zigzag"]
-                                    }
-                                ],
-                                "smooth_path_mode": 2
-                            },
-                            "outcomes":{
-                                "succeeded": "1_to_home",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "follow_path",
-                            "name": "to_home",
-                            "ids": 1,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "path": [
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
                                     {
-                                        "definition":["Ground_Station_1","volume","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0
                             },
                             "outcomes":{
                                 "succeeded": "completed",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
-                                "low_battery": "1_to_home",
+                                "low_battery": "completed",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcomes":{
+                        "completed": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "low_battery": "low_battery"
+                    }
+                },
+                {
+                    "type": "StateMachine",
+                    "name": "filming",
+                    "ids": 2,
+                    "occurrencies": [
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "to_delivery_height",
+                            "ids": 2,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random"]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random"]
+                                    }
+                                ],
+                                "smooth_path_mode": 0,
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "low_battery": "completed",
                                 "preempted": "collision",
                                 "aborted": "collision"
                             }
@@ -190,19 +316,6 @@
                     "state_type": "basic_move",
                     "name": "hover",
                     "ids": 2,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0
-                    }
-                },
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 3,
                     "ids_var": "agent",
                     "parameters": {
                         "move_type": "translation",

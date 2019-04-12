@@ -54,9 +54,12 @@ from gazebo_msgs.srv import DeleteModel
 from tf2_msgs.msg import *
 from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
+from actionlib import SimpleActionClient
 
 import utils
 from magna.srv import *
+from magna.msg import *
+
 from GroundStation_SM import GroundStation_SM
 from Worlds import *
 
@@ -274,7 +277,8 @@ class GroundStation(object):
         # Create path for rosbag and create object to manage it
         bag_folder_path = self.third_folder_path + "/everything.bag"
         
-        self.bag = rosbag.Bag(bag_folder_path, 'w')
+        if self.rosbag_flag:
+            self.bag = rosbag.Bag(bag_folder_path, 'w')
 
 
     def MakePath(self,path_def):
@@ -315,15 +319,9 @@ class GroundStation(object):
 
     # Function to close Agent Ground Station process.In the furure would be done by GS
     def AgentKiller(self):
-        for n_agent in np.arange(self.N_agents):
-            rospy.wait_for_service('/magna/GS_Agent_{}/die_command'.format(n_agent+1))
-            try:
-                die_command = rospy.ServiceProxy('/magna/GS_Agent_{}/die_command'.format(n_agent+1), DieCommand)
-                die_command(True)
-                time.sleep(0.1)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                print "error in die_command"
+        
+        self.sendNotificationsToAgents(range(1,self.N_agents+1),"die")
+
         return
 
     # Function to close GAZEBO process
@@ -352,22 +350,63 @@ class GroundStation(object):
             print "Service call failed: %s"%e
             print "error in simulation_termination"
 
+    # def SaveCSVCommand(self,agents_list):
+    #     if type(agents_list) == int:
+    #         agents_list = [agents_list]
+        
+    #     for agent in agents_list:
+    #         rospy.wait_for_service('/magna/GS_Agent_{}/save_csv'.format(agent))
+    #         try:
+    #             instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/save_csv'.format(agent), SaveCSV)
+    #             instruction_command(True)
+    #             return "completed"
+
+    #         except rospy.ServiceException, e:
+    #             print "Service call failed: %s"%e
+    #             print "error in simulation_termination"
+
+    def AlgorithmControlCommand(self,agents_list,name,action,params,values):
+
+        if type(agents_list) == int:
+            agents_list = [agents_list]
+        print(agents_list)
+        for agent in agents_list:
+            print('/magna/GS_Agent_{}/algorithm_control'.format(agent))
+            rospy.wait_for_service('/magna/GS_Agent_{}/algorithm_control'.format(agent))
+            try:
+                instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/algorithm_control'.format(agent), AlgorithmControl)
+                instruction_command(name,action,params,values)
+
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                print "error in simulation_termination"
+
+        return "completed"
+
+        
+
     #### Commander functions ####
 
     def sendNotificationsToAgents(self,agents_list,message):
         if type(agents_list) == int:
             agents_list = [agents_list]
+
+        msg = InstructionCommandRequest()
         
         for agent in agents_list:
-            rospy.wait_for_service('/magna/GS/notification_command_to_{}'.format(agent+1))
+
+            msg.instruction = message
+
+            rospy.wait_for_service('/magna/GS_Agent_{}/notification'.format(agent))
             try:
-                instruction_command = rospy.ServiceProxy('/magna/GS/notification_command_to_{}'.format(agent+1), StateActualization)
-                instruction_command(0,"tbd",message)
-                return
+                instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/notification'.format(agent), InstructionCommand)
+                instruction_command(msg)
 
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
                 print "error in simulation_termination"
+
+        return "completed"
 
     #### listener functions ####
 
@@ -376,10 +415,12 @@ class GroundStation(object):
 
         # Start service for Agents to actualize its state
         rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_agent_status)
+        rospy.Service('/magna/gyal_GS/command', GyalCommand, self.handle_gyal_command)
 
         # Start listening to topics stored on rosbag
-        rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
-        rospy.Subscriber('/tf', TFMessage, self.tf_callback)
+        if self.rosbag_flag:
+            rospy.Subscriber('/tf_static', TFMessage, self.tf_static_callback)
+            rospy.Subscriber('/tf', TFMessage, self.tf_callback)
 
         # for n_agent in range(self.N_agents):
         #     rospy.Subscriber('/magna/agent_{0}/path'.format(n_agent+1), Path, self.path_callback,'/magna/agent_{0}/path'.format(n_agent+1))
@@ -402,7 +443,7 @@ class GroundStation(object):
                 rospy.loginfo_throttle(0,"Agent {0} reported {1}".format(data.id,data.critical_event))
             
                 if data.critical_event == "collision":
-                    agents_to_inform = range(self.N_agents)
+                    agents_to_inform = range(1,self.N_agents+1)
                     agents_to_inform = agents_to_inform[:data.id-1] + agents_to_inform[data.id:]
 
                     # Change succeed information if a collision has been reported
@@ -412,6 +453,60 @@ class GroundStation(object):
 
         print self.states_list
         return True
+
+    def handle_gyal_command(self,req):
+
+        params_dicc = {}
+
+        response = GyalCommandResponse()
+
+        for i, param in enumerate(req.params):
+
+            if req.values_str[i] != "from_integer":
+                params_dicc[param] = req.values_str[i]
+            else:
+                params_dicc[param] = req.values_int[i]
+
+        if req.intent == "parameters":
+            if req.action == "get":
+                if params_dicc["parameter"] == "state":
+
+                    agent_id = int(req.agent_id) -1 
+
+                    response.result = [self.states_list[agent_id],self.critical_events_list[agent_id]]
+
+                    return response
+                
+                    
+        if req.intent == "mission":
+            if req.action == "set":
+                self.sendNotificationsToAgents(req.agent_id,params_dicc["action"])
+
+                return ["ok"]
+
+        if req.intent == "basic_action":
+            if req.action == "set":
+
+                self.generic_action_client(req.agent_id,params_dicc["action_type"],params_dicc)
+
+                return ["ok"]
+
+        if req.intent == "algorithm":
+            if req.action == "set":
+                pass
+
+    def generic_action_client(self,agent_id,name,params):
+
+        if len(name.split(" ")) > 1: name = "_".join(name.split(" "))
+
+        client = SimpleActionClient('magna/GS_Agent_{0}/{1}_command'.format(agent_id,name), self.gs_sm.SASMsgTypeDic[name])
+        client.wait_for_server()
+
+        goal = self.gs_sm.SASGoalCBDic[name]([], self.gs_sm.SASGoalDic[name](), params)        # get goal
+        client.send_goal(goal)
+        client.wait_for_result()
+
+        return client.get_result()
 
     # Functions to save every TF information inside ROS bag
     def tf_static_callback(self,data):
@@ -450,6 +545,7 @@ class GroundStation(object):
         self.n_dataset = self.hyperparameters['n_dataset']
         self.smach_view = self.hyperparameters['smach_view']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
+        self.rosbag_flag = self.hyperparameters['rosbag_flag']
 
 def main():
     GroundStation()

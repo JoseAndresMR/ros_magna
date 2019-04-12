@@ -1,0 +1,6 @@
+string name
+string action
+string[] params
+int8[] values
+---
+bool result

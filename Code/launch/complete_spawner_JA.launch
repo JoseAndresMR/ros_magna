@@ -13,11 +13,11 @@
     <arg default="true" name="uav_manager_on_gs" />
     <arg default="false" name="smooth_path_generator" />
 
-    <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)3">
+    <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)2">
         <group>
             <group if="$(eval autopilot == 'px4')">
                 <include file="$(find magna)/launch/PX4_spawn_robot_JA.launch">
-                    <arg name="id" value="3" />
+                    <arg name="id" value="2" />
                     <arg name="material" value="Orange" />
                     <arg name="mode" value="$(arg mode)" />
                     <arg name="x" value="0" />
@@ -40,7 +40,7 @@
         <group if="$(arg ual_use)">
             <group if="$(eval autopilot == 'px4')">
                 <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
-                    <param name="uav_id" value="3" />
+                    <param name="uav_id" value="2" />
                     <param name="pose_frame_id" value="$(arg pose_frame_id)" />
                     <param name="ual_server" value="$(arg ual_server)" />
                     <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
@@ -65,10 +65,10 @@
     </group>
 
     <group if="$(arg uav_manager_on_gs)">
-        <node args="-ID=3" name="agent_3" output="screen" pkg="magna" type="Agent_Manager.py" />
+        <node args="-ID=2" name="agent_2" output="screen" pkg="magna" type="Agent_Manager.py" />
 
-        <node name="path_follower_node_3" pkg="uav_path_manager" type="path_follower_node">
-            <param name="uav_id" value="3" />
+        <node name="path_follower_node_2" pkg="uav_path_manager" type="path_follower_node">
+            <param name="uav_id" value="2" />
         </node>
     </group>
     

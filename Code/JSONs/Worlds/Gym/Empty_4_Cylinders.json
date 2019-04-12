@@ -1,0 +1,105 @@
+{
+    "scenario": {
+        "world_boundaries": [[-9,9],[-9,9],[-9,9]],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS4",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "above_take_off",
+                        "prefix": "aTO",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [2,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "LateralAccissibleZones",
+                "prefix": "GS5",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "X",
+                        "prefix": "x",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[3.0,0.0,2.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "-X",
+                        "prefix": "-x",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-3.0,0.0,2.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Y",
+                        "prefix": "y",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,3.0,2.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "-Y",
+                        "prefix": "-y",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,-3.0,2.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    }
+                ]
+            }
+        ]
+    }
+}

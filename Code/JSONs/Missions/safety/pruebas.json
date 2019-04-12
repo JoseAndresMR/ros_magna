@@ -2,9 +2,17 @@
     "Agents_Config": [
         {
             "ID":1,
-            "model":"plane",
+            "model":"iris",
             "mode": "sitl",
-            "marker_color": [255,0,0,0.5],
+            "marker_color": [0,0,255,0.5],
+            "ual_use": true,
+            "agent_manager_on_gs": true
+        },
+        {
+            "ID":2,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [0,255,0,0.5],
             "ual_use": true,
             "agent_manager_on_gs": true
         }
@@ -35,19 +43,35 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station_1","Agents_take_off","matrix",[0,0,0],-1.57]]
+                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0],0],
+                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0],0]]
             },
             "outcomes": {
-                "completed": "initial_wait"
+                "completed": "algorithm_control"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"algorithm_control",
+            "name": "algorithm_control",
+            "ids": "all",
+            "ids_var" : "agent",
+            "parameters": {
+                "name": "orca3",
+                "action": "set",
+                "params": ["N_neighbors_aware"],
+                "values": [1]
+            },
+            "outcomes": {
+                "completed": "agents_spawned_wait"
             }
         },
         {
             "type": "CBState",
             "state_type":"wait",
-            "name": "initial_wait",
+            "name": "agents_spawned_wait",
             "parameters": {
-                "exit_type": "time",
-                "duration":1
+                "exit_type": "button"
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -88,50 +112,77 @@
             "occurrencies": [
                 {
                     "type": "StateMachine",
-                    "name": "forest_inspection",
+                    "name": "inspection",
                     "ids": 1,
                     "occurrencies": [
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "inspection",
+                            "name": "to_panels_zone",
                             "ids": 1,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Forest","Inspection","path","Zigzag"]
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,20.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
-                                "smooth_path_mode": 2
-                            },
-                            "outcomes":{
-                                "succeeded": "1_to_home",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "follow_path",
-                            "name": "to_home",
-                            "ids": 1,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "path": [
-                                    {
-                                        "definition":["Ground_Station_1","volume","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
-                                    }
-                                ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 1,
+                                "dynamic": "velocity"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
-                                "low_battery": "1_to_home",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcomes":{
+                        "completed": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "low_battery": "low_battery"
+                    }
+                },
+                {
+                    "type": "StateMachine",
+                    "name": "inspection",
+                    "ids": 2,
+                    "occurrencies": [
+                        {
+                            "type": "CBState",
+                            "state_type":"wait",
+                            "name": "initial_wait",
+                            "parameters": {
+                                "exit_type": "time",
+                                "duration" : 0.5
+                            },
+                            "outcomes": {
+                                "completed": "2_to_panels_zone",
+                                "failed": "2_to_panels_zone"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "to_panels_zone",
+                            "ids": 2,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[20.0,0.0,7.0],[0,0,0,1]]]
+                                    }
+                                ],
+                                "smooth_path_mode": 1,
+                                "dynamic": "velocity"
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
                                 "preempted": "collision",
                                 "aborted": "collision"
                             }
@@ -162,83 +213,9 @@
             },
             "outcomes": {
                 "completed": "1_save_csv",
-                "collision": "1_hovering",
-                "low_battery": "1_hovering",
-                "GS_critical_event": "1_hovering"
-            }
-        },
-        {
-            "type": "Concurrence",
-            "name": "hovering",
-            "ids": 1,
-            "occurrencies": [
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 1,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0
-                    }
-                },
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 2,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0
-                    }
-                },
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 3,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0
-                    }
-                }
-            ],
-            "occurrencies_outcome_map": {
-                "completed": {
-                    "all": "succeeded"
-                },
-                "collision": {
-                    "all": "collision"
-                },
-                "low_battery": {
-                    "all": "low_battery"
-                }
-            },
-            "outcomes": {
-                "completed": "safety_wait",
-                "collision": "safety_wait",
-                "low_battery": "safety_wait"
-            }
-        },
-        {
-            "type": "CBState",
-            "state_type":"wait",
-            "name": "safety_wait",
-            "parameters": {
-                "exit_type": "time",
-                "duration": 10
-            },
-            "outcomes": {
-                "completed": "1_save_csv"
+                "collision": "1_save_csv",
+                "low_battery": "1_save_csv",
+                "GS_critical_event": "1_save_csv"
             }
         },
         {
@@ -247,19 +224,22 @@
             "ids": 1,
             "occurrencies": [
                 {
-                    "type": "SimpleActionState",
-                    "state_type": "save_csv",
+                    "type": "CBState",
+                    "state_type":"save_csv",
                     "name": "save_csv",
                     "ids": "all",
-                    "ids_var" : "agent"
+                    "ids_var" : "agent",
+                    "outcomes": {
+                        "completed": "succeded"
+                    }
                 }
             ],
             "occurrencies_outcome_map": {
                 "completed": {
-                    "all": "succeeded"
+                    "save_csv": "succeeded"
                 },
                 "failed": {
-                    "all": "aborted"
+                    "save_csv": "aborted"
                 }
             },
             "outcomes": {

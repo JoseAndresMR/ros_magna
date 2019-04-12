@@ -66,6 +66,8 @@ add_service_files(
    StateActualization.srv
    InstructionCommand.srv
    DieCommand.srv
+   AlgorithmControl.srv
+   GyalCommand.srv
 #   Service1.srv
 #   Service2.srv
  )
@@ -75,7 +77,6 @@ add_service_files(
    FILES
    TakeOff.action
    Land.action
-   SaveCSV.action
    FollowPath.action
    FollowAgentAD.action
    FollowAgentAP.action

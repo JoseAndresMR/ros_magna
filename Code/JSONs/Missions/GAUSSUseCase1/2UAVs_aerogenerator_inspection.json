@@ -134,7 +134,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Aerogenerator","Inspection","path"]
+                                        "definition":["Aerogenerator","Inspection","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 2
@@ -186,6 +186,19 @@
                     "name": "inspection",
                     "ids": 2,
                     "occurrencies": [
+                        {
+                            "type": "CBState",
+                            "state_type":"wait",
+                            "name": "initial_wait",
+                            "parameters": {
+                                "exit_type": "time",
+                                "duration" : 0.5
+                            },
+                            "outcomes": {
+                                "completed": "2_to_panels_zone",
+                                "failed": "2_to_panels_zone"
+                            }
+                        },
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",

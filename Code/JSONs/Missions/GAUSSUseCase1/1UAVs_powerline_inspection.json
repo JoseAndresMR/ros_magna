@@ -99,18 +99,6 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["PowerLine","Base9","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["PowerLine","Base8","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["PowerLine","Base7","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["PowerLine","Base6","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
-                                    },
-                                    {
                                         "definition":["PowerLine","Base5","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
                                     },
                                     {

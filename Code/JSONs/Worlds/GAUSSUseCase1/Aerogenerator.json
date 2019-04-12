@@ -1,6 +1,6 @@
 {
     "scenario": {
-        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "world_boundaries": [[-5000,5000],[-5000,5000],[-500,500]],
         "volumes": [
             {
                 "name": "Ground_Station_4",
@@ -242,8 +242,8 @@
                                 "use" : "poses",
                                 "orientation": [0,0,0],
                                 "height": 0.5,
-                                "spacing": [5,5],
-                                "sweep_angle":1.5708,
+                                "spacing": [10,10],
+                                "sweep_angle":-1.5708,
                                 "initial_sense": "left",
                                 "margins": [1.0,1.0]
                             }

@@ -71,10 +71,13 @@ class Agent_Manager(object):
         self.home_path = rospkg.RosPack().get_path('magna')[:-5]
 
         self.nai = Agent_NAI(self.ID)   # Creation of an utility to treat depth camera topic data
+        self.standby_flag = False
 
         # Local variables initialization
         self.global_data_frame = pd.DataFrame()     # Data frame where to store this Agent dynamical simulation data for future dump into a csv
         self.global_frame_depth = []        # Data frame where to store this Agent depth image simulation data for future dump into a csv
+
+        self.GS_notification = 'nothing'
 
         self.distance_to_goal = 10000
         self.goal = {}      # Structure to store goal specifications
@@ -146,12 +149,50 @@ class Agent_Manager(object):
     def GroundStationListener(self):
 
         # Service to listen to the Ground Station if demands termination
-        rospy.Service('/magna/GS_Agent_{}/die_command'.format(self.ID), DieCommand, self.handle_die)
+        rospy.Service('/magna/GS_Agent_{}/notification'.format(self.ID), InstructionCommand, self.handle_GS_notification_command)
+        rospy.Service('/magna/GS_Agent_{}/algorithm_control'.format(self.ID), AlgorithmControl, self.handle_algorithm_control)
 
     # Function to accomplish end of this node
-    def handle_die(self,req):
-        # self.die_command = True
+    def handle_die(self):
+        
         rospy.signal_shutdown("end of experiment")      # End this node
+
+        return True
+
+    def handle_save_csv(self):
+
+        self.StoreData()        # Tell the GS to store the data
+
+        return True
+
+    def handle_algorithm_control(self,req):
+        params_dicc = {}
+
+        for i,param in enumerate(req.params):
+            params_dicc[param] = req.values[i]
+
+        # Tell the GS to execute basic move role with parsed information
+        output = self.nai.algorithm_control(req.name,req.action,params_dicc)
+        return True
+
+        # Function to deal with a preemption command from Ground Station
+    def handle_GS_notification_command(self,data):
+
+        if data.instruction == "critical_event":
+            self.GS_notification = data.instruction       # Set the variable
+
+        elif data.instruction == "die":
+            self.handle_die()
+
+        elif data.instruction == "save_csv":
+            self.handle_save_csv()
+
+        elif data.instruction == "standby":
+            self.standby_flag = True
+            self.SetVelocityCommand(True)
+
+        elif data.instruction == "resume":
+            self.standby_flag = False
 
         return True
 
@@ -355,7 +396,7 @@ class Agent_Manager(object):
     ### Role functions ###
 
     # Function to model the target of role follow static waypoint path
-    def PathFollower(self,dynamic):
+    def PathFollower(self,dynamic,on_mission = True):
 
         self.role = "path"
         self.nai.role = self.role
@@ -395,21 +436,25 @@ class Agent_Manager(object):
             # Control distance to goal
             while not rospy.is_shutdown() and self.DistanceToGoal() > self.accepted_target_radio:
 
-                if self.preemption_launched == False and self.critical_event != 'nothing':
+                if on_mission and self.standby_flag == True:
+                    time.sleep(2)
+
+                elif self.preemption_launched == False and self.critical_event != 'nothing':
                     self.preemption_launched = True
                     return self.critical_event
 
-                if dynamic == "position":
-                    
-                    self.GoToWPCommand(False,self.goal["pose"])
+                else:
+                    if dynamic == "position":
+                        
+                        self.GoToWPCommand(False,self.goal["pose"])
 
-                elif dynamic == "velocity":
+                    elif dynamic == "velocity":
 
-                    self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
+                        self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
 
-                self.Evaluator()          # Evaluate the situation
-                    
-                time.sleep(0.2)
+                    self.Evaluator()          # Evaluate the situation
+                        
+                    time.sleep(0.2)
 
             self.SetVelocityCommand(True)       # If far, ask nai to give the correct velocity
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
@@ -438,7 +483,7 @@ class Agent_Manager(object):
         return 'succeeded'
 
     # Function to model the target of role Agent Follower AD
-    def AgentFollowerAtDistance(self,target_ID,distance,action_time):
+    def AgentFollowerAtDistance(self,target_ID,distance,action_time, on_mission = True):
 
         self.role = "agent_ad"
         self.nai.role = self.role
@@ -464,49 +509,53 @@ class Agent_Manager(object):
         # Execute while Ground Station doesn't send another instruction
         while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
 
-            if self.preemption_launched == False and self.critical_event != 'nothing':
+            if on_mission and self.standby_flag == True:
+                time.sleep(2)
+
+            elif self.preemption_launched == False and self.critical_event != 'nothing':
                 self.preemption_launched = True
                 return self.critical_event
 
-            # Create an independent copy of the position of the Agent to follow
-            self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
-
-            # If role is orca3, goal wp will be trickered moving it in veolcitywise
-            if self.nai.algorithms_list[0] == "orca3":
-
-                tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
-
-                tar_pos = self.agents_data_list[target_ID-1].position.pose.position
-                tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
-
-                near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
-                        np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
-
-                self.goal_WP_pose = Pose(Point(near_pos[0],near_pos[1],near_pos[2]),
-                                        tar_ori)
-
-            self.GoalStaticBroadcaster()        # Broadcast TF of goal. In future should not be static
-
-            # Fulfil goal variable fields to be later stored
-            self.goal["pose"] = self.goal_WP_pose
-            self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
-            self.goal["dist"] = distance
-
-            # Control distance to goal
-            if self.DistanceToGoal() > distance:
-
-                self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
-                
             else:
-                self.SetVelocityCommand(True)       # If on goal, hover. In future should still be take care off collisions
+                # Create an independent copy of the position of the Agent to follow
+                self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
 
-            self.Evaluator()        # Evaluate the situation
-            time.sleep(0.2)
+                # If role is orca3, goal wp will be trickered moving it in veolcitywise
+                if self.nai.algorithms_list[0] == "orca3":
+
+                    tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
+
+                    tar_pos = self.agents_data_list[target_ID-1].position.pose.position
+                    tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
+
+                    near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
+                            np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
+
+                    self.goal_WP_pose = Pose(Point(near_pos[0],near_pos[1],near_pos[2]),
+                                            tar_ori)
+
+                self.GoalStaticBroadcaster()        # Broadcast TF of goal. In future should not be static
+
+                # Fulfil goal variable fields to be later stored
+                self.goal["pose"] = self.goal_WP_pose
+                self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
+                self.goal["dist"] = distance
+
+                # Control distance to goal
+                if self.DistanceToGoal() > distance:
+
+                    self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
+                    
+                else:
+                    self.SetVelocityCommand(True)       # If on goal, hover. In future should still be take care off collisions
+
+                self.Evaluator()        # Evaluate the situation
+                time.sleep(0.2)
 
         return 'succeeded'
 
     # Function to model the target of role Agent Follower AP
-    def AgentFollowerAtPosition(self,target_ID,pos,action_time):
+    def AgentFollowerAtPosition(self,target_ID,pos,action_time, on_mission = True):
 
         self.role = "agent_ap"
         self.nai.role = self.role
@@ -530,47 +579,50 @@ class Agent_Manager(object):
         # Execute while Ground Station doesn't send another instruction
         while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
 
-            if self.preemption_launched == False and self.critical_event != 'nothing':
+            if on_mission and self.standby_flag == True:
+                time.sleep(2)
+
+            elif self.preemption_launched == False and self.critical_event != 'nothing':
                 self.preemption_launched = True
                 return self.critical_event
-
-            # Create an independent copy of the position of the Agent to follow
-            self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
-
-            # Add to that pose, the bias required
-            self.goal_WP_pose.position.x += pos[0]
-            self.goal_WP_pose.position.y += pos[1]
-            self.goal_WP_pose.position.z += pos[2]
-
-            # If role is orca3, goal wp will be trickered moving it in veolcitywise
-            if self.nai.algorithms_list[0] == "orca3":
-                tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
-
-                tar_pos = self.goal_WP_pose.position
-                tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
-
-                near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
-                        np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
-
-                self.goal_WP_pose = Pose(Point(near_pos[0],near_pos[1],near_pos[2]),
-                                        tar_ori)
-
-            self.GoalStaticBroadcaster()        # Broadcast TF of goal. In future should not be static
-
-            # Fulfil goal variable fields to be later stored. Those are no used, fix in the future.
-            self.goal["pose"] = self.goal_WP_pose
-            self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
-
-            # Control distance to goal
-            if self.DistanceToGoal() > self.accepted_target_radio:
-                self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
-
             else:
-                self.SetVelocityCommand(True)       # If on goal, hover
+                # Create an independent copy of the position of the Agent to follow
+                self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
 
-            self.Evaluator()         # Evaluate the situation
+                # Add to that pose, the bias required
+                self.goal_WP_pose.position.x += pos[0]
+                self.goal_WP_pose.position.y += pos[1]
+                self.goal_WP_pose.position.z += pos[2]
 
-            time.sleep(0.2)
+                # If role is orca3, goal wp will be trickered moving it in veolcitywise
+                if self.nai.algorithms_list[0] == "orca3":
+                    tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
+
+                    tar_pos = self.goal_WP_pose.position
+                    tar_ori = self.agents_data_list[target_ID-1].position.pose.orientation
+
+                    near_pos = np.asarray([tar_pos.x,tar_pos.y,tar_pos.z]) + \
+                            np.asarray([tar_vel_lin.x,tar_vel_lin.y,tar_vel_lin.z])*1.5
+
+                    self.goal_WP_pose = Pose(Point(near_pos[0],near_pos[1],near_pos[2]),
+                                            tar_ori)
+
+                self.GoalStaticBroadcaster()        # Broadcast TF of goal. In future should not be static
+
+                # Fulfil goal variable fields to be later stored. Those are no used, fix in the future.
+                self.goal["pose"] = self.goal_WP_pose
+                self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
+
+                # Control distance to goal
+                if self.DistanceToGoal() > self.accepted_target_radio:
+                    self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
+
+                else:
+                    self.SetVelocityCommand(True)       # If on goal, hover
+
+                self.Evaluator()         # Evaluate the situation
+
+                time.sleep(0.2)
 
         return 'succeeded'
 
@@ -608,7 +660,7 @@ class Agent_Manager(object):
                 goal_WP_pose.position.z += change_matrix[0][2]
                 # self.goal_WP_pose = goal_WP_pose
                 self.goal_path_poses_list = [goal_WP_pose]
-                outcome = self.PathFollower("velocity")
+                outcome = self.PathFollower("velocity",False)
         # for i in np.arange(len(self.goal_path_poses_list)):
                 # self.GoToWPCommand(True,goal_WP_pose)
 
@@ -632,7 +684,7 @@ class Agent_Manager(object):
     def Evaluator(self):
 
         # Thresholds of separation acceptance
-        safety_distance = self.agents_config_list[self.ID-1].safety_radius*3
+        safety_distance = self.agents_config_list[self.ID-1].safety_radius*2
 
         # Initialize collision as no occurred
         collision_detected = False
@@ -676,9 +728,9 @@ class Agent_Manager(object):
             print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.GSStateActualization()
 
-        elif self.preemption_launched == False and  self.agents_data_list[self.ID-1].GS_notification == 'GS_critical_event':
+        elif self.preemption_launched == False and  self.GS_notification == 'GS_critical_event':
             print(self.ID, "GROUND STATION CRITICAL EVENT!!!!!!!!!!!!!!!!!!")
-            self.critical_event = self.agents_data_list[self.ID-1].GS_notification
+            self.critical_event = self.GS_notification
 
             self.GSStateActualization()
 

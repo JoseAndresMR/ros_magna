@@ -1,0 +1,13 @@
+{
+    "scenario": {
+        "world_boundaries": [[-900,900],[-900,900],[-900,900]],
+        "origin_geo" : [37.558542, -5.931074, 0.0],
+        "volumes": [
+            {
+                "name": "JSON",
+                "world": "Safedrone",
+                "subworld": "ManualPolygon"
+            }
+        ]
+    }
+}

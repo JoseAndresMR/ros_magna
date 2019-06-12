@@ -71,8 +71,80 @@
             "state_type":"wait",
             "name": "initial_wait",
             "parameters": {
-                "exit_type": "time",
-                "duration" : 0.5
+                "exit_type": "button"
+            },
+            "outcomes": {
+                "completed": "1_set_mission"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "set_mission",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "set_mission",
+                    "name": "set_mission",
+                    "ids": 1,
+                    "ids_var": "agent",
+                    "parameters": {
+                        "path": [
+                            {
+                                "definition":["ManualPolygon","ManualPolygon1","path","Zigzag"]
+                            }
+                        ]
+                    },
+                    "outcomes":{
+                        "succeeded": "succeeded",
+                        "collision": "aborted",
+                        "GS_critical_event": "aborted",
+                        "low_battery": "aborted",
+                        "preempted": "aborted",
+                        "aborted": "aborted"
+                    }
+                },
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "set_mission",
+                    "name": "set_mission",
+                    "ids": 2,
+                    "ids_var": "agent",
+                    "parameters": {
+                        "path": [
+                            {
+                                "definition":["ManualPolygon","ManualPolygon2","path","Zigzag"]
+                            }
+                        ]
+                    },
+                    "outcomes":{
+                        "succeeded": "succeeded",
+                        "collision": "aborted",
+                        "GS_critical_event": "aborted",
+                        "low_battery": "aborted",
+                        "preempted": "aborted",
+                        "aborted": "aborted"
+                    }
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "succeeded"
+                },
+                "failed": {
+                    "all": "aborted"
+                }
+            },
+            "outcomes": {
+                "completed": "wait_after_setmission"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "wait_after_setmission",
+            "parameters": {
+                "exit_type": "button"
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -90,7 +162,7 @@
                     "ids": "all",
                     "ids_var": "agent",
                     "parameters": {
-                        "height": 1.5
+                        "height": 3
                     }
                 }
             ],
@@ -137,25 +209,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["LateralAccissibleZones","-X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","X","random",1]
+                                        "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0
@@ -179,41 +233,22 @@
                 },
                 {
                     "type": "StateMachine",
-                    "name": "filming",
+                    "name": "delivery",
                     "ids": 2,
                     "occurrencies": [
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "to_delivery_height",
+                            "name": "delivery",
                             "ids": 2,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["LateralAccissibleZones","Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","X","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","-Y","random",1]
-                                    },
-                                    {
-                                        "definition":["LateralAccissibleZones","Y","random",1]
+                                        "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
                                     }
                                 ],
-                                "smooth_path_mode": 0,
-                                "dynamic": "velocity"
+                                "smooth_path_mode": 0
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -265,20 +300,6 @@
                     "state_type": "basic_move",
                     "name": "hover",
                     "ids": 1,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0,
-                        "duration" : 0.5
-                    }
-                },
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 2,
                     "ids_var": "agent",
                     "parameters": {
                         "move_type": "translation",

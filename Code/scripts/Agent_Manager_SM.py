@@ -127,6 +127,29 @@ class Agent_Manager_SM(object):
                                   'low_battery':'low_battery',
                                   'GS_critical_event':'GS_critical_event'})
 
+            ### SET MISSION STATE MACHINE & WRAPPER ###
+            self.set_mission_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
+                                         input_keys=['action_goal','action_result'])
+
+            self.asw_dicc['set_mission'] = ActionServerWrapper(
+                        '/magna/GS_Agent_{}/set_mission_command'.format(heritage.ID),
+                        SetMissionAction,
+                        self.set_mission_sm,
+                        ['completed'], ['failed'], ['collision','low_battery','GS_critical_event'],
+                        goal_key = 'action_goal',
+                        result_key = 'action_result'
+                        )
+
+            with self.set_mission_sm:
+
+                StateMachine.add('set_mission',
+                                 CBState(self.set_mission_stcb,
+                                         input_keys=['action_goal','action_result','_preempt_requested'],
+                                         cb_kwargs={'heritage':heritage}),
+                                 {'completed':'completed',
+                                  'collision':'collision',
+                                  'low_battery':'low_battery',
+                                  'GS_critical_event':'GS_critical_event'})
 
             ### FOLLOW PATH STATE MACHINE & WRAPPER ###
             self.follow_path_sm = StateMachine(outcomes=['completed', 'failed','collision','low_battery','GS_critical_event'],
@@ -231,12 +254,25 @@ class Agent_Manager_SM(object):
         return outcome
 
     @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
+    def set_mission_stcb(self,heritage):
+
+        # Copy the goal path to follow into GS's variable
+        poses_list = self.action_goal.poses_list
+        include_takeoff = self.action_goal.include_takeoff
+        include_land = self.action_goal.include_land
+        output = heritage.CreateMission(poses_list,include_takeoff,include_land)     # Tell the GS to execute that function
+
+        self.action_result.output = output
+
+        return 'completed'
+
+    @cb_interface(outcomes=['completed','failed','collision','low_battery','GS_critical_event'])
     def follow_path_stcb(self,heritage):
 
         # Copy the goal path to follow into GS's variable
         heritage.smooth_path_mode = self.action_goal.smooth_path_mode
         heritage.goal_path_poses_list = self.action_goal.goal_path_poses_list
-        output = heritage.PathFollower(self.action_goal.dynamic)     # Tell the GS to execute that function
+        output = heritage.PathFollower(self.action_goal.dynamic,self.action_goal.duration)     # Tell the GS to execute that function
 
         self.action_result.output = output
 
@@ -246,7 +282,7 @@ class Agent_Manager_SM(object):
     def follow_agent_ad_stcb(self,heritage):
 
         # Tell the GS to execute AgentFollowerAD role with at the required distance
-        output = heritage.AgentFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.time)
+        output = heritage.AgentFollowerAtDistance(self.action_goal.target_ID,self.action_goal.distance,self.action_goal.duration)
 
         self.action_result.output = output
 
@@ -256,7 +292,7 @@ class Agent_Manager_SM(object):
     def follow_agent_ap_stcb(self,heritage):
 
         # Tell the GS to execute AgentFollowerAP role with the required bias
-        output = heritage.AgentFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.time)
+        output = heritage.AgentFollowerAtPosition(self.action_goal.target_ID,self.action_goal.pos,self.action_goal.duration)
 
         self.action_result.output = output
 
@@ -278,6 +314,7 @@ class Agent_Manager_SM(object):
         dynamic = self.action_goal.dynamic
         direction = self.action_goal.direction
         value = self.action_goal.value
+        duration = self.action_goal.duration
 
         # Tell the GS to execute basic move role with parsed information
         output = heritage.basic_move(move_type,dynamic,direction,value)

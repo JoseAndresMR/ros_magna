@@ -44,9 +44,10 @@ import tf, tf2_ros
 import signal
 import copy
 import rospkg
-# from six.moves import cPickle as pickle
+from six.moves import cPickle as pickle
 from uav_abstraction_layer.srv import *
 from uav_abstraction_layer.msg import State as ual_state_msg
+from uav_abstraction_layer.msg import WaypointSet, Param_float
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Path
@@ -57,7 +58,7 @@ from magna.srv import *
 from Agent_Data import Agent_Data
 from Agent_Config import Agent_Config
 from Agent_Manager_SM import Agent_Manager_SM
-from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
+# from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
 
 from FwQgc import FwQgc
 class Agent_Manager(object):
@@ -275,6 +276,11 @@ class Agent_Manager(object):
         # print self.finish - self.start
         # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
 
+        latency_pub = rospy.Publisher('/magna/latency/{}'.format(self.ID), PoseStamped, queue_size=1)
+        latency_msg = PoseStamped()
+        latency_msg.pose.position.x = 3
+        latency_pub.publish(latency_msg)
+
         self.velocity_pub.publish(TwistStamped(h,self.new_velocity_twist))
 
         # time.sleep(1)
@@ -359,6 +365,24 @@ class Agent_Manager(object):
             print "Service call failed: %s"%e
             print "error in set_home"
 
+    def SetMissionCommand(self,setmission_msg,blocking):
+
+        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['set_mission'])
+        try:
+            ual_setmission = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['set_mission'], SetMission)
+            ual_setmission(setmission_msg,blocking)
+            time.sleep(0.1)
+            
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in land service"
+        
+
+        # while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
+        #     time.sleep(0.1)
+
+        return "completed"
+
         # Function to send termination instruction to each Agent
     def SmoothPath(self,raw_path):
         rospy.wait_for_service('/uav_path_manager/generator/generate_path')
@@ -395,8 +419,55 @@ class Agent_Manager(object):
 
     ### Role functions ###
 
+    def CreateMission(self,poses_list,include_takeoff,include_land):
+
+        WaypointSetType = {
+            "TAKEOFF_POSE" : 0,
+            "TAKEOFF_AUX" : 1,
+            "PASS" : 2,
+            "LOITER_UNLIMITED" : 3,
+            "LOITER_TURNS" : 4,
+            "LOITER_TIME" : 5,
+            "LOITER_HEIGHT" : 6,
+            "LAND_POSE" : 7,
+            "LAND_AUX" : 8    }
+
+        mission_msg = []
+
+        if include_takeoff:
+            takeoff_set = WaypointSet()
+            takeoff_set.type = WaypointSetType["TAKEOFF_AUX"]
+            params = [Param_float("aux_distance",0.0),Param_float("aux_angle",0.0),Param_float("aux_height",5.0),
+                        Param_float("minimum_pitch",0.0),Param_float("yaw_angle",0.0)]
+            takeoff_set.params = params
+            mission_msg.append(takeoff_set)
+
+        pass_set = WaypointSet()
+        pass_set.type = WaypointSetType["PASS"]
+        params = [Param_float("acceptance_radius",0.0),Param_float("orbit_distance",0.0),Param_float("yaw_angle",0.0)]
+        pass_set.params = params
+        pass_set.posestamped_list = []
+        for pose in poses_list:
+            posestamped = PoseStamped()
+            posestamped.pose = pose
+            pass_set.posestamped_list.append(posestamped)
+
+        mission_msg.append(pass_set)
+
+        if include_land:
+            pass
+
+        self.SetMissionCommand(mission_msg,False)
+
+        return "succeeded"
+
     # Function to model the target of role follow static waypoint path
-    def PathFollower(self,dynamic,on_mission = True):
+    def PathFollower(self,dynamic,action_time = 0.0,on_mission = True,):
+
+        latency_pub = rospy.Publisher('/magna/latency/{}'.format(self.ID), PoseStamped, queue_size=1)
+        latency_msg = PoseStamped()
+        latency_msg.pose.position.x = 2
+        latency_pub.publish(latency_msg)
 
         self.role = "path"
         self.nai.role = self.role
@@ -418,7 +489,6 @@ class Agent_Manager(object):
             # if smooth_server_response != True:
             #     return
 
-
         self.agents_data_list[self.ID-1].own_path.poses = []
 
         # Control in every single component of the list
@@ -427,6 +497,8 @@ class Agent_Manager(object):
             self.goal_WP_pose = self.goal_path_poses_list[i]        # Set actual goal from the path list
             self.goal["pose"] = self.goal_WP_pose       # Actualize goal variable for later storage
 
+            start_time = time.time()
+
             self.GoalStaticBroadcaster()        # Broadcast TF of goal
 
             # Actualize state and send it to Ground Station
@@ -434,7 +506,7 @@ class Agent_Manager(object):
             self.GSStateActualization()
             
             # Control distance to goal
-            while not rospy.is_shutdown() and self.DistanceToGoal() > self.accepted_target_radio:
+            while not rospy.is_shutdown() and (self.DistanceToGoal() > self.accepted_target_radio) or (time.time()-start_time < action_time):
 
                 if on_mission and self.standby_flag == True:
                     time.sleep(2)
@@ -449,7 +521,7 @@ class Agent_Manager(object):
                         self.GoToWPCommand(False,self.goal["pose"])
 
                     elif dynamic == "velocity":
-
+                        
                         self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
 
                     self.Evaluator()          # Evaluate the situation
@@ -521,7 +593,7 @@ class Agent_Manager(object):
                 self.goal_WP_pose = copy.deepcopy(self.agents_data_list[target_ID-1].position.pose)
 
                 # If role is orca3, goal wp will be trickered moving it in veolcitywise
-                if self.nai.algorithms_list[0] == "orca3":
+                if self.nai.algorithms_dicc.keys()[0] == "orca3":
 
                     tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
 
@@ -595,7 +667,7 @@ class Agent_Manager(object):
                 self.goal_WP_pose.position.z += pos[2]
 
                 # If role is orca3, goal wp will be trickered moving it in veolcitywise
-                if self.nai.algorithms_list[0] == "orca3":
+                if self.nai.algorithms_dicc.keys()[0] == "orca3":
                     tar_vel_lin = self.agents_data_list[target_ID-1].velocity.twist.linear
 
                     tar_pos = self.goal_WP_pose.position
@@ -627,54 +699,59 @@ class Agent_Manager(object):
         return 'succeeded'
 
     # Function to model the target of role of single basic move
-    def basic_move(self,move_type,dynamic,direction,value):
+    def basic_move(self,move_type,dynamic,direction,value,duration = 0):
 
+        start_time = time.time()
         outcome = 'succeded'
-        # Select function used depending on move type
-        if move_type == "take off":
-            self.TakeOffCommand(value,True)
-        elif move_type == "land":
-            self.LandCommand(True)
-        elif move_type == ("translation" or "rotation"):        # Future, rotation or turn? Choose onw
 
-            # If translation, check direction
-            change_matrix=[[0,0,0],[0,0,0]]
-            if move_type == "translation":
-                if direction == "up" or direction == "down":
-                    change_matrix[0][2] = value*(1-2*(direction=="down"))
-                elif direction == "left" or direction == "right":
-                    change_matrix[0][1] = value*(1-2*(direction=="left"))
-                elif direction == "forward" or direction == "backward":
-                    change_matrix[0][0] = value*(1-2*(direction=="backward"))
+        while not rospy.is_shutdown() and time.time() - start_time < duration:
 
-            # If turn, check direction
-            if move_type == "turn":
-                change_matrix[1][3] = value*(1-2*(direction=="left"))
+            # Select function used depending on move type
+            if move_type == "take off":
+                self.TakeOffCommand(value,True)
+            elif move_type == "land":
+                self.LandCommand(True)
+            elif move_type == "hover":
+                self.SetVelocityCommand(True)
+                
+            elif move_type == ("translation" or "rotation"):        # Future, rotation or turn? Choose onw
 
-            # If position change, add direction, actualize goal and call PathFollower
-            if dynamic == "position":
-                goal_WP_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
+                # If translation, check direction
+                change_matrix=[[0,0,0],[0,0,0]]
+                if move_type == "translation":
+                    if direction == "up" or direction == "down":
+                        change_matrix[0][2] = value*(1-2*(direction=="down"))
+                    elif direction == "left" or direction == "right":
+                        change_matrix[0][1] = value*(1-2*(direction=="left"))
+                    elif direction == "forward" or direction == "backward":
+                        change_matrix[0][0] = value*(1-2*(direction=="backward"))
 
-                goal_WP_pose.position.x += change_matrix[0][0]
-                goal_WP_pose.position.y += change_matrix[0][1]
-                goal_WP_pose.position.z += change_matrix[0][2]
-                # self.goal_WP_pose = goal_WP_pose
-                self.goal_path_poses_list = [goal_WP_pose]
-                outcome = self.PathFollower("velocity",False)
-        # for i in np.arange(len(self.goal_path_poses_list)):
-                # self.GoToWPCommand(True,goal_WP_pose)
+                # If turn, check direction
+                if move_type == "turn":
+                    change_matrix[1][3] = value*(1-2*(direction=="left"))
 
-            # If velocity, set new velocity raw
-            elif dynamic == "velocity":
-                #### AHORA ES POR TOPICS
-                rospy.wait_for_service('/uav_{}/ual/set_velocity'.format(self.ID))
-                ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/set_velocity'.format(self.ID), SetVelocity)
-                h = std_msgs.msg.Header()
-                goal_WP_vel = TwistStamped()
-                goal_WP_vel.linear.x += change_matrix[0][0]
-                goal_WP_vel.linear.y += change_matrix[0][1]
-                goal_WP_vel.linear.z += change_matrix[0][2]
-                ual_set_velocity(TwistStamped(h,new_velocity_twist))
+                # If position change, add direction, actualize goal and call PathFollower
+                if dynamic == "position":
+                    goal_WP_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
+
+                    goal_WP_pose.position.x += change_matrix[0][0]
+                    goal_WP_pose.position.y += change_matrix[0][1]
+                    goal_WP_pose.position.z += change_matrix[0][2]
+                    # self.goal_WP_pose = goal_WP_pose
+                    self.goal_path_poses_list = [goal_WP_pose]
+                    outcome = self.PathFollower("velocity",False)
+            # for i in np.arange(len(self.goal_path_poses_list)):
+                    # self.GoToWPCommand(True,goal_WP_pose)
+
+                # If velocity, set new velocity raw
+                elif dynamic == "velocity":
+                    #### AHORA ES POR TOPICS
+
+                    goal_vel = TwistStamped()
+                    goal_vel.linear.x += change_matrix[0][0]
+                    goal_vel.linear.y += change_matrix[0][1]
+                    goal_Wgoal_velP_vel.linear.z += change_matrix[0][2]
+                    self.velocity_pub.publish(goal_vel)
 
         return outcome
 
@@ -757,10 +834,10 @@ class Agent_Manager(object):
         # print(single_frame["main_agent"][0]["Twist"])
 
         single_frame["role"] = [self.role]
-        single_frame["N_neigh_aware"] = [self.nai.N_neighbors_aware]
-        single_frame["algorithms_list"] = [self.nai.algorithms_list]
+        single_frame["N_neigh_aware"] = [self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"]]
+        single_frame["algorithms_list"] = [self.nai.algorithms_dicc.keys()]
 
-        if self.nai.N_neighbors_aware > 0:
+        if self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"] > 0:
             neigh_data_list = []
             for n_neighbor in range(len(self.nai.near_neighbors_sorted["types"])):
 
@@ -802,7 +879,7 @@ class Agent_Manager(object):
         else:
             self.global_data_frame = self.global_data_frame.append(pd.DataFrame(single_frame),ignore_index=False)
 
-        # If depth camera is in use, add its info to its single frame
+        # If depth camera is in use, add its info to its single frameç
         if self.depth_camera_use == True:
             single_frame_depth = self.agents_data_list[self.ID-1].image_depth
 
@@ -862,7 +939,7 @@ class Agent_Manager(object):
 
         # Dump the global depth camera frame into
         if self.depth_camera_use == True:
-            with open(folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
+            with open(third_folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
                 pickle.dump(self.global_frame_depth, f, pickle.HIGHEST_PROTOCOL)
 
     # Function to inform Ground Station about actual Agent's state
@@ -924,14 +1001,20 @@ class Agent_Manager(object):
         path.header.stamp = rospy.Time.now()
         path.header.frame_id = "map"
         self.changed_state = False
-        # posestamped = PoseStamped()
-        # posestamped.header.stamp = rospy.Time.now()
-        # posestamped.header.frame_id = "map"
-        # posestamped.pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
+        mean_vel = self.agents_config_list[self.ID-1].max_speed
+        prior_pose = copy.deepcopy( waypoints_list[0] )
+        prior_stamp = rospy.Time.now()
+
         path.poses = []
         for pose in waypoints_list:
             posestamped = PoseStamped()
-            posestamped.header.stamp = rospy.Time.now()
+
+            segment_distance = self.DistanceBetweenPoses(prior_pose,pose)
+            posestamped.header.stamp = prior_stamp
+            posestamped.header.stamp.secs += segment_distance / mean_vel
+            prior_stamp =  copy.deepcopy(posestamped.header.stamp)
+            prior_pose = copy.deepcopy(pose)
+
             posestamped.header.frame_id = "map"
             posestamped.pose = pose
             path.poses.append(posestamped)

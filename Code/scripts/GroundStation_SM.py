@@ -36,6 +36,7 @@ import numpy as np
 import tf
 import json
 import copy
+from geometry_msgs.msg import PoseStamped
 
 from magna.msg import *
 
@@ -94,7 +95,8 @@ class GroundStation_SM(object):
                 params = self.UpdateLocalParameters(ids,mission_part_def,parent_params)
 
                 params.update({'heritage' : heritage})
-
+                params["id"] = ids
+                
                 self.params = params        ### AHORRARME SELF
 
                 sm.add('{0}_{1}'.format(ids,mission_part_def["name"]),
@@ -291,6 +293,7 @@ class GroundStation_SM(object):
         goal.dynamic = params["dynamic"]
         goal.direction = params["direction"]
         goal.value = params["value"]
+        goal.duration = params["duration"]
 
         return goal
 
@@ -298,13 +301,35 @@ class GroundStation_SM(object):
     def basic_move_result_cb(self, ud, status, result):
         return "succeeded"
 
+    # Goal callback for set mission service
+    def set_mission_goal_cb(self, ud, goal, params):
+
+        goal.poses_list = np.array([])
+        for path_part in params["path"]:
+            goal.poses_list = np.append(goal.poses_list,
+                                                np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
+        goal.include_takeoff = False
+        if "include_takeoff" in params.keys():
+            goal.smooth_path_mode = params["include_takeoff"]
+
+        goal.include_land = False
+        if "include_land" in params.keys():
+            goal.dynamic = params["include_land"]
+    
+        return goal
+
+    # Result callback for set mission service. In the future should be implemented out of SM
+    def set_mission_result_cb(self, ud, status, result):
+
+        return result.output
+
     # Goal callback for follow path service
     def follow_path_goal_cb(self, ud, goal, params):
 
         goal.goal_path_poses_list = np.array([])
         for path_part in params["path"]:
             goal.goal_path_poses_list = np.append(goal.goal_path_poses_list,
-                                                np.array(params["heritage"].MakePath(path_part["definition"])))
+                                                np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
         goal.smooth_path_mode = 0
         if "smooth_path_mode" in params.keys():
             goal.smooth_path_mode = params["smooth_path_mode"]
@@ -312,6 +337,10 @@ class GroundStation_SM(object):
         goal.dynamic = "velocity"
         if "dynamic" in params.keys():
             goal.dynamic = params["dynamic"]
+
+        goal.duration = 0.0
+        if "duration" in params.keys():
+            goal.duration = params["duration"]        
 
         return goal
 
@@ -326,7 +355,7 @@ class GroundStation_SM(object):
         # Build the goal from arguments
         goal.target_ID = params["target_ID"]
         goal.distance = params["distance"]
-        goal.time = params["time"]
+        goal.duration = params["duration"]
 
         return goal
 
@@ -339,7 +368,7 @@ class GroundStation_SM(object):
         # Build the goal from arguments
         goal.target_ID = params["target_ID"]
         goal.pos = params["pos"]
-        goal.time = params["time"]      # In the future should be received from argument or mission dictionary
+        goal.duration = params["duration"]      # In the future should be received from argument or mission dictionary
 
         return goal
 
@@ -367,6 +396,7 @@ class GroundStation_SM(object):
         self.SASGoalCBDic["follow_agent_ad"] = self.follow_agent_ad_goal_cb
         self.SASGoalCBDic["follow_agent_ap"] = self.follow_agent_ap_goal_cb
         self.SASGoalCBDic["land"] = self.land_goal_cb
+        self.SASGoalCBDic["set_mission"] = self.set_mission_goal_cb
 
         self.SASResultCBDic = {}
         self.SASResultCBDic["take_off"] = self.take_off_result_cb
@@ -375,6 +405,7 @@ class GroundStation_SM(object):
         self.SASResultCBDic["follow_agent_ad"] = self.follow_agent_ad_result_cb
         self.SASResultCBDic["follow_agent_ap"] = self.follow_agent_ap_result_cb
         self.SASResultCBDic["land"] = self.land_result_cb
+        self.SASResultCBDic["set_mission"] = self.set_mission_result_cb
 
         self.SASMsgTypeDic = {}
         self.SASMsgTypeDic["take_off"] = TakeOffAction
@@ -383,6 +414,7 @@ class GroundStation_SM(object):
         self.SASMsgTypeDic["follow_agent_ad"] = FollowAgentADAction
         self.SASMsgTypeDic["follow_agent_ap"] = FollowAgentAPAction
         self.SASMsgTypeDic["land"] = LandAction
+        self.SASMsgTypeDic["set_mission"] = SetMissionAction
 
         self.SASGoalDic = {}
         self.SASGoalDic["take_off"] = TakeOffGoal
@@ -391,6 +423,7 @@ class GroundStation_SM(object):
         self.SASGoalDic["follow_agent_ad"] = FollowAgentADGoal
         self.SASGoalDic["follow_agent_ap"] = FollowAgentAPGoal
         self.SASGoalDic["land"] = LandGoal
+        self.SASGoalDic["set_mission"] = SetMissionGoal
 
 
     #### CONCURRENCE OUTCOMES CALLBACKS ####

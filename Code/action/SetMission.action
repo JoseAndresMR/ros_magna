@@ -1,9 +1,7 @@
 # Define the goal
-string move_type
-string dynamic
-string direction
-float32 value
-int8 duration
+geometry_msgs/Pose[] poses_list
+bool include_takeoff
+bool include_land
 --- 
 # Define the result
 string output

@@ -2,7 +2,7 @@
     <node name="ground_station" output="screen" pkg="magna" type="GroundStation.py" />
     
     <group if="true">
-        <node args="-d $(find magna)/rviz/Empty.rviz" name="rviz" pkg="rviz" type="rviz" />
+        <node args="-d $(find magna)/rviz/Safedrone.rviz" name="rviz" pkg="rviz" type="rviz" />
     </group>
 
 </launch>

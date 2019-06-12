@@ -1,7 +1,7 @@
 # Define the goal
 int8 target_ID
 int32 distance
-int64 time
+int64 duration
 --- 
 # Define the result
 string output

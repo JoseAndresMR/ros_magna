@@ -146,12 +146,6 @@ class Worlds(object):
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
 
 
-
-
-
-
-
-
 class Volume(object):
     def __init__(self,volume_def,transforms_list):
         self.name = volume_def["name"]
@@ -214,13 +208,6 @@ class Volume(object):
         return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
         
 
-
-
-
-
-
-
-        
 class GenericGeometry:
     def __init__(self,geometry_def,parent_name,parent_prefix,transforms_list):
 

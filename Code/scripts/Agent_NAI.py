@@ -80,6 +80,8 @@ class Agent_NAI(object):
 
         if "orca3" in self.algorithms_dicc.keys():
             return self.ORCA3()
+            # return self.ORCA3_from_node()
+            
 
     # Function to set new velocity using a Neural Network
     def NeuralNetwork(self):
@@ -208,7 +210,7 @@ class Agent_NAI(object):
         maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
         velocity = (1, 1, 1)
 
-        obs_radius = 2
+        obs_radius = 0.5
 
         # Create an object of orca3 solver class and give the above defined parameters
         sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, velocity)
@@ -224,7 +226,7 @@ class Agent_NAI(object):
 
         orca_agent_list = [sim.addAgent((position_array[0],position_array[1],position_array[2]),
             neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, (velocity_array[0],velocity_array[1],velocity_array[2]))]
-        # Set the preferred velocity of own Agent as decided avobe
+        # Set the prefered velocity of own Agent as decided avobe
         sim.setAgentPrefVelocity(orca_agent_list[0],(prefered_velocity_array[0],prefered_velocity_array[1],prefered_velocity_array[2]))
         
         for n_neighbor in range(len(self.near_neighbors_sorted["ids"])):
@@ -264,6 +266,43 @@ class Agent_NAI(object):
             new_velocity_twist.angular.z = prefered_velocity.angular.z
 
         return new_velocity_twist
+
+    def ORCA3_from_node(self):
+
+        if "agent_created" not in self.algorithms_dicc["orca3"].keys():
+
+            # rospy.wait_for_service('orca/add_agents')
+            # try:
+            #     add_agent_prox = rospy.ServiceProxy('orca/add_agents', MESSAGEEEEEEEEEEEEEE )
+            #     # model_name = "{0}_{1}".format(self.agent_models[n_agent],n_agent+1)
+            #     add_agent_prox(model_name)
+            #     time.sleep(0.1)
+            # except rospy.ServiceException, e:
+            #     print "Service call failed: %s"%e
+            #     print "error in add orca agent"
+
+            self.orca_optimal_velocity = Twist()
+
+            self.algorithms_dicc["orca3"]["agent_created"] = True
+
+            self.algorithms_dicc["orca3"]["prefered_velocity_pub"] = rospy.Publisher('/orca/agent_{}/prefered_velocity'.format(self.ID), TwistStamped, queue_size = 1)
+
+            def handle_orca_optimal_velocity(data):
+
+                self.orca_optimal_velocity = data.twist
+
+            rospy.Subscriber('/orca/agent_{}/optimal_velocity'.format(self.ID), TwistStamped, handle_orca_optimal_velocity)
+
+        prefered_velocity = self.SimpleGuidance()
+
+        prefered_velocity_stamped = TwistStamped()
+        prefered_velocity_stamped.twist = prefered_velocity
+
+        self.algorithms_dicc["orca3"]["prefered_velocity_pub"].publish(prefered_velocity_stamped)
+
+        time.sleep(0.1)
+
+        return self.orca_optimal_velocity
 
     # Function to set velocity directly to goal
     def SimpleGuidance(self):

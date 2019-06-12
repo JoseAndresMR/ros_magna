@@ -20,6 +20,9 @@ Panels:
         - /Path7
         - /Path8
         - /TorusArray1
+        - /Path9
+        - /Path10
+        - /Path11
       Splitter Ratio: 0.5
     Tree Height: 531
   - Class: rviz/Selection
@@ -41,6 +44,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: ""
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -67,14 +72,6 @@ Visualization Manager:
       Frame Timeout: 1
       Frames:
         All Enabled: true
-        CZ_Accessible:
-          Value: true
-        CZ_Obs_obs_0:
-          Value: true
-        CZ_Obstacles:
-          Value: true
-        CentralZone:
-          Value: true
         GS4_Agents_take_off:
           Value: true
         GS4_takeoff_pos_0_0_0:
@@ -108,12 +105,6 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          CentralZone:
-            CZ_Accessible:
-              {}
-            CZ_Obstacles:
-              CZ_Obs_obs_0:
-                {}
           Ground_Station:
             GS4_Agents_take_off:
               GS4_takeoff_pos_0_0_0:
@@ -131,7 +122,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 85; 255; 0
+      Color: 0; 255; 0
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -232,8 +223,6 @@ Visualization Manager:
       Marker Topic: visualization_marker
       Name: Marker
       Namespaces:
-        CZ_Obs_obs_0: true
-        CZ_Obstacles: true
         GS4_Agents_take_off: true
         agent_1: true
         agent_2: true
@@ -242,7 +231,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 0; 120; 0
+      Color: 0; 255; 255
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -366,6 +355,75 @@ Visualization Manager:
       normal length: 0.100000001
       show normal: true
       uv-smooth: 15
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.300000012
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 0; 0
+      Pose Style: Arrows
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: /magna/utm/conflict_path/1
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.300000012
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 0; 0
+      Pose Style: Arrows
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: /magna/utm/conflict_path/2
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.300000012
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 0; 0
+      Pose Style: Arrows
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: /magna/utm/conflict_path/3
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -391,25 +449,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.96649456
+      Distance: 13.7931595
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.110945851
-        Y: 0.0255741477
-        Z: 2.15098953
+        X: -0.0161849521
+        Y: -0.0224204287
+        Z: 0.00528300507
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.05979684
+      Pitch: 1.00479674
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.612003565
+      Yaw: 2.24153757
     Saved: ~
 Window Geometry:
   Displays:

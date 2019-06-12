@@ -43,7 +43,7 @@ from uav_abstraction_layer.msg import State
 from magna.srv import *
 from magna.msg import *
 # from ADSB import ADSB
-# from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge, CvBridgeError
 from Worlds import *
 
 class Agent_Data(object):
@@ -190,7 +190,6 @@ class Agent_Data(object):
         try:
             # Transform the received information eith the bridge and store it into its variable
             self.image_depth = np.array(self.cv_bridge.imgmsg_to_cv2(data, desired_encoding=data.encoding).data)
-            # print(self.image_depth.size)
         except CvBridgeError as e:
             print(e)
 

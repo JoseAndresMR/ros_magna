@@ -115,6 +115,7 @@ class Agent_Config(object):
         self.ser_cli_addr['take_off'] = '/uav_{}/ual/take_off'.format(self.ID)
         self.ser_cli_addr['land'] = '/uav_{}/ual/land'.format(self.ID)
         self.ser_cli_addr['set_home'] = '/uav_{}/ual/set_home'.format(self.ID)
+        self.ser_cli_addr['set_mission'] = '/uav_{}/ual/set_mission'.format(self.ID)
 
 
     def model_iris(self):

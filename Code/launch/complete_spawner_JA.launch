@@ -32,7 +32,7 @@
             </group>
 
             <group if="$(eval autopilot == 'bitcraze')">
-                <include file="$(find lps-ros)/launch/loco_cpp.launch" />
+                <include file="$(find crazyswarm)/launch/hover_swarm.launch" />
             </group>
         </group>
     
@@ -47,6 +47,7 @@
                     <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
                     <param name="home_pose_parent_frame" value="map" />
                     <param name="backend" value="mavros" />
+                    <rosparam param="map_origin_geo">[37.558542, -5.931074, 0.0]</rosparam>
                 </node>
             </group>
             <group if="$(eval autopilot == 'dji')">
@@ -54,6 +55,7 @@
                     <param name="backend" value="dji" />
                     <param name="laser_altimeter" value="false" />
                     <param name="self_arming" value="true" />
+                    <rosparam param="map_origin_geo">[37.4120687, -6.0021959, 71.5408066875]</rosparam>
                 </node>
             </group>   
             <group if="$(eval autopilot == 'crazyflie')">
@@ -66,14 +68,6 @@
 
     <group if="$(arg uav_manager_on_gs)">
         <node args="-ID=2" name="agent_2" output="screen" pkg="magna" type="Agent_Manager.py" />
-
-        <node name="path_follower_node_2" pkg="uav_path_manager" type="path_follower_node">
-            <param name="uav_id" value="2" />
-        </node>
-    </group>
-    
-    <group if="$(arg smooth_path_generator)">
-        <node name="path_generator_node" pkg="uav_path_manager" type="path_generator_node" />
     </group>
 
 </launch>

@@ -81,6 +81,7 @@ add_service_files(
    FollowAgentAD.action
    FollowAgentAP.action
    BasicMove.action
+   SetMission.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -122,7 +123,7 @@ add_service_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES NN4DAA
+#  LIBRARIES 
   CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )

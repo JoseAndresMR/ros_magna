@@ -125,9 +125,15 @@
                                 "path": [
                                     {
                                         "definition":["Ground_Station","volume","coordinates",[[0.0,20.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,-20.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[0.0,20.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
-                                "smooth_path_mode": 1,
+                                "smooth_path_mode": 0,
                                 "dynamic": "velocity"
                             },
                             "outcomes":{
@@ -174,9 +180,15 @@
                                 "path": [
                                     {
                                         "definition":["Ground_Station","volume","coordinates",[[20.0,0.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[-20.0,0.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[20.0,0.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
-                                "smooth_path_mode": 1,
+                                "smooth_path_mode": 0,
                                 "dynamic": "velocity"
                             },
                             "outcomes":{

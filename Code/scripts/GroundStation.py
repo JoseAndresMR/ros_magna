@@ -111,7 +111,7 @@ class GroundStation(object):
         outcome = self.gs_sm.gs_sm.execute()        # Execute State Machine
 
         self.Die()      # Once out of the State Machine, execute al commands of closig
-        self.bag.close()        # Close the rosbag that stores the simulation
+        # self.bag.close()        # Close the rosbag that stores the simulation
 
 
     #### Starter functions ####
@@ -167,12 +167,35 @@ class GroundStation(object):
         rospy.set_param('uav_{}/ual/home_pose'.format(ID),position)
 
         rospy.set_param('uav_{}/ual/pose_frame_id'.format(ID),"map")
+
+        # if model == "crazyflie":
+
+        #     cf_yaml_data = {"crazyflies":[{"id":ID,"channel":80,"initialPosition":position, "type":"default"}]}
+        #     crazyswarm_path = rospkg.RosPack().get_path('crazyswarm')[:-5]
+        #     cf_yaml_path = "{0}/launch/crazyflies_magna.launch".format(crazyswarm_path)
+
+        #     # Write YAML file
+        #     with io.open(cf_yaml_path, 'w', encoding='utf8') as outfile:
+                # yaml.dump(cf_yaml_data, outfile, default_flow_style=False, allow_unicode=True)
+
         time.sleep(1)
 
     # Function to spawn each new Agent (GAZEBO model, UAL server and dedicated Ground Station)
     def AgentSpawner(self,ID):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
+
+        world_config_path = "{0}/Code/JSONs/Worlds/{1}/{2}.json"\
+                            .format(self.home_path,self.world_name,self.subworld_name)
+        
+        with open(world_config_path) as f:
+            world_config = json.load(f)
+
+        if "origin_geo" in world_config["scenario"].keys():
+            origin_geo = world_config["scenario"]["origin_geo"]
+
+        else:
+            origin_geo = [37.558542, -5.931074, 7.89]
 
         launch_path = "{0}/Code/launch/complete_spawner_JA.launch".format(self.home_path)
 
@@ -222,9 +245,11 @@ class GroundStation(object):
 
 
         if config_def["autopilot"] == "px4":
-            pass
+            root[11][1][0][0][7].text = str(origin_geo)
 
         elif config_def["autopilot"] == "dji":
+
+            root[11][1][1][0][3].text = str(origin_geo)
 
             if config_def["laser_altimeter"] == True:
                 root[11][1][1][0][1].attrib["value"] = 'true'
@@ -242,10 +267,6 @@ class GroundStation(object):
         # agent manager
         root[12][0].attrib["name"] = 'agent_{}'.format(ID+1)
         root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
-
-        # if smooth path
-        root[12][1].attrib["name"] = 'path_follower_node_{}'.format(ID+1)
-        root[12][1][0].attrib["value"] = str(ID+1)
 
         et.write(launch_path)
 
@@ -281,7 +302,13 @@ class GroundStation(object):
             self.bag = rosbag.Bag(bag_folder_path, 'w')
 
 
-    def MakePath(self,path_def):
+    def MakePath(self,path_def,agent_id):
+
+        latency_pub = rospy.Publisher('/magna/latency/{}'.format(agent_id), PoseStamped, queue_size=1)
+        latency_msg = PoseStamped()
+        latency_msg.pose.position.x = 1
+        response = latency_pub.publish(latency_msg)
+        time.sleep(1)
 
         return [self.world.getFSPoseGlobal(path_def)]
 
@@ -292,7 +319,6 @@ class GroundStation(object):
             button = raw_input("Wait State asks for a button press")
 
         return "completed" 
-
 
     #### Finisher functions ####
 
@@ -503,10 +529,14 @@ class GroundStation(object):
         client.wait_for_server()
 
         goal = self.gs_sm.SASGoalCBDic[name]([], self.gs_sm.SASGoalDic[name](), params)        # get goal
+        print(goal)
         client.send_goal(goal)
-        client.wait_for_result()
 
-        return client.get_result()
+        # client.wait_for_result()
+
+        # return client.get_result()
+
+        return
 
     # Functions to save every TF information inside ROS bag
     def tf_static_callback(self,data):

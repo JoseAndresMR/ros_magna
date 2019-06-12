@@ -43,6 +43,7 @@ import signal
 import xml.etree.ElementTree
 import pandas as pd
 import rospkg
+import json
 from uav_abstraction_layer.srv import *
 from geometry_msgs.msg import *
 from std_srvs.srv import *
@@ -58,10 +59,10 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "Empty",                    # Type of the world or sceneario created
-        'subworld'           :                   "Empty",
-        'mission'            :                   "safety",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "pruebas",
+        'world'              :                   "Safedrone",                    # Type of the world or sceneario created
+        'subworld'           :                   "Polygons2Sweep",
+        'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "2UAV_Sweep_wMission",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      400,                      # Bunch of simulations developed in the defined dataset
@@ -69,9 +70,8 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         }
-
 
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
         self.rviz_gui = True
@@ -79,7 +79,7 @@ class Master(object):
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
         # Flag to save simulation data if active. The user will be asked to deactive
-        self.hyperparameters["save_flag"] = False
+        self.hyperparameters["save_flag"] = True
         self.hyperparameters["rosbag_flag"] = False
 
         # Function to check if current dataset is already created and ask the user what to do in each case
@@ -132,6 +132,29 @@ class Master(object):
 
     # Launching GAZEBO client and server
     def GazeboLauncher(self):
+
+        world_config_path = "{0}/Code/JSONs/Worlds/{1}/{2}.json"\
+                            .format(self.hyperparameters["home_path"],
+                            self.hyperparameters["world"],self.hyperparameters["subworld"])
+        
+        with open(world_config_path) as f:
+            world_config = json.load(f)
+
+        if "origin_geo" in world_config["scenario"].keys():
+            origin_geo = world_config["scenario"]["origin_geo"]
+
+        else:
+            origin_geo = [37.558542, -5.931074, 7.89]
+
+        gazebo_spawn_launch_path = "{0}/Code/launch/gazebo_spawner_JA.launch".format(self.hyperparameters["home_path"])
+
+        et = xml.etree.ElementTree.parse(gazebo_spawn_launch_path)
+        root = et.getroot()
+
+        root[1][1][0].text = str(origin_geo)
+
+        et.write(gazebo_spawn_launch_path)
+
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
         self.Gazebo_launch = roslaunch.parent.ROSLaunchParent(uuid,[\

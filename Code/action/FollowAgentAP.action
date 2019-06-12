@@ -1,7 +1,7 @@
 # Define the goal
 int8 target_ID
 float32[] pos
-int64 time
+int64 duration
 --- 
 # Define the result
 string output

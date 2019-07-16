@@ -67,14 +67,15 @@ class Worlds(object):
 
         print "creating world",ID
 
+        rospy.init_node('world', anonymous=True)     # Start node
+
         self.world_def = self.ReadJSON("{0}/Code/JSONs/Worlds/{1}/{2}.json"\
                             .format(self.home_path,self.world_name,self.subworld_name))
 
         self.hyperparameters["world_boundaries"] = self.world_def["scenario"]["world_boundaries"]
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
 
-        self.scenario_def = self.world_def["scenario"]
-
+        
 
         # Initialization of lists
         self.n_obs = 0
@@ -86,12 +87,46 @@ class Worlds(object):
 
         self.volumes = {}
 
-        self.addVolumes(self.scenario_def["volumes"])
+        self.scenario_def = self.world_def["scenario"]
+        # self.addVolumes(self.scenario_def["volumes"])
+
+        # self.hyperparameters["N_obs"] = len(self.obs_pose_list)
+        # self.hyperparameters["obs_shape"] = []
+        # self.hyperparameters["obs_pose_list"] = self.obs_pose_list
+        # rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
+
+    # Function to start subscribing and offering
+    def Listener(self):
+
+        # Start service for Agents to actualize its state
+        rospy.Service('/magna/Worlds/add', WordlAdd, self.handle_add)
+        rospy.Service('/magna/Worlds/get_fspset', WordlGetFSPset, self.handle_get_fspset)
+
+    def handle_add(self,data):
+
+        world_part_definition = self.ReadJSON(json.loads(data.world_part_definition))
+
+        print(world_part_definition)
+
+        self.addVolumes(world_part_definition)
 
         self.hyperparameters["N_obs"] = len(self.obs_pose_list)
         self.hyperparameters["obs_shape"] = []
         self.hyperparameters["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
+
+        response = WordlAddResponse()
+
+        return True
+
+
+    def handle_get_fspset(self, data):
+
+        response = WordlGetFSPsetResponse()
+        response.fspset = self.getFSPoseGlobal(data.fspset_path)
+
+        return response
+
 
     def addVolumes(self,volumes_def_list):
 
@@ -1602,4 +1637,8 @@ class DynamicTfBroadcaster(object):
 
         return self.global_pose
 
+def main():
+    Worlds(1)
 
+if __name__ == '__main__':
+    main()

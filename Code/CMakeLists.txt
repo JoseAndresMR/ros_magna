@@ -68,6 +68,8 @@ add_service_files(
    DieCommand.srv
    AlgorithmControl.srv
    GyalCommand.srv
+   WorldGetFSPset.srv
+   WorldAdd.srv
 #   Service1.srv
 #   Service2.srv
  )

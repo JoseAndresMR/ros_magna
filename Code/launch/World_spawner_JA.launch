@@ -1,0 +1,8 @@
+<launch>
+    <node name="world" output="screen" pkg="magna" type="Worlds.py" />
+    
+    <group if="true">
+        <node args="-d $(find magna)/rviz/Safedrone.rviz" name="rviz" pkg="rviz" type="rviz" />
+    </group>
+
+</launch>

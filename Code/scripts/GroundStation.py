@@ -120,7 +120,9 @@ class GroundStation(object):
 
         for i in range(self.N_agents):     # Do it for every Agent
             # first_pose = agent_goal_path[0]       # Select first waypoint. It will determinate where it spawns
-            first_pose = self.world.getFSPoseGlobal(initial_poses[i])
+            # first_pose = self.world.getFSPoseGlobal(initial_poses[i])
+            first_pose = self.world_getfspset_client(initial_poses[i])
+            print(first_pose)
             if len(initial_poses[i]) > 4:
                 yaw = initial_poses[i][4]
 
@@ -145,11 +147,28 @@ class GroundStation(object):
 
         return "completed"
 
-    def CreateWorld(self):
+    def SpawnWorld(self):
 
         # Local parameters inizialization
-        self.world = Worlds(1)      # Create a World of id 1
+        # self.world = Worlds(1)      # Create a World of id 1
         self.GetHyperparameters()       # Get ROS param of definitions
+
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+
+        launch_path = "{0}/Code/launch/World_spawner_JA.launch".format(self.hyperparameters['home_path'])
+
+        et = xml.etree.ElementTree.parse(launch_path)
+        root = et.getroot()
+        if self.rviz_gui == True:
+            root[1].attrib["if"] = "true"
+            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+        else:
+            root[1].attrib["if"] = "false"
+        et.write(launch_path)
+
+        world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        world_spawner_launch.start()
 
         return "completed"
 
@@ -310,7 +329,8 @@ class GroundStation(object):
         response = latency_pub.publish(latency_msg)
         time.sleep(1)
 
-        return [self.world.getFSPoseGlobal(path_def)]
+        # return [self.world.getFSPoseGlobal(path_def)]
+        return [self.world_getfspset_client(path_def)]
 
     def wait(self,exit_type,duration=1):
         if exit_type == "time":
@@ -538,6 +558,22 @@ class GroundStation(object):
 
         return
 
+    def world_getfspset_client(self,fspset_path):
+
+        req = WorldGetFSPsetRequest()
+        req.fspset_path = fspset_path
+        
+        rospy.wait_for_service("/magna/Worlds/get_fspset")
+        try:
+            ual_set_velocity = rospy.ServiceProxy("/magna/Worlds/get_fspset", WorldGetFSPse)
+            response = ual_set_velocity(req)
+
+            return response.fspset
+            
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in take_off"
+
     # Functions to save every TF information inside ROS bag
     def tf_static_callback(self,data):
         try:
@@ -576,6 +612,7 @@ class GroundStation(object):
         self.smach_view = self.hyperparameters['smach_view']
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
         self.rosbag_flag = self.hyperparameters['rosbag_flag']
+        self.rviz_gui = self.hyperparameters['rviz_gui']
 
 def main():
     GroundStation()

@@ -232,7 +232,7 @@ class GroundStation_SM(object):
     @cb_interface(outcomes=['completed','failed'])
     def new_world_stcb(self,heritage):
         
-        outcome = heritage.CreateWorld()
+        outcome = heritage.SpawnWorld()
 
         return outcome
 

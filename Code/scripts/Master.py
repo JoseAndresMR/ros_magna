@@ -71,10 +71,10 @@ class Master(object):
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
         'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
+        'rviz_gui'           :                     True,
         }
         # 00.00022
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
-        self.rviz_gui = True
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
@@ -170,14 +170,14 @@ class Master(object):
 
         launch_path = "{0}/Code/launch/GS_spawner_JA.launch".format(self.hyperparameters['home_path'])
 
-        et = xml.etree.ElementTree.parse(launch_path)
-        root = et.getroot()
-        if self.rviz_gui == True:
-            root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
-        else:
-            root[1].attrib["if"] = "false"
-        et.write(launch_path)
+        # et = xml.etree.ElementTree.parse(launch_path)
+        # root = et.getroot()
+        # if self.rviz_gui == True:
+        #     root[1].attrib["if"] = "true"
+        #     root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+        # else:
+        #     root[1].attrib["if"] = "false"
+        # et.write(launch_path)
 
         self.GS_launch = roslaunch.parent.ROSLaunchParent(uuid1,[launch_path])
         self.GS_launch.start()

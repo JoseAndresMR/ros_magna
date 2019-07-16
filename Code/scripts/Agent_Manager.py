@@ -367,6 +367,8 @@ class Agent_Manager(object):
 
     def SetMissionCommand(self,setmission_msg,blocking):
 
+        time.sleep(10*(self.ID-1))
+
         rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['set_mission'])
         try:
             ual_setmission = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['set_mission'], SetMission)

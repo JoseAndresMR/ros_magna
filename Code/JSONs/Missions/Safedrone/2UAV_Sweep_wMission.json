@@ -91,7 +91,7 @@
                     "parameters": {
                         "path": [
                             {
-                                "definition":["ManualPolygon","ManualPolygon1","path","Zigzag"]
+                                "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
                             }
                         ]
                     },
@@ -113,7 +113,7 @@
                     "parameters": {
                         "path": [
                             {
-                                "definition":["ManualPolygon","ManualPolygon2","path","Zigzag"]
+                                "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
                             }
                         ]
                     },

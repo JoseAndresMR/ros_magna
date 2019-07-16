@@ -7,6 +7,11 @@
                 "name": "JSON",
                 "world": "Safedrone",
                 "subworld": "ManualPolygon"
+            },
+            {
+                "name": "JSON",
+                "world": "Safedrone",
+                "subworld": "volumes_from_unifly"
             }
         ]
     }

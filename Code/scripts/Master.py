@@ -62,17 +62,17 @@ class Master(object):
         'world'              :                   "Safedrone",                    # Type of the world or sceneario created
         'subworld'           :                   "Polygons2Sweep",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "2UAV_Sweep_wMission",
+        'submission'         :                   "3UAV_Sweep_wMission",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_iter'             :                      400,                      # Bunch of simulations developed in the defined dataset
+        'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'algorithms_list'    :                    ["orca3"],
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
         }
-
+        # 00.00022
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization
         self.rviz_gui = True
 

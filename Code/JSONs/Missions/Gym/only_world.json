@@ -1,0 +1,33 @@
+{
+    "Agents_Config": [
+        {
+            "ID":1,
+            "model":"iris",
+            "mode": "sitl",
+            "marker_color": [255,0,0,0.5],
+            "ual_use": true,
+            "agent_manager_on_gs": true
+        }
+    ],
+    "State_Machine": [
+        {
+            "type": "CBState",
+            "state_type":"new_world",
+            "name": "new world",
+            "outcomes": {
+                "completed": "world_created_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "world_created_wait",
+            "parameters": {
+                "exit_type": "button"
+            },
+            "outcomes": {
+                "completed": "completed"
+            }
+        }
+    ]
+}

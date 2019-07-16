@@ -1,5 +1,5 @@
 {
-    "UAVs_Config": [
+    "Agents_Config": [
         {
             "ID":1,
             "model":"plane",

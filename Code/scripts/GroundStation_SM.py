@@ -69,14 +69,15 @@ class GroundStation_SM(object):
 
         if mission_part_def["type"] == "CBState":
             
-            cb_kwargs = {'heritage' : heritage}
+            cb_kwargs = {'heritage' : heritage, "parameters" : {}}
+
+            if "parameters" in mission_part_def.keys():
+                # cb_kwargs.update(mission_part_def["parameters"])
+                cb_kwargs["parameters"] = mission_part_def["parameters"]
 
             if "ids_var" in mission_part_def.keys():
                 mission_part_def = self.IdsExtractor(mission_part_def,heritage)
-                cb_kwargs.update({"agents_list":mission_part_def["ids"]})
-
-            if "parameters" in mission_part_def.keys():
-                cb_kwargs.update(mission_part_def["parameters"])
+                cb_kwargs["parameters"].update({"agents_list":mission_part_def["ids"]})
 
             sm.add(mission_part_def["name"],
                              CBState(self.CBStateCBDic[mission_part_def["state_type"]],
@@ -108,7 +109,7 @@ class GroundStation_SM(object):
                                             output_keys=['id','n_wp'],
                                             goal_cb_kwargs={"params" : self.params},
                                             result_cb_kwargs={"heritage":heritage},
-                                            outcomes=['succeeded','collision','low_battery','GS_critical_event']),
+                                            outcomes=['succeeded','collision','low_battery','GS_critical_event','utm_new_flightplan']),
                         mission_part_def["outcomes"])
 
 
@@ -230,46 +231,49 @@ class GroundStation_SM(object):
 
     # State callback to create a new world
     @cb_interface(outcomes=['completed','failed'])
-    def new_world_stcb(self,heritage):
+    def world_config_stcb(self,heritage,parameters = {}):
         
-        outcome = heritage.SpawnWorld()
+        outcome = heritage.worldConfig(parameters)
 
         return outcome
 
     # State callback to wait one second. In future will fuse with next callback
     @cb_interface(outcomes=['completed','failed'])
-    def wait_stcb(self,heritage,exit_type,duration = 0):
+    def wait_stcb(self,heritage,parameters = {}):
 
-        outcome = heritage.wait(exit_type,duration)
+        parameters.setdefault("duration", 0)
 
-        return outcome
-
-    @cb_interface(outcomes=['completed','failed'])
-    def save_csv_stcb(self,heritage,agents_list):
-
-        # outcome = heritage.SaveCSVCommand(agents_list)
-        outcome = heritage.sendNotificationsToAgents(agents_list,"save_csv")
+        outcome = heritage.wait(parameters["exit_type"],parameters["duration"])
 
         return outcome
 
     @cb_interface(outcomes=['completed','failed'])
-    def algorithm_control_stcb(self,heritage,agents_list,name,action = "delete", params = [], values = []):
+    def save_csv_stcb(self,heritage,parameters = {}):
 
-        outcome = heritage.AlgorithmControlCommand(agents_list,name,action, params, values)
+        outcome = heritage.sendNotificationsToAgents(parameters["agents_list"],"save_csv")
+
+        return outcome
+
+    @cb_interface(outcomes=['completed','failed'])
+    def algorithm_control_stcb(self,heritage,parameters = {}):
+
+        parameters.setdefault("action", "delete"), parameters.setdefault("params", []), parameters.setdefault("values", [])
+
+        outcome = heritage.AlgorithmControlCommand(parameters["agents_list"],parameters["name"], parameters["action"],parameters["params"], parameters["values"])
 
         return outcome
 
     # State callback to spawn Agents
     @cb_interface(outcomes=['completed','failed'])
-    def spawn_agents_stcb(self,heritage,initial_poses):
+    def spawn_agents_stcb(self,heritage,parameters = {}):
 
-        outcome = heritage.SpawnAgents(initial_poses)
+        outcome = heritage.SpawnAgents(parameters["initial_poses"])
 
         return outcome
 
     def DictionarizeCBStateCallbacks(self):
         self.CBStateCBDic = {}
-        self.CBStateCBDic["new_world"] = self.new_world_stcb
+        self.CBStateCBDic["world_config"] = self.world_config_stcb
         self.CBStateCBDic["spawn_agents"] = self.spawn_agents_stcb
         self.CBStateCBDic["wait"] = self.wait_stcb
         self.CBStateCBDic["save_csv"] = self.save_csv_stcb
@@ -326,10 +330,17 @@ class GroundStation_SM(object):
     # Goal callback for follow path service
     def follow_path_goal_cb(self, ud, goal, params):
 
+        
         goal.goal_path_poses_list = np.array([])
-        for path_part in params["path"]:
-            goal.goal_path_poses_list = np.append(goal.goal_path_poses_list,
-                                                np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
+        if params["path"] == "from utm":
+
+            goal.goal_path_poses_list = np.array(params["heritage"].utm_flightplan_list[params["id"]-1])
+
+        else:
+            for path_part in params["path"]:
+                goal.goal_path_poses_list = np.append(goal.goal_path_poses_list,
+                                                        np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
+        
         goal.smooth_path_mode = 0
         if "smooth_path_mode" in params.keys():
             goal.smooth_path_mode = params["smooth_path_mode"]
@@ -429,7 +440,6 @@ class GroundStation_SM(object):
     #### CONCURRENCE OUTCOMES CALLBACKS ####
 
     def preempt_all_at_one_collision_child_termination_cb(self,actual_outcomes_map):
-        # print(actual_outcomes_map)
 
         for outcome in actual_outcomes_map.values():
             if outcome == "collision":

@@ -98,8 +98,10 @@ class GroundStation(object):
         rospy.init_node('ground_station', anonymous=True)     # Start node
 
         self.agent_models = []
+        self.utm_flightplan_list = []
         for N_agents in self.mission_def["Agents_Config"]:
             self.agent_models.append(N_agents["model"])
+            self.utm_flightplan_list.append([])
 
         self.hyperparameters["agent_models"] = self.agent_models
         
@@ -121,8 +123,8 @@ class GroundStation(object):
         for i in range(self.N_agents):     # Do it for every Agent
             # first_pose = agent_goal_path[0]       # Select first waypoint. It will determinate where it spawns
             # first_pose = self.world.getFSPoseGlobal(initial_poses[i])
-            first_pose = self.world_getfspset_client(initial_poses[i])
-            print(first_pose)
+            first_pose = self.worldGetFSPset(initial_poses[i])[0]
+
             if len(initial_poses[i]) > 4:
                 yaw = initial_poses[i][4]
 
@@ -144,31 +146,6 @@ class GroundStation(object):
             print("Ground Station: agent {} is ready!".format(i))
             # time.sleep(5)
         # time.sleep(20 * heritage.N_agents)
-
-        return "completed"
-
-    def SpawnWorld(self):
-
-        # Local parameters inizialization
-        # self.world = Worlds(1)      # Create a World of id 1
-        self.GetHyperparameters()       # Get ROS param of definitions
-
-        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-        roslaunch.configure_logging(uuid)
-
-        launch_path = "{0}/Code/launch/World_spawner_JA.launch".format(self.hyperparameters['home_path'])
-
-        et = xml.etree.ElementTree.parse(launch_path)
-        root = et.getroot()
-        if self.rviz_gui == True:
-            root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
-        else:
-            root[1].attrib["if"] = "false"
-        et.write(launch_path)
-
-        world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
-        world_spawner_launch.start()
 
         return "completed"
 
@@ -292,6 +269,83 @@ class GroundStation(object):
         self.agent_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
         self.agent_spawner_launch.start()
 
+
+    def worldConfig(self, parameters):
+
+        if parameters["action"] == "spawn":
+
+            self.worldSpawn(parameters["id"])
+
+        elif parameters["action"] == "add":
+
+            self.worldAdd(parameters["world_part_def"])
+
+        return "completed"
+
+    def worldSpawn(self, id):
+
+        # Local parameters inizialization
+        # self.world = Worlds(1)      # Create a World of id 1
+        self.GetHyperparameters()       # Get ROS param of definitions
+
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+
+        launch_path = "{0}/Code/launch/World_spawner_JA.launch".format(self.hyperparameters['home_path'])
+
+        et = xml.etree.ElementTree.parse(launch_path)
+        root = et.getroot()
+        if self.rviz_gui == True:
+            root[1].attrib["if"] = "true"
+            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+        else:
+            root[1].attrib["if"] = "false"
+        et.write(launch_path)
+
+        world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        world_spawner_launch.start()
+
+        time.sleep(2)
+
+
+    def worldAdd(self, world_part_definition):
+
+        if world_part_definition == "from_hyperparameters":
+            world_part_definition = [{ "name" : "JSON", "world" : self.world_name, "subworld" : self.subworld_name}]
+
+        req = WorldAddRequest()
+        req.world_part_definition = json.dumps(world_part_definition)
+
+        rospy.wait_for_service("/magna/Worlds/add")
+        try:
+            world_add_client = rospy.ServiceProxy("/magna/Worlds/add", WorldAdd)
+            response = world_add_client(req)
+
+            return response.success
+            
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in take_off"  
+
+
+    def worldGetFSPset(self,fspset_path):
+
+        req = WorldGetFSPsetRequest()
+        req.fspset_path = json.dumps(fspset_path)
+        
+        rospy.wait_for_service("/magna/Worlds/get_fspset")
+        try:
+            world_get_fspset_client = rospy.ServiceProxy("/magna/Worlds/get_fspset", WorldGetFSPset)
+            print(req)
+            response = world_get_fspset_client(req)
+
+            return response.fspset
+            
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in take_off"
+
+
     # Function to create folders and file to store simulations data
     def CreatingSimulationDataStorage(self):
 
@@ -330,7 +384,7 @@ class GroundStation(object):
         time.sleep(1)
 
         # return [self.world.getFSPoseGlobal(path_def)]
-        return [self.world_getfspset_client(path_def)]
+        return [self.worldGetFSPset(path_def)]
 
     def wait(self,exit_type,duration=1):
         if exit_type == "time":
@@ -415,9 +469,9 @@ class GroundStation(object):
 
         if type(agents_list) == int:
             agents_list = [agents_list]
-        print(agents_list)
+
         for agent in agents_list:
-            print('/magna/GS_Agent_{}/algorithm_control'.format(agent))
+
             rospy.wait_for_service('/magna/GS_Agent_{}/algorithm_control'.format(agent))
             try:
                 instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/algorithm_control'.format(agent), AlgorithmControl)
@@ -446,7 +500,7 @@ class GroundStation(object):
             rospy.wait_for_service('/magna/GS_Agent_{}/notification'.format(agent))
             try:
                 instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/notification'.format(agent), InstructionCommand)
-                instruction_command(msg)
+                response = instruction_command(msg)
 
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
@@ -462,6 +516,7 @@ class GroundStation(object):
         # Start service for Agents to actualize its state
         rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_agent_status)
         rospy.Service('/magna/gyal_GS/command', GyalCommand, self.handle_gyal_command)
+        rospy.Service('/magna/utm/notification', UTMnotification, self.utm_notification_command)
 
         # Start listening to topics stored on rosbag
         if self.rosbag_flag:
@@ -541,6 +596,17 @@ class GroundStation(object):
             if req.action == "set":
                 pass
 
+
+    def utm_notification_command(self,req):
+
+        print(req)
+
+        if req.instruction == "new flightplan":
+
+            self.utm_flightplan_list[req.ids[0]-1] = req.goal_path_poses_list
+            self.sendNotificationsToAgents(req.ids,"utm_new_flightplan")
+
+
     def generic_action_client(self,agent_id,name,params):
 
         if len(name.split(" ")) > 1: name = "_".join(name.split(" "))
@@ -558,21 +624,6 @@ class GroundStation(object):
 
         return
 
-    def world_getfspset_client(self,fspset_path):
-
-        req = WorldGetFSPsetRequest()
-        req.fspset_path = fspset_path
-        
-        rospy.wait_for_service("/magna/Worlds/get_fspset")
-        try:
-            ual_set_velocity = rospy.ServiceProxy("/magna/Worlds/get_fspset", WorldGetFSPse)
-            response = ual_set_velocity(req)
-
-            return response.fspset
-            
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in take_off"
 
     # Functions to save every TF information inside ROS bag
     def tf_static_callback(self,data):

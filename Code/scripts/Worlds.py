@@ -55,6 +55,7 @@ from sympy import Point as Point2D
 from sympy import Polygon as Polygon2D
 import xml.etree.ElementTree
 
+from magna.srv import *
 
 # from Brain import *
 
@@ -88,25 +89,21 @@ class Worlds(object):
         self.volumes = {}
 
         self.scenario_def = self.world_def["scenario"]
-        # self.addVolumes(self.scenario_def["volumes"])
 
-        # self.hyperparameters["N_obs"] = len(self.obs_pose_list)
-        # self.hyperparameters["obs_shape"] = []
-        # self.hyperparameters["obs_pose_list"] = self.obs_pose_list
-        # rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
+        self.Listener()
+
+        rospy.spin()
 
     # Function to start subscribing and offering
     def Listener(self):
 
         # Start service for Agents to actualize its state
-        rospy.Service('/magna/Worlds/add', WordlAdd, self.handle_add)
-        rospy.Service('/magna/Worlds/get_fspset', WordlGetFSPset, self.handle_get_fspset)
+        rospy.Service('/magna/Worlds/add', WorldAdd, self.handle_add)
+        rospy.Service('/magna/Worlds/get_fspset', WorldGetFSPset, self.handle_get_fspset)
 
     def handle_add(self,data):
 
-        world_part_definition = self.ReadJSON(json.loads(data.world_part_definition))
-
-        print(world_part_definition)
+        world_part_definition = json.loads(data.world_part_definition)
 
         self.addVolumes(world_part_definition)
 
@@ -115,16 +112,18 @@ class Worlds(object):
         self.hyperparameters["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
 
-        response = WordlAddResponse()
+        response = WorldAddResponse()
 
         return True
 
 
     def handle_get_fspset(self, data):
 
-        response = WordlGetFSPsetResponse()
-        response.fspset = self.getFSPoseGlobal(data.fspset_path)
+        fspset_path = json.loads(data.fspset_path)
 
+        response = WorldGetFSPsetResponse()
+        response.fspset = self.getFSPoseGlobal(fspset_path)
+        
         return response
 
 
@@ -217,7 +216,7 @@ class Volume(object):
 
         self.fsp_list.append(FreeSpacePose(str(len(self.fsp_list)+1),self.PoseFromArray(coordinates),self.name,self.prefix,self.transforms_list).global_pose)
 
-        return self.fsp_list[-1]
+        return [self.fsp_list[-1]]
 
                 
     def getTransforms(self):
@@ -328,11 +327,15 @@ class GenericGeometry:
 
     def getObstacles(self,indexes):
 
+        indexes = [int(x) for x in indexes]
+
         return self.obstacles[indexes[0]][indexes[1]][indexes[2]]
 
     def getFSPGlobalPosefromMatrix(self,indexes):
 
-        return self.fsp_dicc["Matrix"][indexes[0]][indexes[1]][indexes[2]].global_pose
+        indexes = [int(x) for x in indexes]
+
+        return [self.fsp_dicc["Matrix"][indexes[0]][indexes[1]][indexes[2]].global_pose]
 
     # def getFSPGlobalPosefromList(self):
 

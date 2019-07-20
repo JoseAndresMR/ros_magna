@@ -70,6 +70,7 @@ add_service_files(
    GyalCommand.srv
    WorldGetFSPset.srv
    WorldAdd.srv
+   UTMnotification.srv
 #   Service1.srv
 #   Service2.srv
  )

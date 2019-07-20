@@ -1,3 +1,4 @@
-string[] fspset_path
+string fspset_path
+
 ---
-geometry_msgs/PoseStamped[] fspset
+geometry_msgs/Pose[] fspset

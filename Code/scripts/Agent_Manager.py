@@ -179,7 +179,7 @@ class Agent_Manager(object):
         # Function to deal with a preemption command from Ground Station
     def handle_GS_notification_command(self,data):
 
-        if data.instruction == "critical_event":
+        if data.instruction == "critical_event" or data.instruction == "utm_new_flightplan" :
             self.GS_notification = data.instruction       # Set the variable
 
         elif data.instruction == "die":
@@ -807,7 +807,7 @@ class Agent_Manager(object):
             print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.GSStateActualization()
 
-        elif self.preemption_launched == False and  self.GS_notification == 'GS_critical_event':
+        elif self.preemption_launched == False and  ( self.GS_notification == 'GS_critical_event' or self.GS_notification == 'utm_new_flightplan' ):
             print(self.ID, "GROUND STATION CRITICAL EVENT!!!!!!!!!!!!!!!!!!")
             self.critical_event = self.GS_notification
 

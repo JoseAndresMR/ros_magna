@@ -62,7 +62,9 @@ class UTM(object):
 
         self.listener()
 
-        self.utmThread()
+        self.newFlightplanTest()
+
+        # self.utmThread()
 
         # a0 = np.array([-1, 1, 1])
         # a1 = np.array([-1, -1, 1])
@@ -296,6 +298,35 @@ class UTM(object):
 
         while not rospy.is_shutdown():
             time.sleep(1)
+
+    def newFlightplanTest(self):
+
+        selected = raw_input("Waiting for order")
+
+        ids = [1]
+        poses_list = [Pose(Point(10,10,4),Quaternion(0,0,0,1)),Pose(Point(10,20,4),Quaternion(0,0,0,1)),Pose(Point(20,20,4),Quaternion(0,0,0,1))]
+
+        self.sendNewFlightplanToGS(ids, poses_list)
+
+    
+    def sendNewFlightplanToGS(self, ids, poses_list):
+
+        req = UTMnotificationRequest()
+        req.instruction = "new flightplan"
+        req.ids = ids
+        req.goal_path_poses_list = poses_list
+
+        rospy.wait_for_service("/magna/utm/notification")
+        try:
+            notification_client = rospy.ServiceProxy("/magna/utm/notification", UTMnotification)
+            response = notification_client(req)
+
+            return response
+            
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            print "error in take_off"
+
 
     def DistanceBetweenPoints(self,pose_1,pose_2):
         Distance = math.sqrt((pose_1[0]-pose_2[0])**2+(pose_1[1]-pose_2[1])**2+(pose_1[2]-pose_2[2])**2)

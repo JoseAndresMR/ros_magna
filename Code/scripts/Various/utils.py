@@ -1,28 +1,65 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
-def temp_dir(id):
-    path = "/tmp/gauss_files"
-    if id:
-        path += "/id_" + str(id)
-    return path
+# ----------------------------------------------------------------------------------------------------------------------
+# ROS-MAGNA
+# ----------------------------------------------------------------------------------------------------------------------
+# The MIT License (MIT)
 
-def udp_config(id):
-    init_port = 14550 + 10*(id-1)
-    config = {}
-    config["gcs_url"] = "udp://:" + str(init_port+1) + "@127.0.0.1:" + str(init_port)
-    config["sim_port"] = init_port+2
-    config["u_port"] = [init_port+3, init_port+4]
-    config["o_port"] = [init_port+6, init_port+7]
-    return config
+# Copyright (c) 2016 GRVC University of Seville
 
-def check_unknown_args(unknown):
-    for arg in unknown:
-        if arg[0] == '-':
-            raise SyntaxWarning("Unexpected argument " + arg)
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-# def fcu_url(id, mode)
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+# OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# ----------------------------------------------------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    print "This is a utils collection, not a script!"
+"""
+Created on Jul 22 2019
+
+@author: josmilrom
+"""
+
+# import pyModeS as pms
+import numpy as np
+import rospy, time, tf, tf2_ros, math
+from copy import deepcopy
+from geometry_msgs.msg import *
+from sensor_msgs.msg import Image, BatteryState
+from std_msgs.msg import String
+from nav_msgs.msg import Path
+from uav_abstraction_layer.msg import State
+import json
+from magna.srv import *
+from magna.msg import *
+
+def serverClient(request, address, Type, print_request = False, print_response = False):
+
+    if print_request == True:
+        print(request)
+
+    rospy.wait_for_service(address)
+    try:
+        client = rospy.ServiceProxy(address, Type)
+
+        response = client(request)
+
+        if print_response == True:
+            print(response)
+
+        return response
+        
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
+        print "error in {}".format(address)

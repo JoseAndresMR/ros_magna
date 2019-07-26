@@ -5,7 +5,7 @@
             {
                 "name": "Ground_Station_1",
                 "prefix": "GS1",
-                "origin": [[-800,200.0,0.0],[0.0,0.0,0.0]],
+                "origin": [[-800,0.0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {

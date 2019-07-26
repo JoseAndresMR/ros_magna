@@ -1,4 +1,3 @@
-int8[] ids
 string instruction
 geometry_msgs/Pose[] goal_path_poses_list
 bool blocking

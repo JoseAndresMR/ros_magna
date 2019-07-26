@@ -56,12 +56,12 @@ from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
 from actionlib import SimpleActionClient
 
-import utils
 from magna.srv import *
 from magna.msg import *
 
 from GroundStation_SM import GroundStation_SM
-from Worlds import *
+from Various import serverClient
+# from Worlds import *
 
 class GroundStation(object):
     def __init__(self):
@@ -316,34 +316,19 @@ class GroundStation(object):
         req = WorldAddRequest()
         req.world_part_definition = json.dumps(world_part_definition)
 
-        rospy.wait_for_service("/magna/Worlds/add")
-        try:
-            world_add_client = rospy.ServiceProxy("/magna/Worlds/add", WorldAdd)
-            response = world_add_client(req)
+        response = serverClient(req, "/magna/Worlds/add", WorldAdd)
 
-            return response.success
-            
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in take_off"  
+        return response
 
 
     def worldGetFSPset(self,fspset_path):
 
         req = WorldGetFSPsetRequest()
         req.fspset_path = json.dumps(fspset_path)
-        
-        rospy.wait_for_service("/magna/Worlds/get_fspset")
-        try:
-            world_get_fspset_client = rospy.ServiceProxy("/magna/Worlds/get_fspset", WorldGetFSPset)
-            print(req)
-            response = world_get_fspset_client(req)
 
-            return response.fspset
-            
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in take_off"
+        response = serverClient(req, "/magna/Worlds/get_fspset", WorldGetFSPset)
+
+        return response.fspset
 
 
     # Function to create folders and file to store simulations data
@@ -427,43 +412,21 @@ class GroundStation(object):
     # Function to close GAZEBO process
     def GazeboModelsKiller(self):
         for n_agent in np.arange(self.N_agents):
-            rospy.wait_for_service('gazebo/delete_model')
-            try:
-                del_model_prox = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
-                model_name = "{0}_{1}".format(self.agent_models[n_agent],n_agent+1)
-                del_model_prox(model_name)
-                time.sleep(0.1)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                print "error in delete_model agent"
+            model_name = "{0}_{1}".format(self.agent_models[n_agent],n_agent+1)
+
+            response = serverClient(model_name, 'gazebo/delete_model', DeleteModel)
+            time.sleep(0.1)
+
         return
+
 
     # Function to send termination instruction to each Agent
     def SimulationTerminationCommand(self):
-        rospy.wait_for_service('/magna/GS/simulation_termination')
-        try:
-            instruction_command = rospy.ServiceProxy('/magna/GS/simulation_termination', DieCommand)
-            instruction_command(True)
-            return
 
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in simulation_termination"
+        response = serverClient(True, '/magna/GS/simulation_termination', DieCommand)
 
-    # def SaveCSVCommand(self,agents_list):
-    #     if type(agents_list) == int:
-    #         agents_list = [agents_list]
-        
-    #     for agent in agents_list:
-    #         rospy.wait_for_service('/magna/GS_Agent_{}/save_csv'.format(agent))
-    #         try:
-    #             instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/save_csv'.format(agent), SaveCSV)
-    #             instruction_command(True)
-    #             return "completed"
+        return
 
-    #         except rospy.ServiceException, e:
-    #             print "Service call failed: %s"%e
-    #             print "error in simulation_termination"
 
     def AlgorithmControlCommand(self,agents_list,name,action,params,values):
 
@@ -472,14 +435,13 @@ class GroundStation(object):
 
         for agent in agents_list:
 
-            rospy.wait_for_service('/magna/GS_Agent_{}/algorithm_control'.format(agent))
-            try:
-                instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/algorithm_control'.format(agent), AlgorithmControl)
-                instruction_command(name,action,params,values)
+            request = AlgorithmControlRequest()
+            request.name = name
+            request.params = params
+            request.action = action
+            request.values = values
 
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                print "error in simulation_termination"
+            response = serverClient(request, '/magna/GS_Agent_{}/algorithm_control'.format(agent), AlgorithmControl)
 
         return "completed"
 
@@ -496,15 +458,9 @@ class GroundStation(object):
         for agent in agents_list:
 
             msg.instruction = message
+            print(agent,msg)
 
-            rospy.wait_for_service('/magna/GS_Agent_{}/notification'.format(agent))
-            try:
-                instruction_command = rospy.ServiceProxy('/magna/GS_Agent_{}/notification'.format(agent), InstructionCommand)
-                response = instruction_command(msg)
-
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                print "error in simulation_termination"
+            response = serverClient(msg, '/magna/GS_Agent_{}/notification'.format(agent), InstructionCommand)
 
         return "completed"
 
@@ -599,12 +555,16 @@ class GroundStation(object):
 
     def utm_notification_command(self,req):
 
-        print(req)
+        instruction = json.loads(req.instruction)
 
-        if req.instruction == "new flightplan":
+        if instruction["action"] == "new flightplan":
 
-            self.utm_flightplan_list[req.ids[0]-1] = req.goal_path_poses_list
-            self.sendNotificationsToAgents(req.ids,"utm_new_flightplan")
+            self.utm_flightplan_list[instruction["ids"][0]-1] = req.goal_path_poses_list
+            self.sendNotificationsToAgents(instruction["ids"],"utm_new_flightplan")
+
+        elif instruction["action"] == "new world part":
+
+            self.worldConfig(instruction["world_part_def"])
 
 
     def generic_action_client(self,agent_id,name,params):
@@ -638,18 +598,6 @@ class GroundStation(object):
         except:
             print "The bag file does not exist"
 
-    # def path_callback(self,data,topic):
-    #     try:
-    #         self.bag.write(topic, data)
-    #     except:
-    #         print "The bag file does not exist"
-
-    # def visualization_marker_callback(self,data):
-    #     try:
-    #         self.bag.write('/visualization_marker', data)
-    #     except:
-    #         print "The bag file does not exist"
-            
 
     # Function to get Global ROS parameters
     def GetHyperparameters(self):

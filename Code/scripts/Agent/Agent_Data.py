@@ -33,7 +33,7 @@ Created on Mon Feb 21 2018
 
 # import pyModeS as pms
 import numpy as np
-import rospy, time, tf, tf2_ros
+import rospy, math, time, tf, tf2_ros
 from copy import deepcopy
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image, BatteryState
@@ -44,7 +44,8 @@ from magna.srv import *
 from magna.msg import *
 # from ADSB import ADSB
 from cv_bridge import CvBridge, CvBridgeError
-from Worlds import *
+
+from Worlds import RvizMarker
 
 class Agent_Data(object):
     def __init__(self,ID,main_agent,agent_config,ICAO = "40621D",with_ref = True,pos_ref = [0,0]):

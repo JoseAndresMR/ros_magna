@@ -1,0 +1,25 @@
+{
+    "scenario": {
+        "world_boundaries": [[-1900,1900],[-1900,1900],[-1900,1900]],
+        "volumes": [
+            {
+                "name": "Forest",
+                "prefix": "for",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "geofefsdf",
+                        "prefix": "xdrf",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,100.0],[0,0,0]],
+                        "dimensions": [1000,1000,200],
+                        "color": [255,0,0],
+                        "alpha": 0.5
+                    }
+                ]
+            }
+        ]
+    }
+}

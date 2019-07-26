@@ -60,11 +60,13 @@ from Agent_Config import Agent_Config
 from Agent_Manager_SM import Agent_Manager_SM
 # from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
 
-from FwQgc import FwQgc
+# from FwQgc import FwQgc
+
 class Agent_Manager(object):
 
     ### Initialiations ###
     def __init__(self,ID):
+
         self.ID = int(ID)
 
         self.GettingWorldDefinition()   # Global ROS parameters inizialization
@@ -94,11 +96,10 @@ class Agent_Manager(object):
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
 
-
-        if self.agent_models[self.ID-1] != "plane":
-            rospy.init_node('agent_{}'.format(self.ID), anonymous=True)        # Start the node
-        else:
-            self.fw_qgc = FwQgc(self.ID,ual_use = True)
+        # if self.agent_models[self.ID-1] != "plane":
+        rospy.init_node('agent_{}'.format(self.ID), anonymous=True)        # Start the node
+        # else:
+        #     self.fw_qgc = FwQgc(self.ID,ual_use = True)
             
         # Creation of a list within objects of Agent class. They deal with the information of every Agent in the simu.
         # Own ID is given for the object to know if is treating any other Agent or the one dedicated for this GroundStation
@@ -107,7 +108,7 @@ class Agent_Manager(object):
         for n_agent in range(1,self.N_agents+1):
             self.agents_config_list.append(Agent_Config(n_agent))
             self.agents_data_list.append(Agent_Data(n_agent,self.ID,self.agents_config_list[n_agent-1]))
-        
+
         # Publishers initialisation
         self.pose_pub = rospy.Publisher(self.agents_config_list[self.ID-1].top_pub_addr['go_to_waypoint'], PoseStamped, queue_size=1)
         self.velocity_pub= rospy.Publisher(self.agents_config_list[self.ID-1].top_pub_addr['set_velocity'], TwistStamped, queue_size=1)
@@ -180,6 +181,7 @@ class Agent_Manager(object):
     def handle_GS_notification_command(self,data):
 
         if data.instruction == "critical_event" or data.instruction == "utm_new_flightplan" :
+            print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG")
             self.GS_notification = data.instruction       # Set the variable
 
         elif data.instruction == "die":
@@ -229,19 +231,14 @@ class Agent_Manager(object):
     # Function to deal with UAL server Go To Way Point
     def GoToWPCommand(self,blocking,goal_WP_pose):
 
-        h = std_msgs.msg.Header()
-        # self.pose_pub.publish(PoseStamped(h,goal_WP_pose),blocking)
-        rospy.wait_for_service('/uav_{}/ual/go_to_waypoint'.format(self.ID))
-        try:
-            ual_set_velocity = rospy.ServiceProxy('/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
-            ual_set_velocity(PoseStamped(h,goal_WP_pose),True)
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in go_to_waypoint"
+        request = GoToWaypointRequest()
+        request.waypoint = PoseStamped(std_msgs.msg.Header(),goal_WP_pose)
+        request.blocking = True
+
+        response = serverClient(request, '/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
 
         while not rospy.is_shutdown() and self.DistanceToGoal() > 0.2:
-            print(self.DistanceToGoal())
+            # print(self.DistanceToGoal())
             time.sleep(0.1)
         time.sleep(0.5)
         return
@@ -294,15 +291,12 @@ class Agent_Manager(object):
             return self.TakeOffCommand_FW(heigth, blocking)
 
         time.sleep(3)
-        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['take_off'])
-        try:
-            ual_set_velocity = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['take_off'], TakeOff)
-            ual_set_velocity(heigth,blocking)
-            
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in take_off"
 
+        request = TakeOffResponse()
+        request.height = height
+        request.blocking = blocking
+
+        response = serverClient(request, self.agents_config_list[self.ID-1].ser_cli_addr['take_off'], TakeOff)
 
         while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state != ual_state_msg.FLYING_AUTO:
             time.sleep(0.1)
@@ -326,15 +320,8 @@ class Agent_Manager(object):
 
         if self.agent_models[self.ID-1] == "plane":
             return self.LandCommand_FW()
-            
-        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['land'])
-        try:
-            ual_land = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['land'], Land)
-            ual_land(blocking)
-            
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in land service"
+
+        response = serverClient(blocking, self.agents_config_list[self.ID-1].ser_cli_addr['land'], Land)
 
         while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
             time.sleep(0.1)
@@ -356,14 +343,8 @@ class Agent_Manager(object):
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
-        rospy.wait_for_service(self.agents_config_list[self.ID-1].ser_cli_addr['set_home'])
-        try:
-            ual_set_velocity = rospy.ServiceProxy(self.agents_config_list[self.ID-1].ser_cli_addr['set_home'], TakeOff)
-            ual_set_velocity()
-            return
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            print "error in set_home"
+
+        response = serverClient(True, self.agents_config_list[self.ID-1].ser_cli_addr['set_home'], TakeOff)
 
     def SetMissionCommand(self,setmission_msg,blocking):
 

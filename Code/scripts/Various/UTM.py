@@ -40,8 +40,11 @@ from sensor_msgs.msg import Image, BatteryState
 from std_msgs.msg import String
 from nav_msgs.msg import Path
 from uav_abstraction_layer.msg import State
+import json
+
 from magna.srv import *
 from magna.msg import *
+from Various import serverClient
 
 class UTM(object):
 
@@ -62,7 +65,9 @@ class UTM(object):
 
         self.listener()
 
-        self.newFlightplanTest()
+        # self.sendNewWorldPartTest()
+
+        self.sendNewFlightplanTest()
 
         # self.utmThread()
 
@@ -299,22 +304,42 @@ class UTM(object):
         while not rospy.is_shutdown():
             time.sleep(1)
 
-    def newFlightplanTest(self):
+    def sendNewFlightplanTest(self):
 
-        selected = raw_input("Waiting for order")
+        selected = raw_input("Press any button to create new fligthplan")
 
         ids = [1]
         poses_list = [Pose(Point(10,10,4),Quaternion(0,0,0,1)),Pose(Point(10,20,4),Quaternion(0,0,0,1)),Pose(Point(20,20,4),Quaternion(0,0,0,1))]
 
-        self.sendNewFlightplanToGS(ids, poses_list)
+        self.sendsendNewFlightplanToGS(ids, poses_list)
 
     
-    def sendNewFlightplanToGS(self, ids, poses_list):
+    def sendsendNewFlightplanToGS(self, ids, poses_list):
 
         req = UTMnotificationRequest()
-        req.instruction = "new flightplan"
-        req.ids = ids
+        req.instruction = json.dumps({"action" : "new flightplan", "ids" : ids })
         req.goal_path_poses_list = poses_list
+
+        response = serverClient(req, "/magna/utm/notification", UTMnotification)
+
+        return response
+
+    def sendNewWorldPartTest(self):
+
+        selected = raw_input("Press any button to create geofence")
+
+        world_part_definition = [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence2"}]
+
+        self.sendNewWorldPart(world_part_definition)
+
+
+    def sendNewWorldPart(self,world_part_def):
+
+        world_part_def = {"action" : "new world part", "world_part_def" : {"action" : "add", "world_part_def" : world_part_def}}
+
+        req = UTMnotificationRequest()
+        req.instruction = json.dumps(world_part_def)
+        req.goal_path_poses_list = []
 
         rospy.wait_for_service("/magna/utm/notification")
         try:
@@ -325,8 +350,7 @@ class UTM(object):
             
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-            print "error in take_off"
-
+            print "error in utm notification"
 
     def DistanceBetweenPoints(self,pose_1,pose_2):
         Distance = math.sqrt((pose_1[0]-pose_2[0])**2+(pose_1[1]-pose_2[1])**2+(pose_1[2]-pose_2[2])**2)

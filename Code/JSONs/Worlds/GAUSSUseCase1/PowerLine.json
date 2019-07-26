@@ -5,7 +5,7 @@
             {
                 "name": "Ground_Station_3",
                 "prefix": "GS3",
-                "origin": [[825.0,250.0,0.0],[0.0,0.0,0.0]],
+                "origin": [[825.0,200.0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -73,9 +73,9 @@
                 ]
             },
             {
-                "name": "PowerLine",
-                "prefix": "PL",
-                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "name": "PowerLine1",
+                "prefix": "PL1",
+                "origin": [[0.0,100.0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -83,8 +83,8 @@
                         "prefix": "L",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[0.0,250.0,30.0],[0,1.5707963,0]],
-                        "dimensions": [50,50,1600],
+                        "origin": [[-400.0,0.0,30.0],[0,1.5707963,0]],
+                        "dimensions": [50,50,800],
                         "color": [255,255,0],
                         "alpha": 0.1
                     },
@@ -93,7 +93,7 @@
                         "prefix": "base1",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[-800.0,250.0,15.0],[0,0,0]],
+                        "origin": [[-800.0,0.0,15.0],[0,0,0]],
                         "dimensions": [4.0,4.0,30.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -116,7 +116,7 @@
                         "prefix": "wir1",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[-600.0,250.0,25.0],[0,1.5707963,0]],
+                        "origin": [[-600.0,0.0,25.0],[0,1.5707963,0]],
                         "dimensions": [4.0,4.0,400.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -137,7 +137,7 @@
                         "prefix": "base2",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[-400.0,250.0,15.0],[0,0,0]],
+                        "origin": [[-400.0,0.0,15.0],[0,0,0]],
                         "dimensions": [4.0,4.0,30.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -160,7 +160,7 @@
                         "prefix": "wir2",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[-200.0,250.0,25.0],[0,1.5707963,0]],
+                        "origin": [[-200.0,0.0,25.0],[0,1.5707963,0]],
                         "dimensions": [4.0,4.0,400.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -175,14 +175,31 @@
                                 "poses_orientation": [0,0,0]
                             }
                         ]
+                    }
+                ]
+            },
+            {
+                "name": "PowerLine2",
+                "prefix": "PL2",
+                "origin": [[0.0,100.0,0.0],[0.0,0.0,0.30288486837]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[400.0,0.0,30.0],[0,1.5707963,0]],
+                        "dimensions": [50,50,800],
+                        "color": [255,255,0],
+                        "alpha": 0.1
                     },
-                    
                     {
                         "name": "Base3",
                         "prefix": "base3",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[0.0,250.0,15.0],[0,0,0]],
+                        "origin": [[0.0,0.0,15.0],[0,0,0]],
                         "dimensions": [4.0,4.0,30.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -205,7 +222,7 @@
                         "prefix": "wir3",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[200.0,250.0,25.0],[0,1.5707963,0]],
+                        "origin": [[200.0,0.0,25.0],[0,1.5707963,0]],
                         "dimensions": [4.0,4.0,400.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -215,7 +232,7 @@
                                 "use" : "obstacles",
                                 "coordinates": [[[0,1.5,0],[0,0,0]],[[0,-1.5,0],[0,0,0]]],
                                 "obstacles_shape": ["cylinder"],
-                                "obstacles_dimensions": [0.3, 0.3, 400],
+                                "obstacles_dimensions": [0.3, 0.3, 400.0],
                                 "set_orientation": [0,0,0],
                                 "poses_orientation": [0,0,0]
                             }
@@ -226,7 +243,7 @@
                         "prefix": "base4",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[400.0,250.0,15.0],[0,0,0]],
+                        "origin": [[400.0,0.0,15.0],[0,0,0]],
                         "dimensions": [4.0,4.0,30.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -249,7 +266,7 @@
                         "prefix": "wir4",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[600.0,250.0,25.0],[0,1.5707963,0]],
+                        "origin": [[600.0,0.0,25.0],[0,1.5707963,0]],
                         "dimensions": [4.0,4.0,400.0],
                         "color": [0,0,0],
                         "alpha": 0.2,
@@ -259,7 +276,7 @@
                                 "use" : "obstacles",
                                 "coordinates": [[[0,1.5,0],[0,0,0]],[[0,-1.5,0],[0,0,0]]],
                                 "obstacles_shape": ["cylinder"],
-                                "obstacles_dimensions": [0.3, 0.3, 400],
+                                "obstacles_dimensions": [0.3, 0.3, 400.0],
                                 "set_orientation": [0,0,0],
                                 "poses_orientation": [0,0,0]
                             }
@@ -270,7 +287,7 @@
                         "prefix": "base5",
                         "shape": "cylinder",
                         "id": 0,
-                        "origin": [[800.0,250.0,15.0],[0,0,0]],
+                        "origin": [[800.0,0.0,15.0],[0,0,0]],
                         "dimensions": [4.0,4.0,30.0],
                         "color": [0,0,0],
                         "alpha": 0.2,

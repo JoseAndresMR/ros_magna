@@ -13,7 +13,7 @@ from sensor_msgs.msg import *
 from std_srvs.srv import *
 from geographic_msgs.msg import GeoPoint
 
-from GeoLocalPose import GeoLocalPose
+from Various import GeoLocalPose
 
 class FwQgc(object):
     def __init__(self,robot_id = 1,ual_use = False, pose_frame_id = "", ns_prefix = "uav_",

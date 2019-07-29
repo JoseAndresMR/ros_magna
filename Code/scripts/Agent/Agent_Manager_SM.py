@@ -248,7 +248,6 @@ class Agent_Manager_SM(object):
 
     @cb_interface(outcomes=['completed','failed'])
     def take_off_stcb(self,heritage):
-
         outcome = heritage.TakeOffCommand(self.action_goal.height,True)     # Tell GS to take off
 
         return outcome

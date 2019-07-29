@@ -136,7 +136,7 @@ class GroundStation(object):
                                                             first_pose.orientation.w))[2]
             self.SetAgentSpawnFeatures(i+1,self.agent_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
             time.sleep(2)
-            self.AgentSpawner(i)      # Call service to spawn the Agent
+            self.AgentSpawner(i,self.agent_models[i])      # Call service to spawn the Agent
 
             # Wait until the Agent is in ready state
             while not rospy.is_shutdown() and self.states_list[i] != "waiting for action command":
@@ -177,7 +177,7 @@ class GroundStation(object):
         time.sleep(1)
 
     # Function to spawn each new Agent (GAZEBO model, UAL server and dedicated Ground Station)
-    def AgentSpawner(self,ID):
+    def AgentSpawner(self,ID, agent_model):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
@@ -241,6 +241,11 @@ class GroundStation(object):
 
 
         if config_def["autopilot"] == "px4":
+            if agent_model == "plane":
+                root[11][1][0][0][6].attrib["value"] = "mavros_fw"
+            else:
+                root[11][1][0][0][6].attrib["value"] = "mavros"
+
             root[11][1][0][0][7].text = str(origin_geo)
 
         elif config_def["autopilot"] == "dji":
@@ -565,6 +570,10 @@ class GroundStation(object):
         elif instruction["action"] == "new world part":
 
             self.worldConfig(instruction["world_part_def"])
+
+        response = UTMnotificationResponse()
+        response.success = True
+        return response
 
 
     def generic_action_client(self,agent_id,name,params):

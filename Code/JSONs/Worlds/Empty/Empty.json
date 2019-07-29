@@ -5,7 +5,7 @@
             {
                 "name": "Ground_Station",
                 "prefix": "GS",
-                "origin": [[0,0,0.0],[0.0,0.0,0.0]],
+                "origin": [[-400,0,0.0],[0.0,0.0,0.0]],
                 "permits": "geofence",
                 "geometries": [
                     {
@@ -16,7 +16,7 @@
                         "origin": [[0.0,0.0,1.5],[0,0,0]],
                         "dimensions": [3.0,3.0,3.0],
                         "color": [0,0,0],
-                        "alpha": 0.1
+                        "alpha": 0.5
                     },
                     {
                         "name": "Agents_take_off",

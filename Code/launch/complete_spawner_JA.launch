@@ -46,8 +46,8 @@
                     <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
                     <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
                     <param name="home_pose_parent_frame" value="map" />
-                    <param name="backend" value="mavros" />
-                    <rosparam param="map_origin_geo">[37.558542, -5.931074, 7.89]</rosparam>
+                    <param name="backend" value="mavros_fw" />
+                    <rosparam param="map_origin_geo">[38.009388, -3.371835, 7.89]</rosparam>
                 </node>
             </group>
             <group if="$(eval autopilot == 'dji')">

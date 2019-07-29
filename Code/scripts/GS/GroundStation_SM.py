@@ -283,6 +283,7 @@ class GroundStation_SM(object):
 
     # Goal callback for takeoff state service
     def take_off_goal_cb(self, ud, goal, params):
+
         goal.height = float(params["height"])     # Define takeoff height, in future will be received in ud or mission dictionary
         # time.sleep(3*ud.id)
         return goal

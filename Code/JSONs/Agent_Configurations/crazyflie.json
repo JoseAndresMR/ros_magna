@@ -2,5 +2,6 @@
     "autopilot" : "crazyflie",
     "ual_use": 1,
     "safety_radius": 0.2,
-    "max_speed": 2
+    "max_speed": 2,
+    "accepted_target_radius" : 0.05
 }

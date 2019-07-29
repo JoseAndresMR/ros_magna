@@ -58,6 +58,7 @@ from magna.srv import *
 from Agent_Data import Agent_Data
 from Agent_Config import Agent_Config
 from Agent_Manager_SM import Agent_Manager_SM
+from Various import serverClient
 # from uav_path_manager.srv import GeneratePath,GetGeneratedPath,GetGeneratedPathRequest
 
 # from FwQgc import FwQgc
@@ -91,15 +92,10 @@ class Agent_Manager(object):
 
         self.preemption_launched = False
 
-        self.accepted_target_radio = 0.9        # In the future, received on the world definition
-
         self.start=time.time()      # Counter to check elapsed time in the calculation of velocity each sintant
         self.last_saved_time = 0        # Counter to check elapsed time to save based on a frequency
 
-        # if self.agent_models[self.ID-1] != "plane":
         rospy.init_node('agent_{}'.format(self.ID), anonymous=True)        # Start the node
-        # else:
-        #     self.fw_qgc = FwQgc(self.ID,ual_use = True)
             
         # Creation of a list within objects of Agent class. They deal with the information of every Agent in the simu.
         # Own ID is given for the object to know if is treating any other Agent or the one dedicated for this GroundStation
@@ -108,6 +104,8 @@ class Agent_Manager(object):
         for n_agent in range(1,self.N_agents+1):
             self.agents_config_list.append(Agent_Config(n_agent))
             self.agents_data_list.append(Agent_Data(n_agent,self.ID,self.agents_config_list[n_agent-1]))
+
+        self.accepted_target_radius = self.agents_config_list[self.ID-1].accepted_target_radius
 
         # Publishers initialisation
         self.pose_pub = rospy.Publisher(self.agents_config_list[self.ID-1].top_pub_addr['go_to_waypoint'], PoseStamped, queue_size=1)
@@ -127,14 +125,10 @@ class Agent_Manager(object):
         self.nai.agents_data_list = self.agents_data_list
 
         # Wait time to let Gazebo's Real Time recover from model spawns
-        if self.agent_models[self.ID-1] != "plane":
-            while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
-                time.sleep(0.1)
-                # print(self.agents_data_list[self.ID-1].ual_state)
-        # time.sleep(10 * self.N_agents)
-        # time.sleep((self.ID-1) * 8)
-        if self.agent_models[self.ID-1] != "plane":
-            self.GroundStationListener()        # Start listening
+        while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
+            time.sleep(0.1)
+
+        self.GroundStationListener()        # Start listening
 
         print "Agent",ID,"ready and listening"
 
@@ -181,7 +175,6 @@ class Agent_Manager(object):
     def handle_GS_notification_command(self,data):
 
         if data.instruction == "critical_event" or data.instruction == "utm_new_flightplan" :
-            print("FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG")
             self.GS_notification = data.instruction       # Set the variable
 
         elif data.instruction == "die":
@@ -233,11 +226,11 @@ class Agent_Manager(object):
 
         request = GoToWaypointRequest()
         request.waypoint = PoseStamped(std_msgs.msg.Header(),goal_WP_pose)
-        request.blocking = True
+        request.blocking = blocking
 
         response = serverClient(request, '/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)
 
-        while not rospy.is_shutdown() and self.DistanceToGoal() > 0.2:
+        while not rospy.is_shutdown() and self.DistanceToGoal() > self.accepted_target_radius:
             # print(self.DistanceToGoal())
             time.sleep(0.1)
         time.sleep(0.5)
@@ -285,14 +278,12 @@ class Agent_Manager(object):
         return
 
     # Function to deal with UAL server Take Off
-    def TakeOffCommand(self,heigth, blocking):
-
-        if self.agent_models[self.ID-1] == "plane":
-            return self.TakeOffCommand_FW(heigth, blocking)
+    def TakeOffCommand(self,height, blocking):
 
         time.sleep(3)
 
-        request = TakeOffResponse()
+        request = TakeOffRequest()
+
         request.height = height
         request.blocking = blocking
 
@@ -307,19 +298,9 @@ class Agent_Manager(object):
 
         return "completed"
 
-    def TakeOffCommand_FW(self,heigth, blocking):
-
-        takeoff_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
-        takeoff_pose.position = Point(takeoff_pose.position.x,takeoff_pose.position.y,takeoff_pose.position.z + heigth)
-        self.fw_qgc.MoveCommand("takeoff",[takeoff_pose],0,{"type":"by_angle","height": 10.0,"distance":200})
-
-        return "completed"
 
     # Function to deal with UAL server Land
     def LandCommand(self,blocking):
-
-        if self.agent_models[self.ID-1] == "plane":
-            return self.LandCommand_FW()
 
         response = serverClient(blocking, self.agents_config_list[self.ID-1].ser_cli_addr['land'], Land)
 
@@ -332,14 +313,6 @@ class Agent_Manager(object):
 
         return "completed"
 
-    def LandCommand_FW(self, land_point = []):
-
-        # actual_position = self.agents_data_list[self.ID-1].position.pose.position
-        takeoff_pose = copy.deepcopy(self.agents_data_list[self.ID-1].position.pose)
-        land_pose = Pose(Point(0,0,0),Quaternion(0,0,0,1))
-        self.fw_qgc.MoveCommand("land",[land_pose],0,{"loiter_to_alt":{"type":"by_angle","height": 10.0,"distance":200}})
-
-        return "completed"
 
     # Function to deal with UAL server Set Home
     def SetHomeCommand(self):
@@ -459,9 +432,6 @@ class Agent_Manager(object):
         self.path_pub.publish(self.goal_path)
         self.changed_state = False
 
-        if self.agent_models[self.ID-1] == "plane":
-            return self.PathFollower_FW()
-
         self.nai.smooth_path_mode = self.smooth_path_mode
         self.agents_data_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
         if self.smooth_path_mode != 0:
@@ -473,7 +443,6 @@ class Agent_Manager(object):
             #     return
 
         self.agents_data_list[self.ID-1].own_path.poses = []
-
         # Control in every single component of the list
         for i in np.arange(len(self.goal_path_poses_list)):
 
@@ -487,21 +456,23 @@ class Agent_Manager(object):
             # Actualize state and send it to Ground Station
             self.state = "to WP {}".format(i+1)
             self.GSStateActualization()
-            
+
+            gtwp_cmd_sent = False
+
             # Control distance to goal
-            while not rospy.is_shutdown() and (self.DistanceToGoal() > self.accepted_target_radio) or (time.time()-start_time < action_time):
+            while not rospy.is_shutdown() and (self.DistanceToGoal() > self.accepted_target_radius) or (time.time()-start_time < action_time):
 
                 if on_mission and self.standby_flag == True:
                     time.sleep(2)
-
+                
                 elif self.preemption_launched == False and self.critical_event != 'nothing':
                     self.preemption_launched = True
                     return self.critical_event
 
                 else:
-                    if dynamic == "position":
-                        
-                        self.GoToWPCommand(False,self.goal["pose"])
+                    if dynamic == "position" and gtwp_cmd_sent == False:
+                        self.GoToWPCommand(True,self.goal["pose"])
+                        gtwp_cmd_sent = True
 
                     elif dynamic == "velocity":
                         
@@ -511,7 +482,9 @@ class Agent_Manager(object):
                         
                     time.sleep(0.2)
 
-            self.SetVelocityCommand(True)       # If far, ask nai to give the correct velocity
+            if self.agent_models[self.ID-1] != "plane":
+                self.SetVelocityCommand(True)       # If far, ask nai to give the correct velocity
+
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
 
             # Actualize state and send it to Ground Station
@@ -524,19 +497,6 @@ class Agent_Manager(object):
 
         return 'succeeded'
 
-    def PathFollower_FW(self):
-        # goal_list = []
-        # for i in np.arange(len(self.goal_path_poses_list)):
-            # goal_WP_pose = self.goal_path_poses_list[i].position
-
-            # goal_list.append([goal_WP_pose.x,goal_WP_pose.y,goal_WP_pose.z])
-
-            # goal_list = [[200.0,0.0,10.0],[0.0,0.0,5.0],[-200.0,0.0,10.0],[0.0,0.0,5.0],[200.0,0.0,10.0]]
-
-        self.fw_qgc.MoveCommand("pass",self.goal_path_poses_list,0)
-
-        return 'succeeded'
-
     # Function to model the target of role Agent Follower AD
     def AgentFollowerAtDistance(self,target_ID,distance,action_time, on_mission = True):
 
@@ -546,9 +506,6 @@ class Agent_Manager(object):
         # Tell the GS the identity of its new target
         self.state = "following Agent {0}".format(target_ID)
         self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
-
-        if self.agent_models[self.ID-1] == "plane":
-            return self.PathFollower_FW()
 
         action_start_time = rospy.Time.now()
 
@@ -669,7 +626,7 @@ class Agent_Manager(object):
                 self.goal["vel"] = self.agents_data_list[target_ID-1].velocity.twist
 
                 # Control distance to goal
-                if self.DistanceToGoal() > self.accepted_target_radio:
+                if self.DistanceToGoal() > self.accepted_target_radius:
                     self.SetVelocityCommand(False)      # If far, ask nai to give the correct velocity
 
                 else:
@@ -796,7 +753,7 @@ class Agent_Manager(object):
 
 
         # Check if time to target must be reset and save it anyways
-        if self.DistanceToGoal() < self.accepted_target_radio:
+        if self.DistanceToGoal() < self.accepted_target_radius:
             self.start_time_to_target = time.time()
         elapsed_time_to_target = time.time() - self.start_time_to_target
 

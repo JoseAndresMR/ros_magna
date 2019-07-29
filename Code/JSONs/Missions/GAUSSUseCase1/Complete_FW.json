@@ -2,7 +2,7 @@
     "Agents_Config": [
         {
             "ID":1,
-            "model":"iris",
+            "model":"plane",
             "mode": "sitl",
             "marker_color": [0,255,0,1],
             "ual_use": true,
@@ -73,6 +73,22 @@
                                   ["Ground_Station_5","Agents_take_off","matrix",[0,0,0],0]]
             },
             "outcomes": {
+                "completed": "algorithm_control"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"algorithm_control",
+            "name": "algorithm_control",
+            "ids": "all",
+            "ids_var" : "agent",
+            "parameters": {
+                "name": "orca3",
+                "action": "set",
+                "params": ["N_neighbors_aware"],
+                "values": [1]
+            },
+            "outcomes": {
                 "completed": "initial_wait"
             }
         },
@@ -96,10 +112,10 @@
                     "type": "SimpleActionState",
                     "state_type": "take_off",
                     "name": "take_off",
-                    "ids": "all",
+                    "ids": [1,3],
                     "ids_var": "agent",
                     "parameters": {
-                        "height": 3
+                        "height": 10
                     }
                 }
             ],
@@ -137,7 +153,8 @@
                                         "definition":["Forest","Inspection","path","Zigzag"]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "1_to_home",
@@ -160,7 +177,8 @@
                                         "definition":["Ground_Station_1","volume","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -180,10 +198,11 @@
                             "ids_var": "agent",
                             "parameters": {
                                 "path": "from utm",
-                                "smooth_path_mode": 0
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "1_to_home",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
@@ -205,6 +224,37 @@
                     "name": "inspection",
                     "ids": 2,
                     "occurrencies": [
+                        {
+                            "type": "CBState",
+                            "state_type":"wait",
+                            "name": "fire_wait",
+                            "parameters": {
+                                "exit_type": "time",
+                                "duration" : 100.0
+                            },
+                            "outcomes": {
+                                "completed": "2_take_off",
+                                "failed" : "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "take_off",
+                            "name": "take_off",
+                            "ids": 2,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "height": 10
+                            },
+                            "outcomes":{
+                                "succeeded": "2_to_corridor",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "utm_new_flightplan" : "2_UTM_new_flightplan_state",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        },
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
@@ -229,7 +279,8 @@
                                         "definition":["PowerLine1","Base1","coordinates",[[0.0,0.0,65],[0,0,0,1]]]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "2_to_home",
@@ -255,7 +306,8 @@
                                         "definition":["Ground_Station_3","above_take_off","matrix",[0,0,0]]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -275,10 +327,11 @@
                             "ids_var": "agent",
                             "parameters": {
                                 "path": "from utm",
-                                "smooth_path_mode": 0
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "2_to_home",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
@@ -308,9 +361,11 @@
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
-
                                     {
-                                        "definition":["Forest","volume","coordinates",[[-200.0,-250,60.0],[0,0,0,1]]]
+                                        "definition":["Forest","volume","coordinates",[[-350.0,-300,60.0],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Forest","volume","coordinates",[[350.0,-300,60.0],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["CropField","volume","coordinates",[[-300,0,70.0],[0,0,0,1]]]
@@ -319,7 +374,8 @@
                                         "definition":["CropField","Inspection","path","Zigzag"]
                                     }
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "3_to_home",
@@ -358,7 +414,8 @@
                                     }
 
                                 ],
-                                "smooth_path_mode": 2
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -378,10 +435,11 @@
                             "ids_var": "agent",
                             "parameters": {
                                 "path": "from utm",
-                                "smooth_path_mode": 0
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "3_to_home",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
@@ -489,7 +547,7 @@
             "name": "safety_wait",
             "parameters": {
                 "exit_type": "time",
-                "duration": 10
+                "duration": 10.0
             },
             "outcomes": {
                 "completed": "1_save_csv"

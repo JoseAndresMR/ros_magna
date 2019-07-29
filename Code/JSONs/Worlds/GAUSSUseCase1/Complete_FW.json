@@ -6,17 +6,17 @@
             {
                 "name": "JSON",
                 "world": "GAUSSUseCase1",
-                "subworld": "Complete_FW"
+                "subworld": "Forest"
             },
             {
                 "name": "JSON",
                 "world": "GAUSSUseCase1",
-                "subworld": "Event"
+                "subworld": "PowerLine"
             },
             {
                 "name": "JSON",
                 "world": "GAUSSUseCase1",
-                "subworld": "Aerogenerator"
+                "subworld": "CropField"
             }
         ]
     }

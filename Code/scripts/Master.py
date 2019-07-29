@@ -61,7 +61,7 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
         'world'              :                   "GAUSSUseCase1",                    # Type of the world or sceneario created
-        'subworld'           :                   "Complete",
+        'subworld'           :                   "Complete_FW",
         'mission'            :                   "GAUSSUseCase1",                    # Global mission that characterizes every Agent's role
         'submission'         :                   "Complete_FW",
         'n_dataset'          :                       1,                       # Number of the dataset to create

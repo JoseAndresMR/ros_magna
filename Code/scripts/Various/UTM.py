@@ -65,9 +65,14 @@ class UTM(object):
 
         self.listener()
 
-        # self.sendNewWorldPartTest()
-
-        self.sendNewFlightplanTest()
+        self.sendNewFlightplanTest(0)
+        self.sendNewWorldPartTest(0)
+        self.sendNewFlightplanTest(2)
+        self.sendNewFlightplanTest(1)
+        self.sendNewWorldPartTest(1)
+        self.sendNewFlightplanTest(3)
+        self.sendNewFlightplanTest(4)
+        self.sendNewFlightplanTest(5)
 
         # self.utmThread()
 
@@ -304,12 +309,34 @@ class UTM(object):
         while not rospy.is_shutdown():
             time.sleep(1)
 
-    def sendNewFlightplanTest(self):
+    def sendNewFlightplanTest(self,number = 0):
 
         selected = raw_input("Press any button to create new fligthplan")
 
-        ids = [1]
-        poses_list = [Pose(Point(10,10,4),Quaternion(0,0,0,1)),Pose(Point(10,20,4),Quaternion(0,0,0,1)),Pose(Point(20,20,4),Quaternion(0,0,0,1))]
+        if number == 0:
+            ids = [1]
+
+            poses_list = [Pose(Point(-150.0,250.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(150.0,250.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(150.0,-50.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(-150.0,-50.0, 117.5),Quaternion(0,0,0,1))]
+
+        if number == 2:
+            ids = [2]
+
+            poses_list = [Pose(Point(200,300,100),Quaternion(0,0,0,1)), Pose(Point(0,350,100),Quaternion(0,0,0,1)), Pose(Point(-200,300,100),Quaternion(0,0,0,1))]
+
+        if number == 3:
+            ids = [2]
+
+            poses_list = [Pose(Point(550,0,100),Quaternion(0,0,0,1))]
+
+        if number == 4:
+            ids = [2]
+
+            poses_list = [Pose(Point(550,550,100),Quaternion(0,0,0,1)), Pose(Point(650,300,100),Quaternion(0,0,0,1))]
+
+        if number == 5:
+            ids = [2]
+
+            poses_list = [Pose(Point(770,300,100),Quaternion(0,0,0,1))]
 
         self.sendsendNewFlightplanToGS(ids, poses_list)
 
@@ -324,13 +351,15 @@ class UTM(object):
 
         return response
 
-    def sendNewWorldPartTest(self):
+    def sendNewWorldPartTest(self, number = 0):
 
         selected = raw_input("Press any button to create geofence")
 
-        world_part_definition = [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence2"}]
+        world_part_definitions = []
+        world_part_definitions.append( [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence1"}])
+        world_part_definitions.append( [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence2"}])
 
-        self.sendNewWorldPart(world_part_definition)
+        self.sendNewWorldPart(world_part_definitions[number])
 
 
     def sendNewWorldPart(self,world_part_def):

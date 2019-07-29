@@ -65,6 +65,7 @@ class Agent_Config(object):
         self.autopilot = self.config_def["autopilot"]
         self.ual_use = bool(self.config_def["ual_use"])
         self.safety_radius = self.config_def["safety_radius"]
+        self.accepted_target_radius = self.config_def["accepted_target_radius"]
         self.max_speed = self.config_def["max_speed"]
         self.mode = self.config_def["mode"]
         self.marker_color = self.config_def["marker_color"]

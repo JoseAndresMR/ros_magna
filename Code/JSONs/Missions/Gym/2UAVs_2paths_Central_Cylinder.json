@@ -20,8 +20,25 @@
     "State_Machine": [
         {
             "type": "CBState",
-            "state_type":"new_world",
+            "state_type":"world_config",
             "name": "new world",
+            "parameters" : {
+                "action" : "spawn",
+                "id" : 1
+            },
+            "outcomes": {
+                "completed": "add world"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"world_config",
+            "name": "add world",
+            "parameters" : {
+                "action" : "add",
+                "world_part_def" : "from_hyperparameters"
+            },
+            
             "outcomes": {
                 "completed": "world_created_wait"
             }
@@ -72,7 +89,7 @@
                 "name": "orca3",
                 "action": "set",
                 "params": ["N_neighbors_aware"],
-                "values": [1]
+                "values": [2]
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -146,6 +163,7 @@
                                 "succeeded": "completed",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
+                                "utm_new_flightplan" : "completed",
                                 "low_battery": "completed",
                                 "preempted": "collision",
                                 "aborted": "collision"
@@ -196,6 +214,7 @@
                                 "succeeded": "completed",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
+                                "utm_new_flightplan" : "completed",
                                 "low_battery": "completed",
                                 "preempted": "collision",
                                 "aborted": "collision"

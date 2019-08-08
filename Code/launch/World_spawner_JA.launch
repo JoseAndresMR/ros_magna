@@ -2,7 +2,7 @@
     <node name="world" output="screen" pkg="magna" type="Worlds.py" />
     
     <group if="true">
-        <node args="-d $(find magna)/rviz/GAUSSUseCase1.rviz" name="rviz" pkg="rviz" type="rviz" />
+        <node args="-d $(find magna)/rviz/Gym.rviz" name="rviz" pkg="rviz" type="rviz" />
     </group>
 
 </launch>

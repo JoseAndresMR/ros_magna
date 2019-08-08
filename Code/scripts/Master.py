@@ -60,10 +60,10 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "GAUSSUseCase1",                    # Type of the world or sceneario created
-        'subworld'           :                   "Complete_FW",
-        'mission'            :                   "GAUSSUseCase1",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "Complete_FW",
+        'world'              :                   "Gym",                    # Type of the world or sceneario created
+        'subworld'           :                   "1Obs_Central_Cylinder",
+        'mission'            :                   "Gym",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "2UAVs_2paths_Central_Cylinder",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset

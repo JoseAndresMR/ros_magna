@@ -174,8 +174,11 @@ class Agent_Manager(object):
         # Function to deal with a preemption command from Ground Station
     def handle_GS_notification_command(self,data):
 
-        if data.instruction == "critical_event" or data.instruction == "utm_new_flightplan" :
-            self.GS_notification = data.instruction       # Set the variable
+        if data.instruction == "critical_event":
+            self.GS_notification = "critical_event"       # Set the variable
+
+        elif data.instruction == "utm_new_flightplan":
+            self.GS_notification = "utm_new_flightplan"
 
         elif data.instruction == "die":
             self.handle_die()
@@ -258,7 +261,6 @@ class Agent_Manager(object):
 
             # Ask the NAI to give a zero velocity
             self.new_velocity_twist = self.nai.Hover()
-            pass
 
         h = std_msgs.msg.Header()       # Create an empty header
 
@@ -304,7 +306,7 @@ class Agent_Manager(object):
 
         response = serverClient(blocking, self.agents_config_list[self.ID-1].ser_cli_addr['land'], Land)
 
-        while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == (ual_state_msg.LANDED_DISARMED or ual_state_msg.LANDED_ARMED):
+        while not rospy.is_shutdown() and not (self.agents_data_list[self.ID-1].ual_state == ual_state_msg.LANDED_DISARMED or self.agents_data_list[self.ID-1].ual_state == ual_state_msg.LANDED_ARMED):
             time.sleep(0.1)
 
         # Function to inform Ground Station about actual Agent's state
@@ -425,6 +427,10 @@ class Agent_Manager(object):
         latency_msg.pose.position.x = 2
         latency_pub.publish(latency_msg)
 
+        self.preemption_launched = False
+        if self.critical_event == "utm_new_flightplan":
+            self.critical_event = "nothing"
+
         self.role = "path"
         self.nai.role = self.role
 
@@ -503,6 +509,8 @@ class Agent_Manager(object):
         self.role = "agent_ad"
         self.nai.role = self.role
 
+        self.preemption_launched = False
+
         # Tell the GS the identity of its new target
         self.state = "following Agent {0}".format(target_ID)
         self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
@@ -571,6 +579,8 @@ class Agent_Manager(object):
 
         self.role = "agent_ap"
         self.nai.role = self.role
+
+        self.preemption_launched = False
 
         # Tell the GS the identity of its new target
         self.state = "following Agent {0}".format(target_ID)
@@ -706,49 +716,52 @@ class Agent_Manager(object):
         # Initialize collision as no occurred
         collision_detected = False
 
-        self.nai.NeighborSelector()
-        # Turn to True the local collision flag if distance threshold has been raised for Agents or obstacles
+        if True:
+            self.nai.NeighborSelector(int(self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"]))
+            # Turn to True the local collision flag if distance threshold has been raised for Agents or obstacles
 
-        if len(self.nai.near_neighbors_sorted["distances"]) > 0:
-            if self.nai.near_neighbors_sorted["distances"][0] <= safety_distance:
-                collision_detected = True
+            if len(self.nai.near_neighbors_sorted["distances"]) > 0:
+                if self.nai.near_neighbors_sorted["distances"][0] <= safety_distance:
+                    collision_detected = True
 
-        # if self.N_agents > 1:
-        #     collision_agent = [x for x in self.nai.agent_near_neighbors_sorted_distances if x <= min_distance_agent]
+            # if self.N_agents > 1:
+            #     collision_agent = [x for x in self.nai.agent_near_neighbors_sorted_distances if x <= min_distance_agent]
 
-        # if self.N_obs > 0:
-        #     collision_obs = [x for x in self.nai.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
+            # if self.N_obs > 0:
+            #     collision_obs = [x for x in self.nai.obs_near_neighbors_sorted_distances if x <= min_distance_obs]
 
-        checks = self.CheckFloatsArrayIntoBoundary([self.agents_data_list[self.ID-1].position.pose.position.x,
-                                                    self.agents_data_list[self.ID-1].position.pose.position.y,
-                                                    self.agents_data_list[self.ID-1].position.pose.position.z],
-                                                    self.world_boundaries)
+            checks = self.CheckFloatsArrayIntoBoundary([self.agents_data_list[self.ID-1].position.pose.position.x,
+                                                        self.agents_data_list[self.ID-1].position.pose.position.y,
+                                                        self.agents_data_list[self.ID-1].position.pose.position.z],
+                                                        self.world_boundaries)
 
-        collision_world_boundaries = not(all(checks))
+            collision_world_boundaries = not(all(checks))
 
-        # If confliction detected, raise the global collision flag for later storage
-        if self.preemption_launched == False and (collision_detected or collision_world_boundaries):
-            self.critical_event = "collision"
+            # If confliction detected, raise the global collision flag for later storage
+            if self.preemption_launched == False and (collision_detected or collision_world_boundaries):
+                self.critical_event = "collision"
 
-            if collision_detected:
-                print self.ID,"COLLISIONED!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            # elif collision_obs:
-            #     print self.ID,"COLLISIONED WITH AN OBSTACLE!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            elif collision_world_boundaries:
-                print self.ID,"OUT OF WORLD BOUNDARIES!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                if collision_detected:
+                    print self.ID,"COLLISIONED!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                # elif collision_obs:
+                #     print self.ID,"COLLISIONED WITH AN OBSTACLE!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                elif collision_world_boundaries:
+                    print self.ID,"OUT OF WORLD BOUNDARIES!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-            self.GSStateActualization()
-
-        elif self.preemption_launched == False and  self.agents_data_list[self.ID-1].battery_percentage < 0.2:
+        if self.preemption_launched == False and  self.agents_data_list[self.ID-1].battery_percentage < 0.2:
             self.critical_event = "low_battery"
-
             print(self.ID,"LOW BATTERY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             self.GSStateActualization()
 
-        elif self.preemption_launched == False and  ( self.GS_notification == 'GS_critical_event' or self.GS_notification == 'utm_new_flightplan' ):
+        elif self.preemption_launched == False and  ( self.GS_notification == 'GS_critical_event'):
             print(self.ID, "GROUND STATION CRITICAL EVENT!!!!!!!!!!!!!!!!!!")
-            self.critical_event = self.GS_notification
+            self.critical_event = 'GS_critical_event'
+            self.GSStateActualization()
 
+        elif self.preemption_launched == False and  ( self.GS_notification == 'utm_new_flightplan' ):
+            print(self.ID, "UTM NEW FLIGHT PLAN!!!!!!!!!!!!!!!!!!")
+            self.critical_event = 'utm_new_flightplan'
+            self.GS_notification = "nothing"
             self.GSStateActualization()
 
 
@@ -789,9 +802,14 @@ class Agent_Manager(object):
                 
                 elif self.nai.near_neighbors_sorted["types"][n_neighbor] == "obs":
                     n_obs = self.nai.near_neighbors_sorted["ids"][n_neighbor]
-
-                    neigh_data_list.append({"Pose": self.parse_4CSV(self.agents_data_list[self.ID-1].obs_poses_rel2main[n_obs],"pose"),
+                    try:
+                        neigh_data_list.append({"Pose": self.parse_4CSV(self.agents_data_list[self.ID-1].obs_poses_rel2main[n_obs],"pose"),
                                     "Twist" : [[0,0,0],[0,0,0]]})
+                    except:
+                        print("FLAG error list index out of range. lengt of self.agents_data_list[self.ID-1].obs_poses_rel2main =", len(self.agents_data_list[self.ID-1].obs_poses_rel2main),self.ID-1, n_obs)
+                        print("FLAG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        return
+                        # time.sleep(1000000)
 
             single_frame["neigh"] = [neigh_data_list]
 

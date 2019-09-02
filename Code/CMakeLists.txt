@@ -69,7 +69,6 @@ add_service_files(
    AlgorithmControl.srv
    GyalCommand.srv
    WorldGetFSPset.srv
-   WorldAdd.srv
    UTMnotification.srv
 #   Service1.srv
 #   Service2.srv

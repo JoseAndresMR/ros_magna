@@ -97,12 +97,13 @@ class Worlds(object):
     def Listener(self):
 
         # Start service for Agents to actualize its state
-        rospy.Service('/magna/Worlds/add', WorldAdd, self.handle_add)
+        rospy.Service('/magna/Worlds/add', InstructionCommand, self.handle_add)
         rospy.Service('/magna/Worlds/get_fspset', WorldGetFSPset, self.handle_get_fspset)
+        rospy.Service('/magna/Worlds/die', InstructionCommand, self.handle_die)
 
     def handle_add(self,data):
 
-        world_part_definition = json.loads(data.world_part_definition)
+        world_part_definition = json.loads(data.instruction)
 
         self.addVolumes(world_part_definition)
 
@@ -111,7 +112,7 @@ class Worlds(object):
         self.hyperparameters["obs_pose_list"] = self.obs_pose_list
         rospy.set_param('magna_hyperparameters', self.hyperparameters)      # Actualize the ROS param
 
-        response = WorldAddResponse()
+        response = InstructionCommandResponse()
         response.success = True
 
         return response
@@ -125,6 +126,10 @@ class Worlds(object):
         response.fspset = self.getFSPoseGlobal(fspset_path)
         
         return response
+
+    def handle_die(self,data):
+
+        self.die()
 
 
     def addVolumes(self,volumes_def_list):
@@ -170,6 +175,17 @@ class Worlds(object):
 
         elif params[2] == "coordinates":
             return self.volumes[params[0]].getGeometry(params[1]).getFSPGlobalPosefromCoordinates(params[3])
+
+    def eraseAllObstacles(self):
+
+        pass
+
+    # Function to close active child processess
+    def die(self):
+
+        self.eraseAllObstacles()      # Delete obstacles from Gazebo
+        rospy.signal_shutdown("World node closed")      # Finish Ground Station process
+
 
     
     def GettingWorldDefinition(self):

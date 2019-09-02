@@ -65,14 +65,7 @@ class UTM(object):
 
         self.listener()
 
-        self.sendNewFlightplanTest(0)
-        self.sendNewWorldPartTest(0)
-        self.sendNewFlightplanTest(2)
-        self.sendNewFlightplanTest(1)
-        self.sendNewWorldPartTest(1)
-        self.sendNewFlightplanTest(3)
-        self.sendNewFlightplanTest(4)
-        self.sendNewFlightplanTest(5)
+        self.GAUSSUseCase1()
 
         # self.utmThread()
 
@@ -303,7 +296,6 @@ class UTM(object):
         
     def utmThread(self):
 
-        button = raw_input("Waiting for a button press")
         self.checkAllFlighPlans()                
 
         while not rospy.is_shutdown():
@@ -311,32 +303,32 @@ class UTM(object):
 
     def sendNewFlightplanTest(self,number = 0):
 
-        selected = raw_input("Press any button to create new fligthplan")
+        print("sending lfightplan", number)
 
-        if number == 0:
+        if number == 10:
             ids = [1]
 
-            poses_list = [Pose(Point(-150.0,250.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(150.0,250.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(150.0,-50.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(-150.0,-50.0, 117.5),Quaternion(0,0,0,1))]
+            poses_list = [Pose(Point(-100.0,200.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(100.0,200.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(100.0,0.0, 117.5),Quaternion(0,0,0,1)), Pose(Point(-100.0,0.0, 117.5),Quaternion(0,0,0,1))]
 
-        if number == 2:
+        elif number == 11:
+            ids = [1]
+
+            poses_list = [Pose(Point(-600.0,0.0, 117.5),Quaternion(0,0,0,1))]
+
+        elif number == 20:
             ids = [2]
 
-            poses_list = [Pose(Point(200,300,100),Quaternion(0,0,0,1)), Pose(Point(0,350,100),Quaternion(0,0,0,1)), Pose(Point(-200,300,100),Quaternion(0,0,0,1))]
+            poses_list = [Pose(Point(200,350,100),Quaternion(0,0,0,1)), Pose(Point(0,400,100),Quaternion(0,0,0,1)), Pose(Point(-200,350,100),Quaternion(0,0,0,1))]
 
-        if number == 3:
+        elif number == 21:
             ids = [2]
 
-            poses_list = [Pose(Point(550,0,100),Quaternion(0,0,0,1))]
+            poses_list = [Pose(Point(0,600,100),Quaternion(0,0,0,1)),Pose(Point(0,650,100),Quaternion(0,0,0,1))]
 
-        if number == 4:
+        elif number == 22:
             ids = [2]
 
-            poses_list = [Pose(Point(550,550,100),Quaternion(0,0,0,1)), Pose(Point(650,300,100),Quaternion(0,0,0,1))]
-
-        if number == 5:
-            ids = [2]
-
-            poses_list = [Pose(Point(770,300,100),Quaternion(0,0,0,1))]
+            poses_list = [Pose(Point(550,550,100),Quaternion(0,0,0,1)), Pose(Point(650,300,100),Quaternion(0,0,0,1)),Pose(Point(770,200,100),Quaternion(0,0,0,1))]
 
         self.sendsendNewFlightplanToGS(ids, poses_list)
 
@@ -353,13 +345,30 @@ class UTM(object):
 
     def sendNewWorldPartTest(self, number = 0):
 
-        selected = raw_input("Press any button to create geofence")
-
         world_part_definitions = []
         world_part_definitions.append( [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence1"}])
         world_part_definitions.append( [{ "name" : "JSON", "world" : "GAUSSUseCase1", "subworld" : "Geofence2"}])
 
         self.sendNewWorldPart(world_part_definitions[number])
+
+    def GAUSSUseCase1(self):
+
+        selected = raw_input("Press any button to start phase 1")
+        self.sendNewWorldPartTest(0)
+        self.sendNewFlightplanTest(10)
+        self.sendNewFlightplanTest(20)
+
+        selected = raw_input("Press any button to start phase 2")
+        self.sendNewWorldPartTest(1)
+        self.sendNewFlightplanTest(11)
+        self.sendNewFlightplanTest(21)
+
+        selected = raw_input("Press any button to start phase 3")
+        self.sendNewFlightplanTest(22)
+
+        selected = raw_input("Press any button to start phase 4")
+        self.sendNewFlightplanTest(23)
+
 
 
     def sendNewWorldPart(self,world_part_def):

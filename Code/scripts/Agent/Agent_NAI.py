@@ -63,7 +63,7 @@ class Agent_NAI(object):
     # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,desired_speed):
 
-        self.NeighborSelector()
+        self.NeighborSelector(int(self.algorithms_dicc["orca3"]["N_neighbors_aware"])+1)
         self.desired_speed = desired_speed
 
         # print "loop time", time.time() - self.timer_start
@@ -201,19 +201,23 @@ class Agent_NAI(object):
     # Function to set velocity using ORCA on 3D
     def ORCA3(self):
 
+        self.algorithms_dicc["orca3"]["N_neighbors_aware"] = int(self.algorithms_dicc["orca3"]["N_neighbors_aware"])
+
+        params_dicc = self.algorithms_dicc["orca3"]
+
         # Give value to orca algorithm parameters
-        timeStep = 1/60.          # 1/60.  float   The time step of the simulation. Must be positive.
-        neighborDist = 6.0      # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
-        maxNeighbors = self.algorithms_dicc["orca3"]["N_neighbors_aware"]  # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
-        timeHorizon = 5.0       # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
-        agent_radius = 0.5        # 2      float   The radius of the agent. Must be non-negative
-        maxSpeed = 2.0          # 0.4    float   The maximum speed of the agent. Must be non-negative.
+        timeStep = params_dicc["timeStep"]          # 1/60.  float   The time step of the simulation. Must be positive.
+        neighborDist = params_dicc["neighborDist"]     # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+        maxNeighbors = params_dicc["N_neighbors_aware"]  # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
+        timeHorizon = params_dicc["timeHorizon"]  # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
+        agent_radius = params_dicc["agent_radius"]        # 2      float   The radius of the agent. Must be non-negative
+        maxSpeed = params_dicc["maxSpeed"]          # 0.4    float   The maximum speed of the agent. Must be non-negative.
         velocity = (1, 1, 1)
 
         obs_radius = 0.5
 
         # Create an object of orca3 solver class and give the above defined parameters
-        sim = rvo23d.PyRVOSimulator(timeStep, neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, velocity)
+        sim = rvo23d.PyRVOSimulator(params_dicc["timeStep"], params_dicc["neighborDist"], params_dicc["N_neighbors_aware"], params_dicc["timeHorizon"], params_dicc["agent_radius"], params_dicc["maxSpeed"], velocity)
 
         # Select nearest Agents and Neighbors
         orca_agent_list = []
@@ -225,7 +229,7 @@ class Agent_NAI(object):
         prefered_velocity_array = self.ArrayFromTwist(prefered_velocity)[0]
 
         orca_agent_list = [sim.addAgent((position_array[0],position_array[1],position_array[2]),
-            neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed, (velocity_array[0],velocity_array[1],velocity_array[2]))]
+            params_dicc["neighborDist"], params_dicc["N_neighbors_aware"], params_dicc["timeHorizon"], params_dicc["agent_radius"], params_dicc["maxSpeed"], (velocity_array[0],velocity_array[1],velocity_array[2]))]
         # Set the prefered velocity of own Agent as decided avobe
         sim.setAgentPrefVelocity(orca_agent_list[0],(prefered_velocity_array[0],prefered_velocity_array[1],prefered_velocity_array[2]))
         
@@ -236,7 +240,7 @@ class Agent_NAI(object):
                 position_array = self.ArrayFromPose(self.agents_data_list[n_agent].position.pose)[0]
                 velocity_array = self.ArrayFromTwist(self.agents_data_list[n_agent].velocity.twist)[0]
                 orca_agent_list.append(sim.addAgent((position_array[0],position_array[1],position_array[2]),
-                                        neighborDist, maxNeighbors, timeHorizon, agent_radius, maxSpeed,
+                                        params_dicc["neighborDist"], params_dicc["N_neighbors_aware"], params_dicc["timeHorizon"], params_dicc["agent_radius"], params_dicc["maxSpeed"],
                                         (velocity_array[0],velocity_array[1],velocity_array[2])))
 
                 sim.setAgentPrefVelocity(orca_agent_list[-1],(velocity_array[0],velocity_array[1],velocity_array[2]))
@@ -247,7 +251,7 @@ class Agent_NAI(object):
 
                 obs_pose = self.obs_pose_list[n_obs]
                 orca_agent_list.append(sim.addAgent((obs_pose[0][0],obs_pose[0][1],obs_pose[0][2]),
-                neighborDist, maxNeighbors, timeHorizon, obs_radius, 0.0, (0, 0, 0)))
+                params_dicc["neighborDist"], params_dicc["N_neighbors_aware"], params_dicc["timeHorizon"], obs_radius, 0.0, (0, 0, 0)))
 
                 sim.setAgentPrefVelocity(orca_agent_list[-1],(0,0,0))
 
@@ -369,7 +373,7 @@ class Agent_NAI(object):
             value = -threshold
         return value
 
-    def NeighborSelector(self):
+    def NeighborSelector(self,N_neighbors_aware):
         agent_distances = []
         for n_agent in range(self.N_agents):
             if n_agent != self.ID-1:
@@ -380,11 +384,11 @@ class Agent_NAI(object):
         obs_distances = self.agents_data_list[self.ID-1].obs_distances_rel2main
 
         all_distances = agent_distances + obs_distances
-        self.near_neighbors_sorted = {"distances" : sorted(all_distances)[1:self.algorithms_dicc[self.algorithms_dicc.keys()[0]]["N_neighbors_aware"]+1]}
+        self.near_neighbors_sorted = {"distances" : sorted(all_distances)[1:N_neighbors_aware]}
         
         ids_list = []
         types_list = []
-        for neigh in list(np.argsort(all_distances))[1:self.algorithms_dicc[self.algorithms_dicc.keys()[0]]["N_neighbors_aware"]+1]:
+        for neigh in list(np.argsort(all_distances))[1:N_neighbors_aware]:
 
             if neigh < self.N_agents:
                 neigh_type = "agent"
@@ -399,7 +403,6 @@ class Agent_NAI(object):
 
         self.near_neighbors_sorted["ids"] = ids_list
         self.near_neighbors_sorted["types"] = types_list
-
 
         return self.near_neighbors_sorted
 

@@ -71,11 +71,11 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
         'rviz_gui'           :                     True,
         }
         # 00.00022
-        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
@@ -83,7 +83,10 @@ class Master(object):
         self.hyperparameters["save_flag"] = True
         self.hyperparameters["rosbag_flag"] = False
 
+        self.SIM_MAX_TIME = 60*5
+
         # Function to check if current dataset is already created and ask the user what to do in each case
+        self.n_simulation_bias = 0      # Initi
         botton_selected = self.DatasetExistanceChecker()
 
         ### Initializations
@@ -91,12 +94,12 @@ class Master(object):
         rospy.set_param('magna_hyperparameters', self.hyperparameters)    # Upload ROS params above defined
         rospy.init_node('master', anonymous=True)     # Start node
         self.MasterListener()       # Start subscribers
-        self.n_simulation_bias = 0      # Initi
 
         ### Bunch of simulations
         if botton_selected != "q":    # If user decission was not to abort, start bunch of simulations
             # Run every simulation
             for n_simulation in range(self.n_simulation_bias+1, self.n_simulation_bias + self.hyperparameters["N_iter"] + 1):
+
                 try:
                     ### Initialization for each simulation
                     # Set ROS param of current simulation id
@@ -116,13 +119,14 @@ class Master(object):
                     while not rospy.is_shutdown() and (self.simulation_finished == False):
                         time.sleep(2)
                         # Control of exceeded simulation duration
-                        if (time.time() - timer_start) > 990000:
+                        if (time.time() - timer_start) > self.SIM_MAX_TIME:
                             self.GS_launch.shutdown()     # Terminate Ground Station
                             self.simulation_finished = True    # Activate end flag
                 except:
                     self.processess_killer(2)       # Kill unwanted processess
 
                 self.processess_killer(1)       # Kill unwanted processess
+                time.sleep(3)
                 self.GazeboRestart()        # Restart Gazebo for next simulation
 
 
@@ -257,8 +261,10 @@ class Master(object):
     # Close and start Gazebo for every simulation
     def GazeboRestart(self):
         self.Gazebo_launch.shutdown()
-        time.sleep(1)
+        self.processess_killer(1)
+        # self.node_killer()
         self.GazeboLauncher()
+        time.sleep(30)
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
         time.sleep(5)
 
@@ -267,6 +273,9 @@ class Master(object):
         [os.system("pkill -9 {}".format(proc)) for proc in ["px4","mavros_node"]]
         if level >= 2:
             [os.system("pkill -9 {}".format(proc)) for proc in ["server","python","python2"]]
+    
+    def node_killer(self):
+        [os.system("rosnode kill {}".format(proc)) for proc in ["/gazebo","/uav_1/mavros","/uav_2/mavros"]]
 
     #### listener functions ####
     # Master only listens to Ground Station for the end of simulation message

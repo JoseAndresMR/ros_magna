@@ -1,6 +1,6 @@
 string name
 string action
 string[] params
-int8[] values
+float32[] values
 ---
 bool result

@@ -119,7 +119,7 @@ class GenericGeometry:
 
         self.rviz_polygon_array_def["polygon_array_poses"] = self.polygon_array_poses
 
-        self.rviz_polython_array = RvizPolygonArray(self.rviz_polygon_array_def)
+        self.rviz_polyghon_array = RvizPolygonArray(self.rviz_polygon_array_def)
 
     def MakeRvizTrousArray(self):
 
@@ -129,11 +129,11 @@ class GenericGeometry:
 
         self.rviz_torus_array_def["torus_array_poses"] = [[False,self.PoseFromArray(self.origin),self.dimensions[0]/2,self.dimensions[2]/2]]
 
-        self.rviz_polython_array = RvizTorusArray(self.rviz_torus_array_def)
+        self.rviz_polyghon_array = RvizTorusArray(self.rviz_torus_array_def)
 
     def EraseRvizPolygonArray(self):
 
-        self.rviz_polython_array.Erase()
+        self.rviz_polyghon_array.Erase()
 
     def getTransforms(self):
         # print("persistent",len(self.transforms_list))

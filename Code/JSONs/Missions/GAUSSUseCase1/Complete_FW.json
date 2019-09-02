@@ -181,7 +181,7 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "1_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "1_to_home",
@@ -202,13 +202,32 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "1_to_home",
+                                "succeeded": "1_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
                                 "utm_new_flightplan" : "1_UTM_new_flightplan_state",
                                 "preempted": "collision",
                                 "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "land",
+                            "name": "land",
+                            "ids": 1,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "height": 2
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "completed",
+                                "GS_critical_event": "completed",
+                                "low_battery": "completed",
+                                "utm_new_flightplan" : "completed",
+                                "preempted": "completed",
+                                "aborted": "completed"
                             }
                         }
                     ],
@@ -230,7 +249,7 @@
                             "name": "fire_wait",
                             "parameters": {
                                 "exit_type": "time",
-                                "duration" : 100.0
+                                "duration" : 130.0
                             },
                             "outcomes": {
                                 "completed": "2_take_off",
@@ -310,7 +329,7 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "2_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "2_to_home",
@@ -331,13 +350,32 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "2_to_home",
+                                "succeeded": "2_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
                                 "utm_new_flightplan" : "2_UTM_new_flightplan_state",
                                 "preempted": "collision",
                                 "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "land",
+                            "name": "land",
+                            "ids": 2,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "height": 2
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "completed",
+                                "GS_critical_event": "completed",
+                                "low_battery": "completed",
+                                "utm_new_flightplan" : "completed",
+                                "preempted": "completed",
+                                "aborted": "completed"
                             }
                         }
                     ],
@@ -418,7 +456,7 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "completed",
+                                "succeeded": "3_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "3_to_home",
@@ -439,13 +477,32 @@
                                 "dynamic" : "position"
                             },
                             "outcomes":{
-                                "succeeded": "3_to_home",
+                                "succeeded": "3_land",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
                                 "low_battery": "completed",
                                 "utm_new_flightplan" : "3_UTM_new_flightplan_state",
                                 "preempted": "collision",
                                 "aborted": "collision"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "land",
+                            "name": "land",
+                            "ids": 3,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "height": 2
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "completed",
+                                "GS_critical_event": "completed",
+                                "low_battery": "completed",
+                                "utm_new_flightplan" : "completed",
+                                "preempted": "completed",
+                                "aborted": "completed"
                             }
                         }
                     ],

@@ -16,7 +16,7 @@
                         "origin": [[0.0,0.0,0.05],[0,0,0]],
                         "dimensions": [10.0,0.1,0.1],
                         "color": [0,0,0],
-                        "alpha": 0.3,
+                        "alpha": 0.0,
                         "poses_sets": [
                             {
                                 "type" : "matrix",
@@ -45,7 +45,7 @@
                         "origin": [[0.0,0.0,2.5],[0,0,0]],
                         "dimensions": [6.0,9.0,3.0],
                         "color": [255,255,255],
-                        "alpha": 0.2
+                        "alpha": 0.7
                     },
                     {
                         "name": "Obstacles",
@@ -60,7 +60,7 @@
                             {
                                 "type" : "random",
                                 "use" : "obstacles",
-                                "quantity": 10,
+                                "quantity": 3,
                                 "obstacles_shape": ["sphere"],
                                 "obstacles_dimensions": [0.5,0.5,0.5],
                                 "set_orientation": [0,0,0],

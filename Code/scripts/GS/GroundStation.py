@@ -73,6 +73,7 @@ class GroundStation(object):
         ### Initializations
 
         self.simulation_succeed = True      # Initialize succeed flag of this single simulation
+        self.agent_spawner_launchs_list = []
 
         mission_def_path = "{0}/Code/JSONs/Missions/{1}/{2}.json"\
                             .format(self.home_path,self.mission_name,self.submission_name)
@@ -271,8 +272,10 @@ class GroundStation(object):
 
         et.write(launch_path)
 
-        self.agent_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
-        self.agent_spawner_launch.start()
+        agent_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        agent_spawner_launch.start()
+
+        self.agent_spawner_launchs_list.append(agent_spawner_launch)
 
 
     def worldConfig(self, parameters):
@@ -284,6 +287,10 @@ class GroundStation(object):
         elif parameters["action"] == "add":
 
             self.worldAdd(parameters["world_part_def"])
+
+        elif parameters["action"] == "delete":
+
+            self.worldKiller(parameters["id"])
 
         return "completed"
 
@@ -307,8 +314,8 @@ class GroundStation(object):
             root[1].attrib["if"] = "false"
         et.write(launch_path)
 
-        world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
-        world_spawner_launch.start()
+        self.world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        self.world_spawner_launch.start()
 
         time.sleep(2)
 
@@ -318,10 +325,10 @@ class GroundStation(object):
         if world_part_definition == "from_hyperparameters":
             world_part_definition = [{ "name" : "JSON", "world" : self.world_name, "subworld" : self.subworld_name}]
 
-        req = WorldAddRequest()
-        req.world_part_definition = json.dumps(world_part_definition)
+        req = InstructionCommandRequest()
+        req.instruction = json.dumps(world_part_definition)
 
-        response = serverClient(req, "/magna/Worlds/add", WorldAdd)
+        response = serverClient(req, "/magna/Worlds/add", InstructionCommand)
 
         return response
 
@@ -334,6 +341,15 @@ class GroundStation(object):
         response = serverClient(req, "/magna/Worlds/get_fspset", WorldGetFSPset)
 
         return response.fspset
+
+    def worldKiller(self,id):
+
+        req = InstructionCommandRequest()
+        req.instruction = "die"
+
+        response = serverClient(req, "/magna/Worlds/die", InstructionCommand)
+
+        self.world_spawner_launch.shutdown()
 
 
     # Function to create folders and file to store simulations data
@@ -411,6 +427,9 @@ class GroundStation(object):
     def AgentKiller(self):
         
         self.sendNotificationsToAgents(range(1,self.N_agents+1),"die")
+
+        for agent_launch in self.agent_spawner_launchs_list:
+            agent_launch.shutdown()
 
         return
 

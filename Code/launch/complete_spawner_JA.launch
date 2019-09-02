@@ -6,7 +6,7 @@
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
-    <arg default="30.0" name="mavros_offboard_rate" />
+    <arg default="10.0" name="mavros_offboard_rate" />
 
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />

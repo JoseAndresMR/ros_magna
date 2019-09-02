@@ -88,8 +88,8 @@
             "parameters": {
                 "name": "orca3",
                 "action": "set",
-                "params": ["N_neighbors_aware"],
-                "values": [2]
+                "params": ["N_neighbors_aware", "timeStep", "neighborDist", "timeHorizon", "agent_radius", "maxSpeed"],
+                "values": [2, 0.01666, 6.0, 5.0, 0.5, 2.0]
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -266,7 +266,8 @@
                         "move_type": "translation",
                         "dynamic": "position",
                         "direction": "left",
-                        "value": 0.0
+                        "value": 0.0,
+                        "duration": 1.0
                     }
                 },
                 {
@@ -279,7 +280,8 @@
                         "move_type": "translation",
                         "dynamic": "position",
                         "direction": "left",
-                        "value": 0.0
+                        "value": 0.0,
+                        "duration": 1.0
                     }
                 }
             ],
@@ -363,6 +365,18 @@
                 "failed": {
                     "all": "aborted"
                 }
+            },
+            "outcomes": {
+                "completed": "delete_world"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"world_config",
+            "name": "delete_world",
+            "parameters" : {
+                "action" : "delete",
+                "id" : 1
             },
             "outcomes": {
                 "completed": "completed"

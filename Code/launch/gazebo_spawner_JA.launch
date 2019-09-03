@@ -1,13 +1,10 @@
 <launch>
 
-    <arg default="sitl" name="mode" />
+    <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
     
-    <group if="$(eval mode=='sitl')">
-        
-        <rosparam param="/use_sim_time">true</rosparam>
-        <node args="-physics=ode -world=$(find px4_bringup)/config/empty_light.world" name="gazebo_world" output="screen" pkg="px4_bringup" type="launch_gzworld_JA.py">
-            <rosparam param="sim_origin">[37.558542, -5.931074, 7.89]</rosparam>
-        </node>
-    </group>
+    <rosparam param="/use_sim_time">true</rosparam>
+    <node args="-physics=ode -world=$(find px4_bringup)/config/empty_light.world" name="gazebo_world" output="screen" pkg="px4_bringup" type="launch_gzworld_JA.py">
+        <rosparam param="sim_origin">[37.558542, -5.931074, 7.89]</rosparam>
+    </node>
 
 </launch>

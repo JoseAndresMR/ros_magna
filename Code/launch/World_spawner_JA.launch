@@ -1,8 +1,12 @@
 <launch>
+    
+    <arg default="true" name="rviz_use" />
+    <arg default="Gym" name="world" />
+
     <node name="world" output="screen" pkg="magna" type="Worlds.py" />
     
-    <group if="true">
-        <node args="-d $(find magna)/rviz/Gym.rviz" name="rviz" pkg="rviz" type="rviz" />
+    <group if="$(arg rviz_use)">
+        <node args="-d $(find magna)/rviz/$(arg world).rviz" name="rviz" pkg="rviz" type="rviz" />
     </group>
 
 </launch>

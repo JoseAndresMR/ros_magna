@@ -11,10 +11,10 @@
         {
             "ID":2,
             "model":"iris",
-            "mode": "sitl",
+            "mode": "real",
             "marker_color": [0,255,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         }
     ],
     "State_Machine": [

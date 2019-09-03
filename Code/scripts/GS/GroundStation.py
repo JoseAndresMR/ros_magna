@@ -60,7 +60,7 @@ from magna.srv import *
 from magna.msg import *
 
 from GroundStation_SM import GroundStation_SM
-from Various import serverClient
+from Various import *
 # from Worlds import *
 
 class GroundStation(object):
@@ -207,68 +207,76 @@ class GroundStation(object):
         config_def.update(copy.deepcopy(self.mission_def["Agents_Config"][ID]))
 
         # sitl
-        root[2].attrib["default"] = config_def["mode"]
-
+        # root[2].attrib["default"] = config_def["mode"]
+        xmlSetAttribValueByTagAndAttribValue(root,"arg","name","mode","default",config_def["mode"])
+        xmlSetAttribValueByTagAndAttribValue(root,"arg","name","origin_geo","default",str(origin_geo))
         # ual use
         if config_def["ual_use"] == True:
-            root[7].attrib["default"] = 'true'
+            # root[7].attrib["default"] = 'true'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","ual_use","default",'true')
         else:
-            root[7].attrib["default"] = 'false'
+            # root[7].attrib["default"] = 'false'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","ual_use","default",'false')
 
         # autopilot
-        root[8].attrib["default"] = config_def["autopilot"]
+        # root[8].attrib["default"] = config_def["autopilot"]
+        xmlSetAttribValueByTagAndAttribValue(root,"arg","name","autopilot","default",config_def["autopilot"])
 
         # agent manager embedded
         if config_def["agent_manager_on_gs"] == True:
-            root[9].attrib["default"] = 'true'
+            # root[9].attrib["default"] = 'true'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_on_gs","default",'true')
         else:
-            root[9].attrib["default"] = 'false'
+            # root[9].attrib["default"] = 'false'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_on_gs","default",'false')
 
         # smooth path
         if ID+1 == 1:
-            root[10].attrib["default"] = 'true'
+            # root[10].attrib["default"] = 'true'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'true')
         else:
-            root[10].attrib["default"] = 'false'
+            # root[10].attrib["default"] = 'false'
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'false')
 
         # if sitl
-        # root[11][0][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[11][0][0][0][0].attrib["value"] = str(ID+1)
-        # root[11][0][1][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        # root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
+        xmlSetAttribValueByTagAndAttribValue(root,"arg","name","id","default",str(ID+1))
 
-        # if ual use
-        # root[11][1][0][0].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)
-        root[11][1][0][0][0].attrib["value"] = str(ID+1)
+        # root[11][0][0][0][0].attrib["value"] = str(ID+1)
 
+        # # if ual use
+        # root[11][1][0][0][0].attrib["value"] = str(ID+1)
+
+        _,child = xmlGetIndexByTagAndAttribName(root,"group","if","$(eval mode == 'sitl')")
 
         if config_def["autopilot"] == "px4":
             if agent_model == "plane":
-                root[11][1][0][0][6].attrib["value"] = "mavros_fw"
+                child[1][0][0][6].attrib["value"] = "mavros_fw"
             else:
-                root[11][1][0][0][6].attrib["value"] = "mavros"
+                child[1][0][0][6].attrib["value"] = "mavros"
 
-            root[11][1][0][0][7].text = str(origin_geo)
+            child[1][0][0][7].text = str(origin_geo)
 
         elif config_def["autopilot"] == "dji":
 
-            root[11][1][1][0][3].text = str(origin_geo)
+            child[1][1][0][3].text = str(origin_geo)
 
             if config_def["laser_altimeter"] == True:
-                root[11][1][1][0][1].attrib["value"] = 'true'
+                child[1][1][0][1].attrib["value"] = 'true'
             else:
-                root[11][1][1][0][1].attrib["value"] = 'false'
+                child[1][1][0][1].attrib["value"] = 'false'
 
             if config_def["self_arming"] == True:
-                root[11][1][1][0][2].attrib["value"] = 'true'
+                child[1][1][0][2].attrib["value"] = 'true'
             else:
-                root[11][1][1][0][2].attrib["value"] = 'false'
+                child[1][1][0][2].attrib["value"] = 'false'
 
             # root[12][0][7].attrib["value"] = config_def["laser_altimeter"]
             # root[12][0][8].attrib["value"] = config_def["self_arming"]
 
         # agent manager
-        root[12][0].attrib["name"] = 'agent_{}'.format(ID+1)
-        root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
+        # root[12][0].attrib["name"] = 'agent_{}'.format(ID+1)
+        # root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
 
         et.write(launch_path)
 
@@ -308,10 +316,13 @@ class GroundStation(object):
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
         if self.rviz_gui == True:
-            root[1].attrib["if"] = "true"
-            root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+            # root[1].attrib["if"] = "true"
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","rviz_use","default",'true')
+            # root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","world","default",self.hyperparameters["world"])
         else:
-            root[1].attrib["if"] = "false"
+            # root[1].attrib["if"] = "false"
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","rviz_use","default",'false')
         et.write(launch_path)
 
         self.world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])

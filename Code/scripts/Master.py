@@ -52,6 +52,7 @@ import pandas as pd
 import rospkg
 
 from magna.srv import *
+from Various import *
 
 sys.dont_write_bytecode = True
 
@@ -64,7 +65,7 @@ class Master(object):
         'subworld'           :                   "1Obs_Central_Cylinder",
         'mission'            :                   "Gym",                    # Global mission that characterizes every Agent's role
         'submission'         :                   "2UAVs_2paths_Central_Cylinder",
-        'n_dataset'          :                       1,                       # Number of the dataset to create
+        'n_dataset'          :                       2,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'algorithms_list'    :                    ["orca3"],
@@ -75,7 +76,7 @@ class Master(object):
         'rviz_gui'           :                     True,
         }
         # 00.00022
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
@@ -156,8 +157,9 @@ class Master(object):
         et = xml.etree.ElementTree.parse(gazebo_spawn_launch_path)
         root = et.getroot()
 
-        root[1][1][0].text = str(origin_geo)
-
+        root[2][0].text = str(origin_geo)
+        # xmlSetAttribValueByTagAndAttribValue(root,"arg","name","origin_geo","default",str(origin_geo))
+# 
         et.write(gazebo_spawn_launch_path)
 
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)

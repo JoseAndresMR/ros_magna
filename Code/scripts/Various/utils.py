@@ -63,3 +63,18 @@ def serverClient(request, address, Type, print_request = False, print_response =
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         print "error in {}".format(address)
+
+def xmlGetIndexByTagAndAttribName(root,tag,att_nam,att_val):
+    for i, child in enumerate(root):
+        if child.tag == tag:
+            if att_nam in child.attrib.keys():
+                if child.attrib[att_nam] == att_val:
+                    return i, child
+
+def xmlSetAttribValueByTagAndAttribValue(root,tag,get_att_nam,get_att_val,set_att_nam,set_att_val):
+    root[xmlGetIndexByTagAndAttribName(root,tag,get_att_nam,get_att_val)[0]].attrib[set_att_nam] = set_att_val
+    return root
+
+def xmlSetTextValueByTagAndAttribValue(root,tag,get_att_nam,get_att_val,set_text_val):
+    root[xmlGetIndexByTagAndAttribName(root,tag,get_att_nam,get_att_val)[0]].text = set_text_val
+    return root

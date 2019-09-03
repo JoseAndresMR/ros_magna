@@ -29,3 +29,14 @@ import xml.etree.ElementTree
 # sys.path.insert(0, '/home/joseandresmr/catkin_ws/src/magna/Code/scripts')
 # from Worlds import *
 from GS import GroundStation
+from Various import *
+
+home_path = rospkg.RosPack().get_path('magna')[:-5]
+launch_path = "{0}/Code/launch/complete_spawner_JA.launch".format(home_path)
+        
+et = xml.etree.ElementTree.parse(launch_path)
+root = et.getroot()
+
+print(xmlGetIndexByTagAndAttribName(root,"arg","default","true"))
+xmlSetAttribValueByTagAndAttribValue(root,"arg","name","ual_use","default","jamon")
+print(xmlGetIndexByTagAndAttribName(root,"arg","default","jamon"))

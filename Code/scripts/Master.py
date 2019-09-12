@@ -61,10 +61,10 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "Idron",                    # Type of the world or sceneario created
-        'subworld'           :                   "Inta",
-        'mission'            :                   "Idron",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "1UAV_",
+        'world'              :                   "General",                    # Type of the world or sceneario created
+        'subworld'           :                   "Empty",
+        'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "2UAVs_2paths_nuc_trial",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset

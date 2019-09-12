@@ -1,7 +1,7 @@
 <launch>
     
     <arg default="true" name="rviz_use" />
-    <arg default="Idron" name="world" />
+    <arg default="General" name="world" />
 
     <node name="world" output="screen" pkg="magna" type="Worlds.py" />
     

@@ -2,17 +2,16 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="sitl" name="mode" />
+    <arg default="real" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="10.0" name="mavros_offboard_rate" />
 
-    <arg default="true" name="ual_use" />
+    <arg default="false" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="true" name="uav_manager_on_gs" />
-    <arg default="true" name="smooth_path_generator" />
-    <arg default="1" name="id" />
+    <arg default="false" name="uav_manager_on_gs" />
+    <arg default="2" name="id" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
     <arg default="false" name="multimaster_use" />
 

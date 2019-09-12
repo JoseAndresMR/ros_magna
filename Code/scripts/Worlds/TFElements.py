@@ -106,6 +106,7 @@ class StaticTfBroadcaster(object):
     def Broadcast(self):
         broadcaster = tf2_ros.StaticTransformBroadcaster()
         broadcaster.sendTransform(self.transforms_list)
+
         time.sleep(0.05)
 
     def getTransforms(self):

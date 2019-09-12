@@ -54,6 +54,7 @@ import xml.etree.ElementTree
 
 from magna.srv import *
 from PoseElements import *
+from Maze import Maze
 
 
 class GenericGeometry:
@@ -189,6 +190,13 @@ class GenericGeometry:
 
         return selected_positions_matrix
 
+
+    def GenMazeBooleanMatrix(self,poses_set_def):
+
+        maze = Maze()
+
+        return maze.boundary_matrix
+
     def GenerateObstacleFromMatrix(self,selected_positions_matrix,poses_matrix,shapes,dimensions):
 
         obs_list = copy.deepcopy(selected_positions_matrix.tolist())
@@ -307,6 +315,13 @@ class GenericGeometry:
         elif poses_set_def["matrix_type"] == "distance": 
 
             poses_matrix, selected_positions_matrix = self.PosesDistanceMatrix(poses_set_def)
+
+        
+        if poses_set_def["matrix_type"] == "maze": 
+
+            selected_positions_matrix = self.GenMazeBooleanMatrix(poses_set_def)
+
+            poses_matrix = self.PosesDimensionMatrix(poses_set_def,selected_positions_matrix)
 
 
         if poses_set_def["use"] == "obstacles":

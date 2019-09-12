@@ -61,11 +61,11 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "Gym",                    # Type of the world or sceneario created
-        'subworld'           :                   "1Obs_Central_Cylinder",
-        'mission'            :                   "Gym",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "2UAVs_2paths_Central_Cylinder",
-        'n_dataset'          :                       2,                       # Number of the dataset to create
+        'world'              :                   "Idron",                    # Type of the world or sceneario created
+        'subworld'           :                   "Inta",
+        'mission'            :                   "Idron",                    # Global mission that characterizes every Agent's role
+        'submission'         :                   "1UAV_",
+        'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
         'algorithms_list'    :                    ["orca3"],
@@ -76,7 +76,7 @@ class Master(object):
         'rviz_gui'           :                     True,
         }
         # 00.00022
-        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 
@@ -84,7 +84,7 @@ class Master(object):
         self.hyperparameters["save_flag"] = True
         self.hyperparameters["rosbag_flag"] = False
 
-        self.SIM_MAX_TIME = 60*5
+        self.SIM_MAX_TIME = 60*200
 
         # Function to check if current dataset is already created and ask the user what to do in each case
         self.n_simulation_bias = 0      # Initi

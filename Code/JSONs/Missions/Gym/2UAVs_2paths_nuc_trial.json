@@ -11,10 +11,10 @@
         {
             "ID":2,
             "model":"iris",
-            "mode": "siitl",
+            "mode": "real",
             "marker_color": [0,255,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         }
     ],
     "State_Machine": [
@@ -48,8 +48,7 @@
             "state_type":"wait",
             "name": "world_created_wait",
             "parameters": {
-                "exit_type": "time",
-                "duration" : 0.5
+                "exit_type": "button"
             },
             "outcomes": {
                 "completed": "spawn_Agents"

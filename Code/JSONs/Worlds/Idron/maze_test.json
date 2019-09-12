@@ -1,0 +1,107 @@
+{
+    "scenario": {
+        "world_boundaries": [[-900,900],[-900,900],[-900,900]],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[-1,1,8.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.0],[0,0,0]],
+                        "dimensions": [2,2,2],
+                        "color": [255,85,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Maze",
+                "prefix": "Maz",
+                "origin": [[0.0,0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "prism",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "dimensions": [10.0,[[-210,-125,0],[210,-125,0],[210,125,0],[-210,125,0]]],
+                        "color": [170,0,127],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Maze_Cubes",
+                        "prefix": "MC",
+                        "id": 0,
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "shape": "cube",
+                        "dimensions": [40.0,40.0,8.0],
+                        "color": [255,255,255],
+                        "alpha": 0.0,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"maze",
+                                "use" : "obstacles",
+                                "dimensions": [20,20,4],
+                                "poses_orientation": [0,0,0],
+                                "set_orientation": [0,0,0],
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [2.0, 2.0, 2.0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Init_cubes",
+                        "prefix": "IC",
+                        "shape": "torus",
+                        "id": 0,
+                        "origin": [[0.0,0.0,9.5],[0,0,0]],
+                        "dimensions": [9.0,12.0,3.0],
+                        "color": [255,255,255],
+                        "alpha": 0.7,
+                        "poses_sets": [
+                            {
+                                "type" : "random",
+                                "use" : "obstacles",
+                                "quantity": 10,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [0.5,0.5,0.5],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

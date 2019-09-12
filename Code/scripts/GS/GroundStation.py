@@ -135,7 +135,7 @@ class GroundStation(object):
                                                             first_pose.orientation.y,
                                                             first_pose.orientation.z,
                                                             first_pose.orientation.w))[2]
-            self.SetAgentSpawnFeatures(i+1,self.agent_models[i],[first_pose.position.x,first_pose.position.y,0],yaw)
+            self.SetAgentSpawnFeatures(i+1,self.agent_models[i],[first_pose.position.x,first_pose.position.y,first_pose.position.z],yaw)
             time.sleep(2)
             self.AgentSpawner(i,self.agent_models[i])      # Call service to spawn the Agent
 

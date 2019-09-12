@@ -7,38 +7,13 @@
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
             "agent_manager_on_gs": true
-        },
-        {
-            "ID":2,
-            "model":"iris",
-            "mode": "siitl",
-            "marker_color": [0,255,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
         }
     ],
     "State_Machine": [
         {
             "type": "CBState",
-            "state_type":"world_config",
+            "state_type":"new_world",
             "name": "new world",
-            "parameters" : {
-                "action" : "spawn",
-                "id" : 1
-            },
-            "outcomes": {
-                "completed": "add world"
-            }
-        },
-        {
-            "type": "CBState",
-            "state_type":"world_config",
-            "name": "add world",
-            "parameters" : {
-                "action" : "add",
-                "world_part_def" : "from_hyperparameters"
-            },
-            
             "outcomes": {
                 "completed": "world_created_wait"
             }
@@ -64,18 +39,6 @@
                                   ["Ground_Station","Agents_take_off","matrix",[1,0,0]]]
             },
             "outcomes": {
-                "completed": "initial_wait"
-            }
-        },
-        {
-            "type": "CBState",
-            "state_type":"wait",
-            "name": "initial_wait",
-            "parameters": {
-                "exit_type": "time",
-                "duration" : 0.5
-            },
-            "outcomes": {
                 "completed": "algorithm_control"
             }
         },
@@ -88,8 +51,20 @@
             "parameters": {
                 "name": "orca3",
                 "action": "set",
-                "params": ["N_neighbors_aware", "timeStep", "neighborDist", "timeHorizon", "agent_radius", "maxSpeed"],
-                "values": [2, 0.01666, 6.0, 5.0, 0.5, 2.0]
+                "params": ["N_neighbors_aware"],
+                "values": [1]
+            },
+            "outcomes": {
+                "completed": "initial_wait"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"wait",
+            "name": "initial_wait",
+            "parameters": {
+                "exit_type": "time",
+                "duration" : 0.5
             },
             "outcomes": {
                 "completed": "1_take_off"
@@ -107,7 +82,7 @@
                     "ids": "all",
                     "ids_var": "agent",
                     "parameters": {
-                        "height": 3
+                        "height": 1.5
                     }
                 }
             ],
@@ -154,7 +129,25 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["CentralZone","Accessible","random",20]
+                                        "definition":["LateralAccissibleZones","-X","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-Y","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","-X","random",1]
+                                    },
+                                    {
+                                        "definition":["LateralAccissibleZones","X","random",1]
                                     }
                                 ],
                                 "smooth_path_mode": 0
@@ -163,58 +156,6 @@
                                 "succeeded": "completed",
                                 "collision": "collision",
                                 "GS_critical_event": "GS_critical_event",
-                                "utm_new_flightplan" : "completed",
-                                "low_battery": "completed",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        }
-                    ],
-                    "outcomes":{
-                        "completed": "completed",
-                        "collision": "collision",
-                        "GS_critical_event": "GS_critical_event",
-                        "low_battery": "low_battery"
-                    }
-                },
-                {
-                    "type": "StateMachine",
-                    "name": "filming",
-                    "ids": 2,
-                    "occurrencies": [
-                        {
-                            "type": "CBState",
-                            "state_type":"wait",
-                            "name": "initial_wait",
-                            "parameters": {
-                                "exit_type": "time",
-                                "duration" : 0.5
-                            },
-                            "outcomes": {
-                                "completed": "2_to_delivery_height",
-                                "failed": "2_to_delivery_height"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "follow_path",
-                            "name": "to_delivery_height",
-                            "ids": 2,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "path": [
-                                    {
-                                        "definition":["CentralZone","Accessible","random",20]
-                                    }
-                                ],
-                                "smooth_path_mode": 0,
-                                "dynamic": "velocity"
-                            },
-                            "outcomes":{
-                                "succeeded": "completed",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "utm_new_flightplan" : "completed",
                                 "low_battery": "completed",
                                 "preempted": "collision",
                                 "aborted": "collision"
@@ -267,21 +208,7 @@
                         "dynamic": "position",
                         "direction": "left",
                         "value": 0.0,
-                        "duration": 1.0
-                    }
-                },
-                {
-                    "type": "SimpleActionState",
-                    "state_type": "basic_move",
-                    "name": "hover",
-                    "ids": 2,
-                    "ids_var": "agent",
-                    "parameters": {
-                        "move_type": "translation",
-                        "dynamic": "position",
-                        "direction": "left",
-                        "value": 0.0,
-                        "duration": 1.0
+                        "duration" : 0.5
                     }
                 }
             ],
@@ -365,18 +292,6 @@
                 "failed": {
                     "all": "aborted"
                 }
-            },
-            "outcomes": {
-                "completed": "delete_world"
-            }
-        },
-        {
-            "type": "CBState",
-            "state_type":"world_config",
-            "name": "delete_world",
-            "parameters" : {
-                "action" : "delete",
-                "id" : 1
             },
             "outcomes": {
                 "completed": "completed"

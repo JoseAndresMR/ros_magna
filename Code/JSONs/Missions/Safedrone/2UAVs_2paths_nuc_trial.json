@@ -48,7 +48,8 @@
             "state_type":"wait",
             "name": "world_created_wait",
             "parameters": {
-                "exit_type": "button"
+                "exit_type": "time",
+                "duration": 0.01
             },
             "outcomes": {
                 "completed": "spawn_Agents"

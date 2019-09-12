@@ -225,10 +225,10 @@ class GroundStation(object):
         # agent manager embedded
         if config_def["agent_manager_on_gs"] == True:
             # root[9].attrib["default"] = 'true'
-            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_on_gs","default",'true')
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_use","default",'true')
         else:
             # root[9].attrib["default"] = 'false'
-            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_on_gs","default",'false')
+            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_use","default",'false')
 
         # smooth path
         #if ID+1 == 1:

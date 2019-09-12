@@ -8,10 +8,10 @@
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="10.0" name="mavros_offboard_rate" />
 
-    <arg default="false" name="ual_use" />
+    <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
     <arg default="true" name="uav_manager_use" />
-    <arg default="2" name="id" />
+    <arg default="1" name="id" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
     <arg default="false" name="multimaster_use" />
 

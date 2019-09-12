@@ -2,7 +2,7 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="real" name="mode" />
+    <arg default="sitl" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
@@ -10,10 +10,16 @@
 
     <arg default="false" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="false" name="uav_manager_on_gs" />
+    <arg default="true" name="uav_manager_use" />
     <arg default="2" name="id" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
     <arg default="false" name="multimaster_use" />
+
+
+    <group if="$(eval multimaster_use == 'true')">
+        <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
+        <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
+    </group>
 
     <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)$(arg id)">
         <group>
@@ -68,13 +74,8 @@
         </group>
     </group>
 
-    <group if="$(arg uav_manager_on_gs)">
+    <group if="$(arg uav_manager_use)">
         <node args="-ID=$(arg id)" name="agent_$(arg id)" output="screen" pkg="magna" type="Agent_Manager.py" />
-    </group>
-
-    <group if="$(eval multimaster_use == 'true')">
-        <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
-        <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
     </group>
 
 </launch>

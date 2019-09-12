@@ -231,12 +231,12 @@ class GroundStation(object):
             xmlSetAttribValueByTagAndAttribValue(root,"arg","name","uav_manager_on_gs","default",'false')
 
         # smooth path
-        if ID+1 == 1:
+        #if ID+1 == 1:
             # root[10].attrib["default"] = 'true'
-            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'true')
-        else:
+            #xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'true')
+        #else:
             # root[10].attrib["default"] = 'false'
-            xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'false')
+            #xmlSetAttribValueByTagAndAttribValue(root,"arg","name","smooth_path_generator","default",'false')
 
         # if sitl
         # root[11].attrib["ns"] = '$(arg ns_prefix){}'.format(ID+1)

@@ -78,6 +78,12 @@ class Obstacle(object):
                                 "brick":basic_path + "{0}.sdf".format("brick"),\
                                 }
 
+        if shape[:3] == "ext":
+            path = shape[4:]
+            shape = shape[:3]
+            product_xml_path_dict[shape] = path
+            print(shape,path)
+
         et = xml.etree.ElementTree.parse(product_xml_path_dict[shape])
         root = et.getroot()
 

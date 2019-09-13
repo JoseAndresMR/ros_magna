@@ -1,0 +1,88 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS2",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.0],[0,0,0]],
+                        "dimensions": [2,2,2],
+                        "color": [170,0,127],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Home_limits",
+                        "prefix": "HL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.5],[0,0,0]],
+                        "dimensions": [3.0,3.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.0
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.35],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0,1.25,1.5],
+                                "set_orientation": [0,0,1.5]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Parking",
+                "prefix": "Pkg",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+                "permits": "geofence",
+                "geometries": [
+
+                    {
+                        "name": "Corridor_left",
+                        "prefix": "CL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[100.0,0.0,0.0],[0,0,0]],
+                        "dimensions": [0.5,20.0,3.0],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [0.5,20.0,3.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

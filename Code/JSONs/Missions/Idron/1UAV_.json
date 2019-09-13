@@ -40,8 +40,7 @@
             "state_type":"wait",
             "name": "world_created_wait",
             "parameters": {
-                "exit_type": "time",
-                "duration" : 0.5
+                "exit_type": "button"
             },
             "outcomes": {
                 "completed": "spawn_Agents"
@@ -52,8 +51,7 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0]],
-                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0]]]
+                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0]]]
             },
             "outcomes": {
                 "completed": "initial_wait"
@@ -98,7 +96,7 @@
                     "ids": "all",
                     "ids_var": "agent",
                     "parameters": {
-                        "height": 3
+                        "height": 1.5
                     }
                 }
             ],
@@ -145,7 +143,10 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["CentralZone","Accessible","random",20]
+                                        "definition":["Ground_Station","volume","coordinates",[[-28.0,0.0,1.5],[0,0,0,1]]]
+                                    },
+                                    {
+                                        "definition":["Ground_Station","volume","coordinates",[[-28.0,12.0,1.5],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0

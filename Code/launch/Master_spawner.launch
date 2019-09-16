@@ -1,11 +1,12 @@
 <launch>
 
     <arg name="multimaster_use" default="false"/>
-    <node pkg="magna" type="Master.py" name="master" output="screen"/>
 
-    <group if="$(eval multimaster_use == 'true')">
+    <group if="$(arg multimaster_use)">
         <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" respawn="true" respawn_delay="5" />
         <node pkg="master_sync_fkie" type="master_sync" name="master_sync" respawn="true" respawn_delay="5" />
     </group>
+
+    <!-- <node pkg="magna" type="Master.py" name="master" output="screen"/> -->
 
 </launch>

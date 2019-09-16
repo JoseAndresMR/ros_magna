@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /PointCloud25
       Splitter Ratio: 0.5
     Tree Height: 775
   - Class: rviz/Selection
@@ -26,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -55,9 +56,33 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        loc_init:
+        aft_mapped:
+          Value: true
+        base_link:
+          Value: true
+        camera:
+          Value: true
+        camera_init:
+          Value: true
+        fcu:
+          Value: true
+        fcu_frd:
+          Value: true
+        laser_odom:
+          Value: true
+        lidarlite_laser:
+          Value: true
+        local_origin:
+          Value: true
+        local_origin_ned:
           Value: true
         map:
+          Value: true
+        sensor_frame:
+          Value: true
+        uav_1:
+          Value: true
+        uav_1_home:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -66,8 +91,11 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          loc_init:
+          sensor_frame:
             {}
+          uav_1_home:
+            uav_1:
+              {}
       Update Interval: 0
       Value: true
     - Angle Tolerance: 0.100000001
@@ -203,7 +231,7 @@ Visualization Manager:
       Marker Topic: /occupied_cells_vis_array
       Name: MarkerArray
       Namespaces:
-        map: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -266,6 +294,36 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: ""
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: ""
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.00999999978
+      Style: Flat Squares
+      Topic: /points_raw
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -306,10 +364,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.395202398
+      Pitch: 0.655202389
       Target Frame: aft_mapped
       Value: ThirdPersonFollower (rviz)
-      Yaw: 1.51037741
+      Yaw: 0.0453773737
     Saved: ~
 Window Geometry:
   Displays:
@@ -328,4 +386,4 @@ Window Geometry:
     collapsed: true
   Width: 1855
   X: 1431
-  Y: 24
+  Y: -4

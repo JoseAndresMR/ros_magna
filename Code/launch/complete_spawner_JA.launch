@@ -2,24 +2,18 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="sitl" name="mode" />
+    <arg default="real" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="10.0" name="mavros_offboard_rate" />
 
-    <arg default="true" name="ual_use" />
+    <arg default="false" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="true" name="uav_manager_use" />
-    <arg default="1" name="id" />
+    <arg default="false" name="uav_manager_use" />
+    <arg default="2" name="id" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
     <arg default="false" name="multimaster_use" />
-
-
-    <group if="$(arg multimaster_use)">
-        <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
-        <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
-    </group>
 
     <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)$(arg id)">
         <group>

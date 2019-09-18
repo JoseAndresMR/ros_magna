@@ -1,5 +1,14 @@
 <launch>
-    <include file="$(find magna)/launch/complete_spawner_JA.launch">
+
+    <arg default="true" name="multimaster_use" />
+    <arg default="5.0" name="delay" />
+
+    <group if="$(arg multimaster_use)">
+        <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
+        <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
+    </group>
+
+    <include file="$(find magna)/launch/complete_spawner_JA.launch" launch-prefix="bash -c 'sleep $(arg delay); $0 $@' ">
 
         <arg value="false" name="multi" />
         <arg value="uav_" name="ns_prefix" />

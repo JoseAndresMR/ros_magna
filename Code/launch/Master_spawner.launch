@@ -7,6 +7,6 @@
         <node pkg="master_sync_fkie" type="master_sync" name="master_sync" respawn="true" respawn_delay="5" />
     </group>
 
-    <!-- <node pkg="magna" type="Master.py" name="master" output="screen"/> -->
+    <node pkg="magna" type="Master.py" name="master" output="screen"/>
 
 </launch>

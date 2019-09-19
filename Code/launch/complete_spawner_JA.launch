@@ -12,7 +12,7 @@
     <arg default="px4" name="autopilot" />
     <arg default="false" name="uav_manager_use" />
     <arg default="2" name="id" />
-    <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
+    <arg default="[37.558542, -5.931074, 0.0]" name="origin_geo" />
     <arg default="false" name="multimaster_use" />
 
     <group if="$(eval mode == 'sitl')" ns="$(arg ns_prefix)$(arg id)">
@@ -49,7 +49,7 @@
                     <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
                     <param name="home_pose_parent_frame" value="map" />
                     <param name="backend" value="mavros" />
-                    <rosparam param="map_origin_geo">[37.558542, -5.931074, 7.89]</rosparam>
+                    <rosparam param="map_origin_geo">[37.558542, -5.931074, 0.0]</rosparam>
                 </node>
             </group>
             <group if="$(eval autopilot == 'dji')">

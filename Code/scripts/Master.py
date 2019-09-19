@@ -157,7 +157,7 @@ class Master(object):
         et = xml.etree.ElementTree.parse(gazebo_spawn_launch_path)
         root = et.getroot()
 
-        root[2][0].text = str(origin_geo)
+        root[3][0].text = str(origin_geo)
         # xmlSetAttribValueByTagAndAttribValue(root,"arg","name","origin_geo","default",str(origin_geo))
 # 
         et.write(gazebo_spawn_launch_path)

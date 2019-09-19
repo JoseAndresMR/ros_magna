@@ -1,14 +1,18 @@
 <launch>
 
+    <arg default="2" name="id" />
     <arg default="true" name="multimaster_use" />
     <arg default="5.0" name="delay" />
+    <arg default="sitl" name="mode" />
+    <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
+
+    <rosparam command="load" file="$(find magna)/yaml/uav_$(arg id).yaml" />
 
     <group if="$(arg multimaster_use)">
-        <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
-        <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
+        <include file="$(find magna)/launch/multimaster.launch"></include>
     </group>
 
-    <include file="$(find magna)/launch/complete_spawner_JA.launch" launch-prefix="bash -c 'sleep $(arg delay); $0 $@' ">
+    <include file="$(find magna)/launch/complete_spawner_JA.launch" >
 
         <arg value="false" name="multi" />
         <arg value="uav_" name="ns_prefix" />
@@ -21,9 +25,17 @@
         <arg value="true" name="ual_use" />
         <arg value="px4" name="autopilot" />
         <arg value="true" name="uav_manager_use" />
-        <arg value="2" name="id" />
-        <arg value="[37.558542, -5.931074, 7.89]" name="origin_geo" />
-        <arg value="true" name="multimaster_use" />
+        <arg value="$(arg id)" name="id" />
+        <arg value="$(arg origin_geo)" name="origin_geo" />
+        <arg value="false" name="multimaster_use" />
 
     </include>
+
+    <group if="$(eval mode == 'sitl')">
+        <include file="$(find magna)/launch/gazebo_spawner_JA.launch" >
+
+            <arg value="$(arg origin_geo)" name="origin_geo" />
+
+        </include>
+    </group>
 </launch>

@@ -1,0 +1,4 @@
+<launch>
+    <node name="master_discovery" pkg="master_discovery_fkie" respawn="true" respawn_delay="5" type="master_discovery" />
+    <node name="master_sync" pkg="master_sync_fkie" respawn="true" respawn_delay="5" type="master_sync" />
+</launch>

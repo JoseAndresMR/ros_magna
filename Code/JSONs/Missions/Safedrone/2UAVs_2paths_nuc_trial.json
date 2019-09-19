@@ -154,7 +154,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["CentralZone","Accessible","random",20]
+                                        "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0
@@ -204,7 +204,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["CentralZone","Accessible","random",20]
+                                        "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

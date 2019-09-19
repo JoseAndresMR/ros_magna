@@ -1,9 +1,10 @@
 <launch>
 
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
+    <arg default="gazebo_world" name="node_name" />
     
     <rosparam param="/use_sim_time">true</rosparam>
-    <node args="-physics=ode -world=$(find px4_bringup)/config/empty_light.world" name="gazebo_world" output="screen" pkg="px4_bringup" type="launch_gzworld_JA.py">
+    <node args="-physics=ode -world=$(find px4_bringup)/config/empty_light.world" name="$(arg node_name)" output="screen" pkg="px4_bringup" type="launch_gzworld_JA.py">
         <rosparam param="sim_origin">[37.558542, -5.931074, 7.89]</rosparam>
     </node>
 

@@ -61,8 +61,8 @@ class Master(object):
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
-        'world'              :                   "General",                    # Type of the world or sceneario created
-        'subworld'           :                   "Empty",
+        'world'              :                   "Safedrone",                    # Type of the world or sceneario created
+        'subworld'           :                   "Polygons2Sweep",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
         'submission'         :                   "2UAVs_2paths_nuc_trial",
         'n_dataset'          :                       1,                       # Number of the dataset to create

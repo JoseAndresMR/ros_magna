@@ -35,6 +35,7 @@
         <include file="$(find magna)/launch/gazebo_spawner_JA.launch" >
 
             <arg value="$(arg origin_geo)" name="origin_geo" />
+            <arg value="gazebo_world_$(arg id)" name="node_name" />
 
         </include>
     </group>

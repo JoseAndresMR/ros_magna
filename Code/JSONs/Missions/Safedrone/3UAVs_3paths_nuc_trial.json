@@ -69,7 +69,8 @@
             "name": "spawn_Agents",
             "parameters": {
                 "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0]],
-                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0]]]
+                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0]],
+                                  ["Ground_Station","Agents_take_off","matrix",[2,0,0]]]
             },
             "outcomes": {
                 "completed": "initial_wait"
@@ -250,8 +251,8 @@
                                 "duration" : 0.5
                             },
                             "outcomes": {
-                                "completed": "2_to_delivery_height",
-                                "failed": "2_to_delivery_height"
+                                "completed": "3_to_delivery_height",
+                                "failed": "3_to_delivery_height"
                             }
                         },
                         {

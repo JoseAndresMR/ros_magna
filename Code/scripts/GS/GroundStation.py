@@ -144,7 +144,7 @@ class GroundStation(object):
                 time.sleep(0.5)
 
 
-            print("Ground Station: agent {} is ready!".format(i))
+            print("Ground Station: agent {} is ready!".format(i+1))
             # time.sleep(5)
         # time.sleep(20 * heritage.N_agents)
 
@@ -247,7 +247,7 @@ class GroundStation(object):
         # # if ual use
         # root[11][1][0][0][0].attrib["value"] = str(ID+1)
 
-        _,child = xmlGetIndexByTagAndAttribName(root,"group","if","$(eval mode == 'sitl')")
+        _,child = xmlGetIndexByTagAndAttribName(root,"group","ns","$(arg ns_prefix)$(arg id)")
 
         if config_def["autopilot"] == "px4":
             if agent_model == "plane":

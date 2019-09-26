@@ -76,7 +76,7 @@ class Master(object):
         'rviz_gui'           :                     True,
         }
         # 00.00022
-        rospy.set_param('gazebo_gui',True)   # Gazebo visulization
+        rospy.set_param('gazebo_gui',False)   # Gazebo visulization
 
         self.hyperparameters["home_path"] = rospkg.RosPack().get_path('magna')[:-5]
 

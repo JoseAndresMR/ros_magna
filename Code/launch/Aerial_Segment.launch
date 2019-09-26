@@ -16,7 +16,7 @@
 
         <arg value="false" name="multi" />
         <arg value="uav_" name="ns_prefix" />
-        <arg value="sitl" name="mode" />
+        <arg value="$(arg mode)" name="mode" />
         <arg value="map" name="pose_frame_id" />
         <arg value="on" name="ual_server" />
         <arg value="30.0" name="ual_pub_rate" />

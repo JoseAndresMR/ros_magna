@@ -27,7 +27,6 @@
         <arg value="true" name="uav_manager_use" />
         <arg value="$(arg id)" name="id" />
         <arg value="$(arg origin_geo)" name="origin_geo" />
-        <arg value="false" name="multimaster_use" />
 
     </include>
 

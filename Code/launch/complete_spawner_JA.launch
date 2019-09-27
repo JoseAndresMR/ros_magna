@@ -2,16 +2,16 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="real" name="mode" />
+    <arg default="serial" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="10.0" name="mavros_offboard_rate" />
 
-    <arg default="false" name="ual_use" />
+    <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="false" name="uav_manager_use" />
-    <arg default="2" name="id" />
+    <arg default="true" name="uav_manager_use" />
+    <arg default="1" name="id" />
     <arg default="[37.558542, -5.931074, 0.0]" name="origin_geo" />
 
     <group ns="$(arg ns_prefix)$(arg id)">
@@ -48,6 +48,7 @@
                     <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
                     <param name="home_pose_parent_frame" value="map" />
                     <param name="backend" value="mavros" />
+                    <param name="ual_use" value="$(arg ual_use)">[37.558542, -5.931074, 0.0]</param>
                     <rosparam param="map_origin_geo">[37.558542, -5.931074, 0.0]</rosparam>
                 </node>
             </group>

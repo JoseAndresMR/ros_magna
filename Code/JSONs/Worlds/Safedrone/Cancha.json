@@ -1,0 +1,419 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "origin_geo" : [37.410371, -6.002350, 0.0],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[0.0,0.0,0.0],[0.0,0.0,0.7523695526]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Limits",
+                        "prefix": "L",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,5.0],[0,0,0]],
+                        "dimensions": [30,35,10],
+                        "color": [170,127,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Tent",
+                        "prefix": "T",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,-20.0,2.0],[0,0,0]],
+                        "dimensions": [4,4,4],
+                        "color": [0,127,170],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Home_limits",
+                        "prefix": "HL",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,1.5],[0,0,0]],
+                        "dimensions": [300.0,300.0,30.0],
+                        "color": [0,0,0],
+                        "alpha": 0.1
+                    },
+                    {
+                        "name": "Agents_take_off",
+                        "prefix": "takeoff",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[0.0,0.0,0.05],[0,0,0]],
+                        "dimensions": [4.0,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [3,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Basket_Pitch",
+                "prefix": "BP",
+                "origin": [[0.0,0.0,0.0],[0,0,0.7523695526]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Basket1",
+                        "prefix": "B1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[2.36,12.6,2.0],[0,0,0]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Basket2",
+                        "prefix": "B2",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[12.6,0.0,2.0],[0,0,1.5708]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Basket3",
+                        "prefix": "B3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[2.36,-12.6,2.0],[0,0,0]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Basket4",
+                        "prefix": "B4",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-2.36,-12.6,2.0],[0,0,0]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Basket5",
+                        "prefix": "B5",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-12.6,0.0,2.0],[0,0,1.5708]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Basket6",
+                        "prefix": "B6",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-2.36,12.6,2.0],[0,0,0]],
+                        "dimensions": [1.2,1.7,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cube"],
+                                "obstacles_dimensions": [1.0,1.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Light1",
+                        "prefix": "L1",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[10.3,10.3,2.0],[0,0,0]],
+                        "dimensions": [0.6,0.6,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.5,0.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Light2",
+                        "prefix": "L2",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[10.3,-10.3,2.0],[0,0,0]],
+                        "dimensions": [0.6,0.6,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.5,0.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Light3",
+                        "prefix": "L3",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-10.3,-10.3,2.0],[0,0,0]],
+                        "dimensions": [0.6,0.6,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.5,0.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Light4",
+                        "prefix": "L4",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-10.3,10.3,2.0],[0,0,0]],
+                        "dimensions": [0.6,0.6,4.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.5,0.5,4.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Column1",
+                        "prefix": "C1",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[11.1,15.2,6.0],[0,0,0]],
+                        "dimensions": [0.9,0.9,12.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.7,0.7,12.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Column2",
+                        "prefix": "C2",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[11.1,-15.2,6.0],[0,0,0]],
+                        "dimensions": [0.9,0.9,12.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.7,0.7,12.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Column3",
+                        "prefix": "C3",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-11.1,-15.2,6.0],[0,0,0]],
+                        "dimensions": [0.9,0.9,12.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.7,0.7,12.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Column4",
+                        "prefix": "C4",
+                        "shape": "cylinder",
+                        "id": 0,
+                        "origin": [[-11.1,15.2,6.0],[0,0,0]],
+                        "dimensions": [0.9,0.9,12.2],
+                        "color": [0,0,0],
+                        "alpha": 0.2,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type": "dimension",
+                                "use" : "obstacles",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "obstacles_shape": ["cylinder"],
+                                "obstacles_dimensions": [0.7,0.7,12.0],
+                                "set_orientation": [0,0,0],
+                                "poses_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon1",
+                        "prefix": "ins",
+                        "origin": [[0.0,0.0,4.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-2.1,-2.1,0],[2,-2,0],[2.1,2.1,0],[-2,2,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [1.0,1.0],
+                                "sweep_angle":0,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

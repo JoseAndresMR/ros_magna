@@ -57,14 +57,14 @@ from Various import *
 sys.dont_write_bytecode = True
 
 class Master(object):
-    def __init__(self):
+    def __init__(self):#43.1076deg, 1.36136 rad
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
         'world'              :                   "Safedrone",                    # Type of the world or sceneario created
-        'subworld'           :                   "Polygons2Sweep",
+        'subworld'           :                   "Cancha",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "3UAVs_3paths_nuc_trial",
+        'submission'         :                   "1UAVs_ToL_nuc_trial",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
@@ -72,7 +72,7 @@ class Master(object):
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
-        'smach_view'         :                     False,                      # Flag to decide if smach introspector is actived
+        'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         'rviz_gui'           :                     True,
         }
         # 00.00022

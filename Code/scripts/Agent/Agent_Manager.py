@@ -124,11 +124,17 @@ class Agent_Manager(object):
 
         self.nai.agents_data_list = self.agents_data_list
 
+        self.state = "node_alive"
+        self.GSStateActualization()
+
         # Wait time to let Gazebo's Real Time recover from model spawns
 
-        print("Waiting for Agent", ID, "life inform")
         while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
             time.sleep(0.1)
+
+
+        self.state = "landed"
+        self.GSStateActualization()
 
         self.GroundStationListener()        # Start listening
 

@@ -83,11 +83,15 @@ class GroundStation(object):
         self.N_agents = len(self.mission_def["Agents_Config"])
         self.hyperparameters["N_agents"] = self.N_agents
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
+        self.external_input = "none"
 
-        # Start by landed the state of every Agent
+        rospy.init_node('ground_station', anonymous=True)     # Start node
+
+        # Start by node_disconnected the state of every Agent
         self.states_list = []
         for i in np.arange(self.N_agents):
-            self.states_list.append("landed")
+            self.states_list.append("node_disconnected")
+            self.pubAgentStatus(i + 1, self.states_list[i])
 
         # Start by not collisioned the the list within all Agents
         self.critical_events_list = []
@@ -95,8 +99,6 @@ class GroundStation(object):
             self.critical_events_list.append('nothing')
 
         self.CreatingSimulationDataStorage()
-
-        rospy.init_node('ground_station', anonymous=True)     # Start node
 
         self.agent_models = []
         self.utm_flightplan_list = []
@@ -135,6 +137,7 @@ class GroundStation(object):
                                                             first_pose.orientation.y,
                                                             first_pose.orientation.z,
                                                             first_pose.orientation.w))[2]
+
             self.SetAgentSpawnFeatures(i+1,self.agent_models[i],[first_pose.position.x,first_pose.position.y,first_pose.position.z],yaw)
             time.sleep(2)
             self.AgentSpawner(i,self.agent_models[i])      # Call service to spawn the Agent
@@ -311,7 +314,7 @@ class GroundStation(object):
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
-        launch_path = "{0}/Code/launch/World_spawner_JA.launch".format(self.hyperparameters['home_path'])
+        launch_path = "{0}/Code/launch/World_spawner_JA.launch".format(self.home_path)
 
         et = xml.etree.ElementTree.parse(launch_path)
         root = et.getroot()
@@ -403,13 +406,25 @@ class GroundStation(object):
         # return [self.world.getFSPoseGlobal(path_def)]
         return [self.worldGetFSPset(path_def)]
 
-    def wait(self,exit_type,duration=1):
+    def wait(self,exit_type,duration=1,external_input = "none"):
         if exit_type == "time":
             time.sleep(duration)
         elif exit_type == "button":
             button = raw_input("Wait State asks for a button press")
+        elif exit_type =="external_input":
+            
+            while not rospy.is_shutdown() and self.external_input != external_input:
+                time.sleep(0.7)
 
         return "completed" 
+
+
+    def pubAgentStatus(self,agent_id,status):
+
+        status_pub = rospy.Publisher('/magna/status/agent_{}'.format(agent_id), String, queue_size=1)
+        response = status_pub.publish(status)
+
+        return
 
     #### Finisher functions ####
 
@@ -507,7 +522,8 @@ class GroundStation(object):
         # Start service for Agents to actualize its state
         rospy.Service('/magna/GS/state_actualization', StateActualization, self.handle_agent_status)
         rospy.Service('/magna/gyal_GS/command', GyalCommand, self.handle_gyal_command)
-        rospy.Service('/magna/utm/notification', UTMnotification, self.utm_notification_command)
+        rospy.Service('/magna/utm/notification', UTMnotification, self.hande_utm_notification_command)
+        rospy.Service('/magna/GS/external_input', InstructionCommand, self.handle_external_input_command)
 
         # Start listening to topics stored on rosbag
         if self.rosbag_flag:
@@ -526,6 +542,7 @@ class GroundStation(object):
 
         # Store Agent status into Agents state list
         self.states_list[data.id-1] = data.state
+        self.pubAgentStatus(data.id, self.states_list[data.id-1])
 
         # Check collisions to update it Agents collision list
         if data.critical_event != 'nothing':
@@ -588,7 +605,7 @@ class GroundStation(object):
                 pass
 
 
-    def utm_notification_command(self,req):
+    def hande_utm_notification_command(self,req):
 
         instruction = json.loads(req.instruction)
 
@@ -606,6 +623,27 @@ class GroundStation(object):
         return response
 
 
+    def handle_external_input_command(self,data):
+        self.external_input = data.instruction
+
+        response = InstructionCommandResponse()
+        response.success = True
+        return response
+
+
+    # Functions to save every TF information inside ROS bag
+    def tf_static_callback(self,data):
+        try:
+            self.bag.write('/tf_static', data)
+        except:
+            print "The bag file does not exist"
+
+    def tf_callback(self,data):
+        try:
+            self.bag.write('/tf', data)
+        except:
+            print "The bag file does not exist"
+
     def generic_action_client(self,agent_id,name,params):
 
         if len(name.split(" ")) > 1: name = "_".join(name.split(" "))
@@ -622,20 +660,6 @@ class GroundStation(object):
         # return client.get_result()
 
         return
-
-
-    # Functions to save every TF information inside ROS bag
-    def tf_static_callback(self,data):
-        try:
-            self.bag.write('/tf_static', data)
-        except:
-            print "The bag file does not exist"
-
-    def tf_callback(self,data):
-        try:
-            self.bag.write('/tf', data)
-        except:
-            print "The bag file does not exist"
 
 
     # Function to get Global ROS parameters

@@ -242,8 +242,9 @@ class GroundStation_SM(object):
     def wait_stcb(self,heritage,parameters = {}):
 
         parameters.setdefault("duration", 0)
+        parameters.setdefault("external_input", "none")
 
-        outcome = heritage.wait(parameters["exit_type"],parameters["duration"])
+        outcome = heritage.wait(parameters["exit_type"],parameters["duration"],parameters["external_input"])
 
         return outcome
 

@@ -6,12 +6,13 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1
         - /TF1/Frames1
         - /PolygonArray1
         - /PolygonArray2
         - /PolygonArray5
       Splitter Ratio: 0.5
-    Tree Height: 663
+    Tree Height: 531
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -55,19 +56,313 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/TF
-      Enabled: false
+      Enabled: true
       Frame Timeout: 1
       Frames:
-        All Enabled: true
+        All Enabled: false
+        BP_B1_obs_0_0_0:
+          Value: false
+        BP_B2_obs_0_0_0:
+          Value: false
+        BP_B3_obs_0_0_0:
+          Value: false
+        BP_B4_obs_0_0_0:
+          Value: false
+        BP_B5_obs_0_0_0:
+          Value: false
+        BP_B6_obs_0_0_0:
+          Value: false
+        BP_Basket1:
+          Value: false
+        BP_Basket2:
+          Value: false
+        BP_Basket3:
+          Value: false
+        BP_Basket4:
+          Value: false
+        BP_Basket5:
+          Value: false
+        BP_Basket6:
+          Value: false
+        BP_C1_obs_0_0_0:
+          Value: false
+        BP_C2_obs_0_0_0:
+          Value: false
+        BP_C3_obs_0_0_0:
+          Value: false
+        BP_C4_obs_0_0_0:
+          Value: false
+        BP_Column1:
+          Value: false
+        BP_Column2:
+          Value: false
+        BP_Column3:
+          Value: false
+        BP_Column4:
+          Value: false
+        BP_L1_obs_0_0_0:
+          Value: false
+        BP_L2_obs_0_0_0:
+          Value: false
+        BP_L3_obs_0_0_0:
+          Value: false
+        BP_L4_obs_0_0_0:
+          Value: false
+        BP_Light1:
+          Value: false
+        BP_Light2:
+          Value: false
+        BP_Light3:
+          Value: false
+        BP_Light4:
+          Value: false
+        BP_ManualPolygon1:
+          Value: false
+        BP_ManualPolygon1_auxiliar_1:
+          Value: false
+        BP_ManualPolygon1_auxiliar_2:
+          Value: false
+        BP_ManualPolygon1_auxiliar_reference:
+          Value: false
+        BP_ManualPolygon1_center:
+          Value: false
+        BP_ManualPolygon1_perimeter_vertex_0:
+          Value: false
+        BP_ManualPolygon1_perimeter_vertex_1:
+          Value: false
+        BP_ManualPolygon1_perimeter_vertex_2:
+          Value: false
+        BP_ManualPolygon1_perimeter_vertex_3:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_0:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_1:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_2:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_3:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_4:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_5:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_6:
+          Value: false
+        BP_ManualPolygon1_prism_vertex_7:
+          Value: false
+        BP_ManualPolygon1zigzag_inter0:
+          Value: false
+        BP_ManualPolygon1zigzag_inter1:
+          Value: false
+        BP_ManualPolygon1zigzag_inter2:
+          Value: false
+        BP_ManualPolygon1zigzag_inter3:
+          Value: false
+        BP_ManualPolygon1zigzag_inter4:
+          Value: false
+        BP_ManualPolygon1zigzag_inter5:
+          Value: false
+        BP_ManualPolygon1zigzag_inter6:
+          Value: false
+        BP_ManualPolygon1zigzag_inter7:
+          Value: false
+        BP_ManualPolygon1zigzag_inter8:
+          Value: false
+        BP_ManualPolygon1zigzag_inter9:
+          Value: false
+        BP_ins_pos_0:
+          Value: false
+        BP_ins_pos_1:
+          Value: false
+        BP_ins_pos_2:
+          Value: false
+        BP_ins_pos_3:
+          Value: false
+        BP_ins_pos_4:
+          Value: false
+        BP_ins_pos_5:
+          Value: false
+        BP_ins_pos_6:
+          Value: false
+        BP_ins_pos_7:
+          Value: false
+        BP_ins_pos_8:
+          Value: false
+        BP_ins_pos_9:
+          Value: false
+        Basket_Pitch:
+          Value: false
+        GS_Agents_take_off:
+          Value: false
+        GS_Home_limits:
+          Value: false
+        GS_Limits:
+          Value: false
+        GS_Tent:
+          Value: false
+        GS_takeoff_pos_0_0_0:
+          Value: true
+        GS_takeoff_pos_1_0_0:
+          Value: true
+        GS_takeoff_pos_2_0_0:
+          Value: true
+        Ground_Station:
+          Value: false
+        fcu:
+          Value: false
+        fcu_frd:
+          Value: false
+        local_origin:
+          Value: false
+        local_origin_ned:
+          Value: false
+        map:
+          Value: true
+        uav_1/base_link:
+          Value: true
+        uav_1/odom:
+          Value: true
       Marker Scale: 0.5
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          Basket_Pitch:
+            BP_Basket1:
+              BP_B1_obs_0_0_0:
+                {}
+            BP_Basket2:
+              BP_B2_obs_0_0_0:
+                {}
+            BP_Basket3:
+              BP_B3_obs_0_0_0:
+                {}
+            BP_Basket4:
+              BP_B4_obs_0_0_0:
+                {}
+            BP_Basket5:
+              BP_B5_obs_0_0_0:
+                {}
+            BP_Basket6:
+              BP_B6_obs_0_0_0:
+                {}
+            BP_Column1:
+              BP_C1_obs_0_0_0:
+                {}
+            BP_Column2:
+              BP_C2_obs_0_0_0:
+                {}
+            BP_Column3:
+              BP_C3_obs_0_0_0:
+                {}
+            BP_Column4:
+              BP_C4_obs_0_0_0:
+                {}
+            BP_Light1:
+              BP_L1_obs_0_0_0:
+                {}
+            BP_Light2:
+              BP_L2_obs_0_0_0:
+                {}
+            BP_Light3:
+              BP_L3_obs_0_0_0:
+                {}
+            BP_Light4:
+              BP_L4_obs_0_0_0:
+                {}
+            BP_ManualPolygon1:
+              BP_ManualPolygon1_auxiliar_reference:
+                BP_ManualPolygon1_auxiliar_1:
+                  {}
+                BP_ManualPolygon1_auxiliar_2:
+                  {}
+                BP_ManualPolygon1_center:
+                  {}
+              BP_ManualPolygon1_perimeter_vertex_0:
+                {}
+              BP_ManualPolygon1_perimeter_vertex_1:
+                {}
+              BP_ManualPolygon1_perimeter_vertex_2:
+                {}
+              BP_ManualPolygon1_perimeter_vertex_3:
+                {}
+              BP_ManualPolygon1_prism_vertex_0:
+                {}
+              BP_ManualPolygon1_prism_vertex_1:
+                {}
+              BP_ManualPolygon1_prism_vertex_2:
+                {}
+              BP_ManualPolygon1_prism_vertex_3:
+                {}
+              BP_ManualPolygon1_prism_vertex_4:
+                {}
+              BP_ManualPolygon1_prism_vertex_5:
+                {}
+              BP_ManualPolygon1_prism_vertex_6:
+                {}
+              BP_ManualPolygon1_prism_vertex_7:
+                {}
+              BP_ManualPolygon1zigzag_inter0:
+                {}
+              BP_ManualPolygon1zigzag_inter1:
+                {}
+              BP_ManualPolygon1zigzag_inter2:
+                {}
+              BP_ManualPolygon1zigzag_inter3:
+                {}
+              BP_ManualPolygon1zigzag_inter4:
+                {}
+              BP_ManualPolygon1zigzag_inter5:
+                {}
+              BP_ManualPolygon1zigzag_inter6:
+                {}
+              BP_ManualPolygon1zigzag_inter7:
+                {}
+              BP_ManualPolygon1zigzag_inter8:
+                {}
+              BP_ManualPolygon1zigzag_inter9:
+                {}
+              BP_ins_pos_0:
+                {}
+              BP_ins_pos_1:
+                {}
+              BP_ins_pos_2:
+                {}
+              BP_ins_pos_3:
+                {}
+              BP_ins_pos_4:
+                {}
+              BP_ins_pos_5:
+                {}
+              BP_ins_pos_6:
+                {}
+              BP_ins_pos_7:
+                {}
+              BP_ins_pos_8:
+                {}
+              BP_ins_pos_9:
+                {}
+          Ground_Station:
+            GS_Agents_take_off:
+              GS_takeoff_pos_0_0_0:
+                {}
+              GS_takeoff_pos_1_0_0:
+                {}
+              GS_takeoff_pos_2_0_0:
+                {}
+            GS_Home_limits:
+              {}
+            GS_Limits:
+              {}
+            GS_Tent:
+              {}
+          uav_1/odom:
+            uav_1/base_link:
+              {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -172,10 +467,39 @@ Visualization Manager:
       Marker Topic: visualization_marker
       Name: Marker
       Namespaces:
+        BP_B1_obs_0_0_0: true
+        BP_B2_obs_0_0_0: true
+        BP_B3_obs_0_0_0: true
+        BP_B4_obs_0_0_0: true
+        BP_B5_obs_0_0_0: true
+        BP_B6_obs_0_0_0: true
+        BP_Basket1: true
+        BP_Basket2: true
+        BP_Basket3: true
+        BP_Basket4: true
+        BP_Basket5: true
+        BP_Basket6: true
+        BP_C1_obs_0_0_0: true
+        BP_C2_obs_0_0_0: true
+        BP_C3_obs_0_0_0: true
+        BP_C4_obs_0_0_0: true
+        BP_Column1: true
+        BP_Column2: true
+        BP_Column3: true
+        BP_Column4: true
+        BP_L1_obs_0_0_0: true
+        BP_L2_obs_0_0_0: true
+        BP_L3_obs_0_0_0: true
+        BP_L4_obs_0_0_0: true
+        BP_Light1: true
+        BP_Light2: true
+        BP_Light3: true
+        BP_Light4: true
         GS_Agents_take_off: true
+        GS_Home_limits: true
+        GS_Limits: true
+        GS_Tent: true
         agent_1: true
-        agent_2: true
-        agent_3: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -396,33 +720,33 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 4.56605434
+      Distance: 64.9638901
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.0114049446
-        Y: 0.00210026302
-        Z: -0.00404970441
+        X: -0.109960176
+        Y: 0.124004163
+        Z: 0.00393998995
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.714797378
+      Pitch: 1.34479654
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.71194983
+      Yaw: 4.78015757
     Saved: ~
 Window Geometry:
   Displays:
-    collapsed: true
-  Height: 876
-  Hide Left Dock: true
+    collapsed: false
+  Height: 744
+  Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd0000000400000000000001c800000326fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000002800000326000000d700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f0000025efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a0056006900650077007300000000280000025e000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005150000003efc0100000002fb0000000800540069006d00650000000000000005150000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000005ff0000032600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000016a000002a2fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000002a2000000d700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f0000025efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a0056006900650077007300000000280000025e000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005150000003efc0100000002fb0000000800540069006d00650000000000000005150000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000003a5000002a200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -431,6 +755,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 1535
+  Width: 1301
   X: 65
   Y: 24

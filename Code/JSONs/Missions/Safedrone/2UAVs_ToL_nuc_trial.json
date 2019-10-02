@@ -11,18 +11,18 @@
         {
             "ID":2,
             "model":"iris",
-            "mode": "sitl",
+            "mode": "real",
             "marker_color": [0,255,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         },
         {
             "ID":3,
             "model":"iris",
-            "mode": "sitl",
+            "mode": "real",
             "marker_color": [0,0,255,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         }
     ],
     "State_Machine": [
@@ -110,147 +110,22 @@
             "ids": 1,
             "occurrencies": [
                 {
-                    "type": "StateMachine",
+                    "type": "SimpleActionState",
+                    "state_type": "take_off",
                     "name": "take_off",
-                    "ids": 1,
-                    "occurrencies": [
-                        {
-                            "type": "CBState",
-                            "state_type":"wait",
-                            "name": "initial_wait",
-                            "parameters": {
-                                "exit_type": "external_input",
-                                "external_input" : "1_take_off"
-                            },
-                            "outcomes": {
-                                "completed": "1_take_off",
-                                "failed": "collision"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "take_off",
-                            "name": "take_off",
-                            "ids": 1,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "height": 3
-                            },
-                            "outcomes":{
-                                "succeeded": "completed",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "utm_new_flightplan" : "completed",
-                                "low_battery": "completed",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        }
-                    ],
-                    "outcomes":{
-                        "completed": "completed",
-                        "collision": "collision",
-                        "GS_critical_event": "GS_critical_event",
-                        "low_battery": "low_battery"
-                    }
-                },
-                {
-                    "type": "StateMachine",
-                    "name": "take_off",
-                    "ids": 2,
-                    "occurrencies": [
-                        {
-                            "type": "CBState",
-                            "state_type":"wait",
-                            "name": "initial_wait",
-                            "parameters": {
-                                "exit_type": "external_input",
-                                "external_input" : "2_take_off"
-                            },
-                            "outcomes": {
-                                "completed": "2_take_off",
-                                "failed": "collision"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "take_off",
-                            "name": "take_off",
-                            "ids": 2,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "height": 3
-                            },
-                            "outcomes":{
-                                "succeeded": "completed",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "utm_new_flightplan" : "completed",
-                                "low_battery": "completed",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        }
-                    ],
-                    "outcomes":{
-                        "completed": "completed",
-                        "collision": "collision",
-                        "GS_critical_event": "GS_critical_event",
-                        "low_battery": "low_battery"
-                    }
-                },
-                {
-                    "type": "StateMachine",
-                    "name": "take_off",
-                    "ids": 3,
-                    "occurrencies": [
-                        {
-                            "type": "CBState",
-                            "state_type":"wait",
-                            "name": "initial_wait",
-                            "parameters": {
-                                "exit_type": "external_input",
-                                "external_input" : "3_take_off"
-                            },
-                            "outcomes": {
-                                "completed": "3_take_off",
-                                "failed": "collision"
-                            }
-                        },
-                        {
-                            "type": "SimpleActionState",
-                            "state_type": "take_off",
-                            "name": "take_off",
-                            "ids": 3,
-                            "ids_var": "agent",
-                            "parameters": {
-                                "height": 3
-                            },
-                            "outcomes":{
-                                "succeeded": "completed",
-                                "collision": "collision",
-                                "GS_critical_event": "GS_critical_event",
-                                "utm_new_flightplan" : "completed",
-                                "low_battery": "completed",
-                                "preempted": "collision",
-                                "aborted": "collision"
-                            }
-                        }
-                    ],
-                    "outcomes":{
-                        "completed": "completed",
-                        "collision": "collision",
-                        "GS_critical_event": "GS_critical_event",
-                        "low_battery": "low_battery"
+                    "ids": "all",
+                    "ids_var": "agent",
+                    "parameters": {
+                        "height": 3
                     }
                 }
             ],
             "occurrencies_outcome_map": {
                 "completed": {
-                    "all": "completed"
+                    "all": "succeeded"
                 },
-                "aborted": {
-                    "all": "collision"
+                "failed": {
+                    "all": "aborted"
                 }
             },
             "outcomes": {
@@ -262,50 +137,36 @@
             "state_type":"wait",
             "name": "after_takeoff_wait",
             "parameters": {
-                "exit_type": "external_input",
-                "external_input" : "start_mission"
+                "exit_type": "time",
+                "duration" : 0.5
             },
             "outcomes": {
-                "completed": "1_area_sweep"
+                "completed": "1_filmed_delivery"
             }
         },
         {
             "type": "Concurrence",
-            "name": "area_sweep",
+            "name": "filmed_delivery",
             "ids": 1,
             "occurrencies": [
                 {
                     "type": "StateMachine",
-                    "name": "area_sweep",
+                    "name": "delivery",
                     "ids": 1,
                     "occurrencies": [
                         {
-                            "type": "CBState",
-                            "state_type":"wait",
-                            "name": "initial_wait",
-                            "parameters": {
-                                "exit_type": "time",
-                                "duration" : 0.5
-                            },
-                            "outcomes": {
-                                "completed": "1_area_sweep",
-                                "failed": "1_area_sweep"
-                            }
-                        },
-                        {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "area_sweep",
+                            "name": "delivery",
                             "ids": 1,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon1","path","Zigzag"]
+                                        "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
                                     }
                                 ],
-                                "smooth_path_mode": 0,
-                                "dynamic" : "velocity"
+                                "smooth_path_mode": 0
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -327,7 +188,7 @@
                 },
                 {
                     "type": "StateMachine",
-                    "name": "area_sweep",
+                    "name": "filming",
                     "ids": 2,
                     "occurrencies": [
                         {
@@ -339,20 +200,20 @@
                                 "duration" : 0.5
                             },
                             "outcomes": {
-                                "completed": "2_area_sweep",
-                                "failed": "2_area_sweep"
+                                "completed": "2_to_delivery_height",
+                                "failed": "2_to_delivery_height"
                             }
                         },
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "area_sweep",
+                            "name": "to_delivery_height",
                             "ids": 2,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","Agents_take_off","coordinates",[[0.0,10.0,3.0],[0,0,0,1]]]
+                                        "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -378,7 +239,7 @@
                 },
                 {
                     "type": "StateMachine",
-                    "name": "area_sweep",
+                    "name": "filming",
                     "ids": 3,
                     "occurrencies": [
                         {
@@ -390,20 +251,20 @@
                                 "duration" : 0.5
                             },
                             "outcomes": {
-                                "completed": "3_area_sweep",
-                                "failed": "3_area_sweep"
+                                "completed": "3_to_delivery_height",
+                                "failed": "3_to_delivery_height"
                             }
                         },
                         {
                             "type": "SimpleActionState",
                             "state_type": "follow_path",
-                            "name": "area_sweep",
+                            "name": "to_delivery_height",
                             "ids": 3,
                             "ids_var": "agent",
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","Agents_take_off","coordinates",[[0.0,-10.0,3.0],[0,0,0,1]]]
+                                        "definition":["PolygonsFromUnifly","Polygon_3","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

@@ -3,7 +3,7 @@
         {
             "ID":1,
             "model":"iris",
-            "mode": "sitl",
+            "mode": "real",
             "marker_color": [255,0,0,0.5],
             "ual_use": true,
             "agent_manager_on_gs": true
@@ -158,7 +158,86 @@
                 "external_input" : "start_mission"
             },
             "outcomes": {
-                "completed": "1_hovering"
+                "completed": "1_area_sweep"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "area_sweep",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "StateMachine",
+                    "name": "area_sweep",
+                    "ids": 1,
+                    "occurrencies": [
+                        {
+                            "type": "CBState",
+                            "state_type":"wait",
+                            "name": "initial_wait",
+                            "parameters": {
+                                "exit_type": "time",
+                                "duration" : 0.5
+                            },
+                            "outcomes": {
+                                "completed": "1_area_sweep",
+                                "failed": "1_area_sweep"
+                            }
+                        },
+                        {
+                            "type": "SimpleActionState",
+                            "state_type": "follow_path",
+                            "name": "area_sweep",
+                            "ids": 1,
+                            "ids_var": "agent",
+                            "parameters": {
+                                "path": [
+                                    {
+                                        "definition":["Basket_Pitch","ManualPolygon1","path","Zigzag"]
+                                    }
+                                ],
+                                "smooth_path_mode": 0,
+                                "dynamic" : "position"
+                            },
+                            "outcomes":{
+                                "succeeded": "completed",
+                                "collision": "collision",
+                                "GS_critical_event": "GS_critical_event",
+                                "utm_new_flightplan" : "completed",
+                                "low_battery": "completed",
+                                "preempted": "collision",
+                                "aborted": "collision"
+                            }
+                        }
+                    ],
+                    "outcomes":{
+                        "completed": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "low_battery": "low_battery"
+                    }
+                }
+            ],
+            "outcome_cb":"collision_if_any_collided",
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "completed"
+                },
+                "collision": {
+                    "all": "collision"
+                },
+                "low_battery": {
+                    "all": "low_battery"
+                },
+                "GS_critical_event": {
+                    "all": "GS_critical_event"
+                }
+            },
+            "outcomes": {
+                "completed": "1_save_csv",
+                "collision": "1_hovering",
+                "low_battery": "1_hovering",
+                "GS_critical_event": "1_hovering"
             }
         },
         {

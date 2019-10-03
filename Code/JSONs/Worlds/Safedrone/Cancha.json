@@ -1,7 +1,7 @@
 {
     "scenario": {
         "world_boundaries": [[-500,500],[-500,500],[-500,500]],
-        "origin_geo" : [37.410371, -6.002350, 0.0],
+        "origin_geo" : [37.410371, -6.002348, 0.0],
         "volumes": [
             {
                 "name": "Ground_Station",

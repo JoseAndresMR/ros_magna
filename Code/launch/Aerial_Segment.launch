@@ -5,6 +5,8 @@
     <arg default="5.0" name="delay" />
     <arg default="sitl" name="mode" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
+    <arg default="udp://:14550@localhost:14556" name="fcu_url" />
+    <arg default="udp://@localhost" name="gcs_url" />
 
     <rosparam command="load" file="$(find magna)/yaml/uav_$(arg id).yaml" />
 
@@ -27,6 +29,9 @@
         <arg value="true" name="uav_manager_use" />
         <arg value="$(arg id)" name="id" />
         <arg value="$(arg origin_geo)" name="origin_geo" />
+
+        <arg name="fcu_url" value="$(arg fcu_url)" />
+        <arg name="gcs_url" value="$(arg gcs_url)" />
 
     </include>
 

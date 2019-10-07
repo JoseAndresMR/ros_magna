@@ -126,6 +126,7 @@ class Agent_Manager(object):
 
         self.state = "node_alive"
         self.GSStateActualization()
+        time.sleep(1)
 
         # Wait time to let Gazebo's Real Time recover from model spawns
 

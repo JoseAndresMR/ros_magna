@@ -124,18 +124,14 @@ class Agent_Manager(object):
 
         self.nai.agents_data_list = self.agents_data_list
 
-        self.state = "node_alive"
-        self.GSStateActualization()
-        time.sleep(1)
+        self.setState("node_alive")
 
         # Wait time to let Gazebo's Real Time recover from model spawns
 
         while not rospy.is_shutdown() and self.agents_data_list[self.ID-1].ual_state == ual_state_msg.UNINITIALIZED:
             time.sleep(0.1)
 
-
-        self.state = "landed"
-        self.GSStateActualization()
+        self.setState("landed")
 
         self.GroundStationListener()        # Start listening
 
@@ -304,8 +300,7 @@ class Agent_Manager(object):
             time.sleep(0.1)
 
         # Function to inform Ground Station about actual Agent's state
-        self.state = "inizializating"
-        self.GSStateActualization()
+        self.setState("inizializating")
 
         return "completed"
 
@@ -319,8 +314,7 @@ class Agent_Manager(object):
             time.sleep(0.1)
 
         # Function to inform Ground Station about actual Agent's state
-        self.state = "landed"
-        self.GSStateActualization()
+        self.setState("landed")
 
         return "completed"
 
@@ -469,8 +463,7 @@ class Agent_Manager(object):
             self.GoalStaticBroadcaster()        # Broadcast TF of goal
 
             # Actualize state and send it to Ground Station
-            self.state = "to WP {}".format(i+1)
-            self.GSStateActualization()
+            self.setState("to WP {}".format(i+1))
 
             gtwp_cmd_sent = False
 
@@ -503,8 +496,7 @@ class Agent_Manager(object):
             #self.goal_WP_pose = self.goal_path_poses_list[i]        # Actualize actual goal from the path list
 
             # Actualize state and send it to Ground Station
-            self.state = "in WP {}".format(i+1)
-            self.GSStateActualization()
+            self.setState("in WP {}".format(i+1))
 
             time.sleep(0.2)
 
@@ -521,8 +513,7 @@ class Agent_Manager(object):
         self.preemption_launched = False
 
         # Tell the GS the identity of its new target
-        self.state = "following Agent {0}".format(target_ID)
-        self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
+        self.setState("following Agent {0}".format(target_ID))
 
         action_start_time = rospy.Time.now()
 
@@ -532,8 +523,7 @@ class Agent_Manager(object):
         self.queue_of_followers_at_distance = distance      # Save the distance requiered
 
         # Actualize the state and send it to Ground Station
-        self.state = "following Agent {} at distance".format(target_ID)
-        self.GSStateActualization()
+        self.setState("following Agent {} at distance".format(target_ID))
 
         # Execute while Ground Station doesn't send another instruction
         while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
@@ -592,9 +582,7 @@ class Agent_Manager(object):
         self.preemption_launched = False
 
         # Tell the GS the identity of its new target
-        self.state = "following Agent {0}".format(target_ID)
-        self.GSStateActualization()       # Function to inform Ground Station about actual Agent's state
-
+        self.setState("following Agent {0}".format(target_ID))
 
         self.queue_of_followers_ap_pos = pos        # Save the position requiered
 
@@ -604,8 +592,7 @@ class Agent_Manager(object):
         self.nai.smooth_path_mode = self.smooth_path_mode
 
         # Actualize the state and send it to Ground Station
-        self.state = "following Agent {} at position".format(target_ID)
-        self.GSStateActualization()
+        self.setState("following Agent {} at position".format(target_ID))
 
         # Execute while Ground Station doesn't send another instruction
         while not rospy.is_shutdown() and (rospy.Time.now()-action_start_time) < rospy.Duration(action_time):
@@ -908,6 +895,12 @@ class Agent_Manager(object):
         if self.depth_camera_use == True:
             with open(third_folder_path + "/depth_camera_{}.pickle".format(self.ID), 'wb') as f:
                 pickle.dump(self.global_frame_depth, f, pickle.HIGHEST_PROTOCOL)
+
+    def setState(self, state):
+
+        self.state = state
+        self.GSStateActualization()
+        time.sleep(0.1)
 
     # Function to inform Ground Station about actual Agent's state
     def GSStateActualization(self):

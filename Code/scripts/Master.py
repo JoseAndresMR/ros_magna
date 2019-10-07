@@ -64,7 +64,7 @@ class Master(object):
         'world'              :                   "Safedrone",                    # Type of the world or sceneario created
         'subworld'           :                   "Cancha",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "1UAVs_ToL_nuc_trial",
+        'submission'         :                   "1UAVs_1paths_nuc_trial",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset

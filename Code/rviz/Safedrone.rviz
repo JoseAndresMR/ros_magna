@@ -11,6 +11,10 @@ Panels:
         - /PolygonArray1
         - /PolygonArray2
         - /PolygonArray5
+        - /PolygonArray6
+        - /PolygonArray7
+        - /PolygonArray8
+        - /PolygonArray9
       Splitter Ratio: 0.5
     Tree Height: 531
   - Class: rviz/Selection
@@ -56,313 +60,19 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 1
       Frames:
         All Enabled: false
-        BP_B1_obs_0_0_0:
-          Value: false
-        BP_B2_obs_0_0_0:
-          Value: false
-        BP_B3_obs_0_0_0:
-          Value: false
-        BP_B4_obs_0_0_0:
-          Value: false
-        BP_B5_obs_0_0_0:
-          Value: false
-        BP_B6_obs_0_0_0:
-          Value: false
-        BP_Basket1:
-          Value: false
-        BP_Basket2:
-          Value: false
-        BP_Basket3:
-          Value: false
-        BP_Basket4:
-          Value: false
-        BP_Basket5:
-          Value: false
-        BP_Basket6:
-          Value: false
-        BP_C1_obs_0_0_0:
-          Value: false
-        BP_C2_obs_0_0_0:
-          Value: false
-        BP_C3_obs_0_0_0:
-          Value: false
-        BP_C4_obs_0_0_0:
-          Value: false
-        BP_Column1:
-          Value: false
-        BP_Column2:
-          Value: false
-        BP_Column3:
-          Value: false
-        BP_Column4:
-          Value: false
-        BP_L1_obs_0_0_0:
-          Value: false
-        BP_L2_obs_0_0_0:
-          Value: false
-        BP_L3_obs_0_0_0:
-          Value: false
-        BP_L4_obs_0_0_0:
-          Value: false
-        BP_Light1:
-          Value: false
-        BP_Light2:
-          Value: false
-        BP_Light3:
-          Value: false
-        BP_Light4:
-          Value: false
-        BP_ManualPolygon1:
-          Value: false
-        BP_ManualPolygon1_auxiliar_1:
-          Value: false
-        BP_ManualPolygon1_auxiliar_2:
-          Value: false
-        BP_ManualPolygon1_auxiliar_reference:
-          Value: false
-        BP_ManualPolygon1_center:
-          Value: false
-        BP_ManualPolygon1_perimeter_vertex_0:
-          Value: false
-        BP_ManualPolygon1_perimeter_vertex_1:
-          Value: false
-        BP_ManualPolygon1_perimeter_vertex_2:
-          Value: false
-        BP_ManualPolygon1_perimeter_vertex_3:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_0:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_1:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_2:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_3:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_4:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_5:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_6:
-          Value: false
-        BP_ManualPolygon1_prism_vertex_7:
-          Value: false
-        BP_ManualPolygon1zigzag_inter0:
-          Value: false
-        BP_ManualPolygon1zigzag_inter1:
-          Value: false
-        BP_ManualPolygon1zigzag_inter2:
-          Value: false
-        BP_ManualPolygon1zigzag_inter3:
-          Value: false
-        BP_ManualPolygon1zigzag_inter4:
-          Value: false
-        BP_ManualPolygon1zigzag_inter5:
-          Value: false
-        BP_ManualPolygon1zigzag_inter6:
-          Value: false
-        BP_ManualPolygon1zigzag_inter7:
-          Value: false
-        BP_ManualPolygon1zigzag_inter8:
-          Value: false
-        BP_ManualPolygon1zigzag_inter9:
-          Value: false
-        BP_ins_pos_0:
-          Value: false
-        BP_ins_pos_1:
-          Value: false
-        BP_ins_pos_2:
-          Value: false
-        BP_ins_pos_3:
-          Value: false
-        BP_ins_pos_4:
-          Value: false
-        BP_ins_pos_5:
-          Value: false
-        BP_ins_pos_6:
-          Value: false
-        BP_ins_pos_7:
-          Value: false
-        BP_ins_pos_8:
-          Value: false
-        BP_ins_pos_9:
-          Value: false
-        Basket_Pitch:
-          Value: false
-        GS_Agents_take_off:
-          Value: false
-        GS_Home_limits:
-          Value: false
-        GS_Limits:
-          Value: false
-        GS_Tent:
-          Value: false
-        GS_takeoff_pos_0_0_0:
-          Value: true
-        GS_takeoff_pos_1_0_0:
-          Value: true
-        GS_takeoff_pos_2_0_0:
-          Value: true
-        Ground_Station:
-          Value: false
-        fcu:
-          Value: false
-        fcu_frd:
-          Value: false
-        local_origin:
-          Value: false
-        local_origin_ned:
-          Value: false
-        map:
-          Value: true
-        uav_1/base_link:
-          Value: true
-        uav_1/odom:
-          Value: true
       Marker Scale: 0.5
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          Basket_Pitch:
-            BP_Basket1:
-              BP_B1_obs_0_0_0:
-                {}
-            BP_Basket2:
-              BP_B2_obs_0_0_0:
-                {}
-            BP_Basket3:
-              BP_B3_obs_0_0_0:
-                {}
-            BP_Basket4:
-              BP_B4_obs_0_0_0:
-                {}
-            BP_Basket5:
-              BP_B5_obs_0_0_0:
-                {}
-            BP_Basket6:
-              BP_B6_obs_0_0_0:
-                {}
-            BP_Column1:
-              BP_C1_obs_0_0_0:
-                {}
-            BP_Column2:
-              BP_C2_obs_0_0_0:
-                {}
-            BP_Column3:
-              BP_C3_obs_0_0_0:
-                {}
-            BP_Column4:
-              BP_C4_obs_0_0_0:
-                {}
-            BP_Light1:
-              BP_L1_obs_0_0_0:
-                {}
-            BP_Light2:
-              BP_L2_obs_0_0_0:
-                {}
-            BP_Light3:
-              BP_L3_obs_0_0_0:
-                {}
-            BP_Light4:
-              BP_L4_obs_0_0_0:
-                {}
-            BP_ManualPolygon1:
-              BP_ManualPolygon1_auxiliar_reference:
-                BP_ManualPolygon1_auxiliar_1:
-                  {}
-                BP_ManualPolygon1_auxiliar_2:
-                  {}
-                BP_ManualPolygon1_center:
-                  {}
-              BP_ManualPolygon1_perimeter_vertex_0:
-                {}
-              BP_ManualPolygon1_perimeter_vertex_1:
-                {}
-              BP_ManualPolygon1_perimeter_vertex_2:
-                {}
-              BP_ManualPolygon1_perimeter_vertex_3:
-                {}
-              BP_ManualPolygon1_prism_vertex_0:
-                {}
-              BP_ManualPolygon1_prism_vertex_1:
-                {}
-              BP_ManualPolygon1_prism_vertex_2:
-                {}
-              BP_ManualPolygon1_prism_vertex_3:
-                {}
-              BP_ManualPolygon1_prism_vertex_4:
-                {}
-              BP_ManualPolygon1_prism_vertex_5:
-                {}
-              BP_ManualPolygon1_prism_vertex_6:
-                {}
-              BP_ManualPolygon1_prism_vertex_7:
-                {}
-              BP_ManualPolygon1zigzag_inter0:
-                {}
-              BP_ManualPolygon1zigzag_inter1:
-                {}
-              BP_ManualPolygon1zigzag_inter2:
-                {}
-              BP_ManualPolygon1zigzag_inter3:
-                {}
-              BP_ManualPolygon1zigzag_inter4:
-                {}
-              BP_ManualPolygon1zigzag_inter5:
-                {}
-              BP_ManualPolygon1zigzag_inter6:
-                {}
-              BP_ManualPolygon1zigzag_inter7:
-                {}
-              BP_ManualPolygon1zigzag_inter8:
-                {}
-              BP_ManualPolygon1zigzag_inter9:
-                {}
-              BP_ins_pos_0:
-                {}
-              BP_ins_pos_1:
-                {}
-              BP_ins_pos_2:
-                {}
-              BP_ins_pos_3:
-                {}
-              BP_ins_pos_4:
-                {}
-              BP_ins_pos_5:
-                {}
-              BP_ins_pos_6:
-                {}
-              BP_ins_pos_7:
-                {}
-              BP_ins_pos_8:
-                {}
-              BP_ins_pos_9:
-                {}
-          Ground_Station:
-            GS_Agents_take_off:
-              GS_takeoff_pos_0_0_0:
-                {}
-              GS_takeoff_pos_1_0_0:
-                {}
-              GS_takeoff_pos_2_0_0:
-                {}
-            GS_Home_limits:
-              {}
-            GS_Limits:
-              {}
-            GS_Tent:
-              {}
-          uav_1/odom:
-            uav_1/base_link:
-              {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -695,6 +405,45 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
+    - Alpha: 0.100000001
+      Class: jsk_rviz_plugin/PolygonArray
+      Color: 255; 170; 0
+      Enabled: true
+      Name: PolygonArray
+      Topic: /visualization_polygon_array/BP_ManualPolygon1
+      Unreliable: false
+      Value: true
+      coloring: Flat color
+      enable lighting: false
+      normal length: 1
+      only border: false
+      show normal: false
+    - Alpha: 0.100000001
+      Class: jsk_rviz_plugin/PolygonArray
+      Color: 255; 170; 0
+      Enabled: true
+      Name: PolygonArray
+      Topic: /visualization_polygon_array/BP_ManualPolygon2
+      Unreliable: false
+      Value: true
+      coloring: Flat color
+      enable lighting: false
+      normal length: 1
+      only border: false
+      show normal: false
+    - Alpha: 0.100000001
+      Class: jsk_rviz_plugin/PolygonArray
+      Color: 255; 170; 0
+      Enabled: true
+      Name: PolygonArray
+      Topic: /visualization_polygon_array/BP_ManualPolygon3
+      Unreliable: false
+      Value: true
+      coloring: Flat color
+      enable lighting: false
+      normal length: 1
+      only border: false
+      show normal: false
   Enabled: true
   Global Options:
     Background Color: 34; 34; 34
@@ -720,25 +469,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 64.9638901
+      Distance: 32.1509323
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.109960176
-        Y: 0.124004163
-        Z: 0.00393998995
+        X: -0.00112469785
+        Y: -0.00138508179
+        Z: 0.000805132848
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.34479654
+      Pitch: 1.50979662
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.78015757
+      Yaw: 5.50516844
     Saved: ~
 Window Geometry:
   Displays:

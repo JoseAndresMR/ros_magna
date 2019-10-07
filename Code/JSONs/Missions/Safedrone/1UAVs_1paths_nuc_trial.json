@@ -5,8 +5,8 @@
             "model":"iris",
             "mode": "real",
             "marker_color": [255,0,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         }
     ],
     "State_Machine": [
@@ -193,7 +193,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon1","path","Zigzag"]
+                                        "definition":["Basket_Pitch","ManualPolygon2","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

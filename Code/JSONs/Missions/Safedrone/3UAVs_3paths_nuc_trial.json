@@ -352,7 +352,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","Agents_take_off","coordinates",[[0.0,10.0,3.0],[0,0,0,1]]]
+                                        "definition":["Basket_Pitch","ManualPolygon2","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -403,7 +403,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Ground_Station","Agents_take_off","coordinates",[[0.0,-10.0,3.0],[0,0,0,1]]]
+                                        "definition":["Basket_Pitch","ManualPolygon3","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

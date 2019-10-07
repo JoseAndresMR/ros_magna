@@ -30,8 +30,7 @@
                     <arg name="z" value="0" />
                     <arg name="yaw" value="0" />
                     <arg name="ual_use" value="$(arg ual_use)" />
-                    <arg name="fcu_url" value="$(arg fcu_url)" />
-                    <arg name="gcs_url" value="$(arg gcs_url)" />
+                    
                     <arg name="robot_model" value="$(arg robot_model)" />
                 </include>
             </group>

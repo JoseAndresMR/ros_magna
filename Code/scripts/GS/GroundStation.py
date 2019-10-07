@@ -143,7 +143,7 @@ class GroundStation(object):
             self.AgentSpawner(i,self.agent_models[i])      # Call service to spawn the Agent
 
             # Wait until the Agent is in ready state
-            while not rospy.is_shutdown() and self.states_list[i] != "waiting for action command":
+            while not rospy.is_shutdown() and self.states_list[i] != "landed":
                 time.sleep(0.5)
 
 

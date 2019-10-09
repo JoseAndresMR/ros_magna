@@ -11,7 +11,7 @@
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
     <arg default="true" name="uav_manager_use" />
-    <arg default="1" name="id" />
+    <arg default="3" name="id" />
     <arg default="[37.410371, -6.002348, 0.0]" name="origin_geo" />
 
     <arg default="udp://:14550@localhost:14556" name="fcu_url" />

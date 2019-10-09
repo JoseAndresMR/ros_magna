@@ -713,7 +713,7 @@ class Agent_Manager(object):
         collision_detected = False
 
         if True:
-            self.nai.NeighborSelector(int(self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"]))
+            self.nai.NeighborSelector()
             # Turn to True the local collision flag if distance threshold has been raised for Agents or obstacles
 
             if len(self.nai.near_neighbors_sorted["distances"]) > 0:
@@ -783,10 +783,10 @@ class Agent_Manager(object):
         # print(single_frame["main_agent"][0]["Twist"])
 
         single_frame["role"] = [self.role]
-        single_frame["N_neigh_aware"] = [self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"]]
+        single_frame["N_neigh_aware"] = [self.nai.algorithms_dicc["global"]["N_neighbors_aware"]]
         single_frame["algorithms_list"] = [self.nai.algorithms_dicc.keys()]
 
-        if self.nai.algorithms_dicc["orca3"]["N_neighbors_aware"] > 0:
+        if self.nai.algorithms_dicc["global"]["N_neighbors_aware"] > 0:
             neigh_data_list = []
             for n_neighbor in range(len(self.nai.near_neighbors_sorted["types"])):
 

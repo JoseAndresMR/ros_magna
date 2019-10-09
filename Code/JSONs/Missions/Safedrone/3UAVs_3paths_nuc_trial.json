@@ -85,20 +85,36 @@
                 "duration" : 0.5
             },
             "outcomes": {
-                "completed": "algorithm_control"
+                "completed": "algorithm_control_global"
             }
         },
         {
             "type": "CBState",
             "state_type":"algorithm_control",
-            "name": "algorithm_control",
+            "name": "algorithm_control_global",
             "ids": "all",
             "ids_var" : "agent",
             "parameters": {
-                "name": "orca3",
+                "name": "global",
                 "action": "set",
-                "params": ["N_neighbors_aware", "timeStep", "neighborDist", "timeHorizon", "agent_radius", "maxSpeed"],
-                "values": [2, 0.01666, 6.0, 5.0, 0.5, 2.0]
+                "params": ["N_neighbors_aware"],
+                "values": [0]
+            },
+            "outcomes": {
+                "completed": "algorithm_control_simple"
+            }
+        },
+        {
+            "type": "CBState",
+            "state_type":"algorithm_control",
+            "name": "algorithm_control_simple",
+            "ids": "all",
+            "ids_var" : "agent",
+            "parameters": {
+                "name": "simple",
+                "action": "set",
+                "params": ["N_neighbors_aware"],
+                "values": [0]
             },
             "outcomes": {
                 "completed": "1_take_off"

@@ -63,7 +63,7 @@ class Agent_NAI(object):
     # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,desired_speed):
 
-        self.NeighborSelector(int(self.algorithms_dicc["orca3"]["N_neighbors_aware"])+1)
+        self.NeighborSelector()
         self.desired_speed = desired_speed
 
         # print "loop time", time.time() - self.timer_start
@@ -347,9 +347,11 @@ class Agent_NAI(object):
 
         # Create the velocity twist with calculated data
         new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
-                                   Vector3(0,\
-                                   0,\
-                                   relative_WP_pose_degrees.orientation.z-euler[2]))
+                                   Vector3(0, 0, 0))
+
+        # If head use selected, decide it by direct by simple algorithm. In future, put lower threshold.
+        if self.heading_use == True:
+            new_velocity_twist.angular.z = relative_WP_pose_degrees.orientation.z-euler[2]
 
         # Thresholds imposition
         # new_velocity_twist.linear.x = self.UpperLowerSaturation(new_velocity_twist.linear.x,1.5)
@@ -373,7 +375,7 @@ class Agent_NAI(object):
             value = -threshold
         return value
 
-    def NeighborSelector(self,N_neighbors_aware):
+    def NeighborSelector(self,N_neighbors_aware = 0):
         agent_distances = []
         for n_agent in range(self.N_agents):
             if n_agent != self.ID-1:

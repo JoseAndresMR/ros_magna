@@ -272,6 +272,14 @@ class GroundStation_SM(object):
 
         return outcome
 
+        # State callback to spawn Agents
+    @cb_interface(outcomes=['completed','failed'])
+    def execute_script_stcb(self,heritage,parameters = {}):
+
+        outcome = heritage.executeScript(parameters["path"])
+
+        return outcome
+
     def DictionarizeCBStateCallbacks(self):
         self.CBStateCBDic = {}
         self.CBStateCBDic["world_config"] = self.world_config_stcb
@@ -279,6 +287,7 @@ class GroundStation_SM(object):
         self.CBStateCBDic["wait"] = self.wait_stcb
         self.CBStateCBDic["save_csv"] = self.save_csv_stcb
         self.CBStateCBDic["algorithm_control"] = self.algorithm_control_stcb
+        self.CBStateCBDic["execute_script"] = self.execute_script_stcb
 
     #### ACTIONS CALLBACKS ####
 

@@ -62,9 +62,9 @@ class Master(object):
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
         'world'              :                   "Safedrone",                    # Type of the world or sceneario created
-        'subworld'           :                   "Cancha",
+        'subworld'           :                   "Oran",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "3UAVs_3paths_nuc_trial",
+        'submission'         :                   "2UAVs_2paths_nuc_trial",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset

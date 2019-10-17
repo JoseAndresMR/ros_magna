@@ -3,10 +3,10 @@
         {
             "ID":1,
             "model":"iris",
-            "mode": "sitl",
+            "mode": "real",
             "marker_color": [255,0,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false
         }
     ],
     "State_Machine": [
@@ -132,7 +132,7 @@
                             "ids": 1,
                             "ids_var": "agent",
                             "parameters": {
-                                "height": 3
+                                "height": 7
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -209,7 +209,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon2","path","Zigzag"]
+                                        "definition":["Field","ManualPolygon1","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -299,7 +299,7 @@
             "name": "safety_wait",
             "parameters": {
                 "exit_type": "time",
-                "duration": 10
+                "duration": 2
             },
             "outcomes": {
                 "completed": "1_save_csv"

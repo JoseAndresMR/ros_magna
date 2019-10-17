@@ -68,9 +68,9 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[0,0,0]],
-                                  ["Ground_Station","Agents_take_off","matrix",[1,0,0]],
-                                  ["Ground_Station","Agents_take_off","matrix",[2,0,0]]]
+                "initial_poses": [["Flights","Take_off_1","matrix",[0,0,0]],
+                                  ["Flights","Take_off_2","matrix",[0,0,0]],
+                                  ["Flights","Take_off_3","matrix",[0,0,0]]]
             },
             "outcomes": {
                 "completed": "initial_wait"
@@ -317,7 +317,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon1","path","Zigzag"]
+                                        "definition":["Flights","ManualPolygon1","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -368,7 +368,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon2","path","Zigzag"]
+                                        "definition":["Flights","ManualPolygon2","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -419,7 +419,7 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Basket_Pitch","ManualPolygon3","path","Zigzag"]
+                                        "definition":["Flights","ManualPolygon3","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

@@ -1,0 +1,182 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "origin_geo" : [37.2001500, -5.8811750, 0.0],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[-17.189876826363616, 41.87729630060494,0.0],[0.0,0.0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Tent",
+                        "prefix": "T",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-0.0,-0.0,2.0],[0,0,0]],
+                        "dimensions": [4,4,4],
+                        "color": [0,127,170],
+                        "alpha": 0.1
+                    }
+                ]
+            },
+            {
+                "name": "Flights",
+                "prefix": "Flg",
+                "origin": [[0.0,0.0,0.0],[0,0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Take_off_1",
+                        "prefix": "TO1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[2.096252708375687, 10.488604245241731,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon1",
+                        "prefix": "Pol1",
+                        "origin": [[2.096252708375687, 10.488604245241731,7.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [2.0,2.0],
+                                "sweep_angle":0,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Take_off_2",
+                        "prefix": "TO2",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[12.871099022537237, -17.94195477804169,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon2",
+                        "prefix": "Pol2",
+                        "origin": [[6.0, -17.94195477804169,7.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [2.0,2.0],
+                                "sweep_angle":0,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Take_off_3",
+                        "prefix": "TO3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[9.919950454932405, -44.844059258233756,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon3",
+                        "prefix": "Pol3",
+                        "origin": [[9.919950454932405, -44.844059258233756,7.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [2.0,2.0],
+                                "sweep_angle":0,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Field",
+                "prefix": "BP",
+                "origin": [[0.0,0.0,0.0],[0,0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    
+                    {
+                        "name": "Flying_Zone",
+                        "prefix": "FZ",
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[25.60269905210589, -78.4225000902079, 0.0], [-1.6990094580396544, -64.59558145236224, 0.0], [-2.2046892728540115, -43.253255635965616, 0.0], [-17.967249543842627, -6.45119936298579, 0.0], [-66.80526804886176, 3.365463310852647, 0.0], [-95.67285962519236, 41.676766658667475, 0.0], [-66.53130326684914, 50.34300361108035, 0.0], [-6.723271833005128, 41.85874672513455, 0.0], [13.408462854946265, 28.91652859468013, 0.0]]],
+                        "color": [255,0,255],
+                        "alpha": 0.3
+                    }
+                ]
+            }
+        ]
+    }
+}

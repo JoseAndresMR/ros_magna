@@ -10,11 +10,6 @@ Panels:
         - /TF1/Frames1
         - /PolygonArray1
         - /PolygonArray2
-        - /PolygonArray5
-        - /PolygonArray6
-        - /PolygonArray7
-        - /PolygonArray8
-        - /PolygonArray9
       Splitter Ratio: 0.5
     Tree Height: 531
   - Class: rviz/Selection
@@ -177,39 +172,15 @@ Visualization Manager:
       Marker Topic: visualization_marker
       Name: Marker
       Namespaces:
-        BP_B1_obs_0_0_0: true
-        BP_B2_obs_0_0_0: true
-        BP_B3_obs_0_0_0: true
-        BP_B4_obs_0_0_0: true
-        BP_B5_obs_0_0_0: true
-        BP_B6_obs_0_0_0: true
-        BP_Basket1: true
-        BP_Basket2: true
-        BP_Basket3: true
-        BP_Basket4: true
-        BP_Basket5: true
-        BP_Basket6: true
-        BP_C1_obs_0_0_0: true
-        BP_C2_obs_0_0_0: true
-        BP_C3_obs_0_0_0: true
-        BP_C4_obs_0_0_0: true
-        BP_Column1: true
-        BP_Column2: true
-        BP_Column3: true
-        BP_Column4: true
-        BP_L1_obs_0_0_0: true
-        BP_L2_obs_0_0_0: true
-        BP_L3_obs_0_0_0: true
-        BP_L4_obs_0_0_0: true
-        BP_Light1: true
-        BP_Light2: true
-        BP_Light3: true
-        BP_Light4: true
+        Flg_Take_off_1: true
+        Flg_Take_off_2: true
+        Flg_Take_off_3: true
         GS_Agents_take_off: true
-        GS_Home_limits: true
         GS_Limits: true
         GS_Tent: true
         agent_1: true
+        agent_2: true
+        agent_3: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -410,7 +381,7 @@ Visualization Manager:
       Color: 255; 170; 0
       Enabled: true
       Name: PolygonArray
-      Topic: /visualization_polygon_array/BP_ManualPolygon1
+      Topic: /visualization_polygon_array/Flg_ManualPolygon1
       Unreliable: false
       Value: true
       coloring: Flat color
@@ -423,7 +394,7 @@ Visualization Manager:
       Color: 255; 170; 0
       Enabled: true
       Name: PolygonArray
-      Topic: /visualization_polygon_array/BP_ManualPolygon2
+      Topic: /visualization_polygon_array/Flg_ManualPolygon2
       Unreliable: false
       Value: true
       coloring: Flat color
@@ -436,7 +407,20 @@ Visualization Manager:
       Color: 255; 170; 0
       Enabled: true
       Name: PolygonArray
-      Topic: /visualization_polygon_array/BP_ManualPolygon3
+      Topic: /visualization_polygon_array/Flg_ManualPolygon3
+      Unreliable: false
+      Value: true
+      coloring: Flat color
+      enable lighting: false
+      normal length: 1
+      only border: false
+      show normal: false
+    - Alpha: 0.100000001
+      Class: jsk_rviz_plugin/PolygonArray
+      Color: 255; 170; 0
+      Enabled: true
+      Name: PolygonArray
+      Topic: /visualization_polygon_array/BP_Flying_Zone
       Unreliable: false
       Value: true
       coloring: Flat color
@@ -469,7 +453,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 32.1509323
+      Distance: 109.335976
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -484,10 +468,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.50979662
+      Pitch: 1.03479707
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.50516844
+      Yaw: 1.84015071
     Saved: ~
 Window Geometry:
   Displays:

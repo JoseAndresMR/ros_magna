@@ -419,11 +419,11 @@ class GroundStation(object):
         return "completed" 
 
     
-    def execiteScript(self,path):
+    def executeScript(self,path):
 
         os.system(path)
 
-        return
+        return "completed"
 
 
     def pubAgentStatus(self,agent_id,status):

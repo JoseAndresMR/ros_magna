@@ -5,10 +5,11 @@
     <arg default="5.0" name="delay" />
     <arg default="sitl" name="mode" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
-    <arg default="udp://:14550@localhost:14556" name="fcu_url" />
-    <arg default="udp://@localhost" name="gcs_url" />
 
     <rosparam command="load" file="$(find magna)/yaml/uav_$(arg id).yaml" />
+
+    <arg default="serial:///dev/ttyUSB0:921600" name="fcu_url" />
+    <arg default="udp://@localhost" name="gcs_url" />
 
     <group if="$(arg multimaster_use)">
         <include file="$(find magna)/launch/multimaster.launch"></include>

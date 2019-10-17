@@ -11,8 +11,8 @@
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
     <arg default="true" name="uav_manager_use" />
-    <arg default="2" name="id" />
-    <arg default="[37.20015, -5.881175, 0.0]" name="origin_geo" />
+    <arg default="3" name="id" />
+    <arg default="[37.410371, -6.002348, 0.0]" name="origin_geo" />
 
     <arg default="udp://:14550@localhost:14556" name="fcu_url" />
     <arg default="udp://@localhost" name="gcs_url" />
@@ -49,13 +49,14 @@
             <group if="$(eval autopilot == 'px4')">
                 <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
                     <param name="uav_id" value="$(arg id)" />
+		    <param name="position_th" value="1.0" />
                     <param name="pose_frame_id" value="$(arg pose_frame_id)" />
                     <param name="ual_server" value="$(arg ual_server)" />
                     <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
                     <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
                     <param name="home_pose_parent_frame" value="map" />
                     <param name="backend" value="mavros" />
-                    <rosparam param="map_origin_geo">[37.20015, -5.881175, 0.0]</rosparam>
+                    <rosparam param="map_origin_geo">[37.410371, -6.002348, 0.0]</rosparam>
                 </node>
             </group>
             <group if="$(eval autopilot == 'dji')">

@@ -757,16 +757,16 @@ class Prism(GenericGeometry):
             self.polygon_array_poses.append(polygon_poses)
 
         # Bottom face
-        polygon_poses = []
-        for vertex_index in range(n_vertexes-2,-2,-2):
-            polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
-        self.polygon_array_poses.append(polygon_poses)
+        # polygon_poses = []
+        # for vertex_index in range(n_vertexes-2,-2,-2):
+        #     polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        # self.polygon_array_poses.append(polygon_poses)
 
         # Top face
-        polygon_poses = []
-        for vertex_index in range(1,n_vertexes,2):
-            polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
-        self.polygon_array_poses.append(polygon_poses)
+        # polygon_poses = []
+        # for vertex_index in range(1,n_vertexes,2):
+        #     polygon_poses.append(self.vertexes_tf_list[vertex_index].getGlobalPose())
+        # self.polygon_array_poses.append(polygon_poses)
 
 
     def PosesDimensionMatrix(self,poses_set_def,selected_positions_matrix):

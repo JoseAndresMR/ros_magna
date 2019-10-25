@@ -5,7 +5,7 @@
     
     <rosparam param="/use_sim_time">true</rosparam>
     <node args="-physics=ode -world=$(find px4_bringup)/config/empty_light.world" name="$(arg node_name)" output="screen" pkg="px4_bringup" type="launch_gzworld_JA.py">
-        <rosparam param="sim_origin">[37.20015, -5.881175, 0.0]</rosparam>
+        <rosparam param="sim_origin">[37.199941, -5.881098, 0.0]</rosparam>
     </node>
 
 </launch>

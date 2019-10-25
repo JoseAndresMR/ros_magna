@@ -18,12 +18,12 @@ from sympy import Point, Polygon, Line, Segment
 from GeoLocalPose import GeoLocalPose
 
 class SafedroneInverseNode(object):
-    def __init__(self,ids = [1,2,3], ns_prefix = "uav_",origin_geo = [37.558542, -5.931074,0.0]):
+    def __init__(self,ids = [1,2,3], ns_prefix = "uav_",origin_geo = [37.558542, -5.931074,0.0], angle = 1.5):
 
         self.ids = ids
         self.ns_prefix = ns_prefix
 
-        self.use_multi_polython = True
+        self.use_multi_polygon = True
 
         self.polygons_geo = {}
         self.polygons_geo["Origin"] = [origin_geo]
@@ -36,20 +36,21 @@ class SafedroneInverseNode(object):
 
         time.sleep(1)
 
-        if self.use_multi_polython == False:
+        if self.use_multi_polygon == False:
 
             polygons_local = self.Global2Local(self.polygons_geo)
 
-        if self.use_multi_polython == True:
+        if self.use_multi_polygon == True:
 
             auxiliar_polygons = self.Global2Local(self.polygons_geo)
+        
             main_polygon_array = auxiliar_polygons["1"]
             print("main_polygon_array",main_polygon_array)
 
             # main_polygon_array = [[-150.01255746543757, 149.85376389184967, -12.5], [-125.65221288704197, -159.8376554097049, -50.0], [105.37052664515795, -236.5466791386716, -50.0], [1026.092006954481, -168.59934886405244, -50.0], [1155.3705004769145, 90.11888963589445, -50.0], [995.6826912371034, 315.442073025275, -50.0], [582.8812200819957, 104.96125665307045, -50.0]]
             # main_polygon_array = [[-150,150,10],[3,70],[150,150],[150,-150],[3,-190],[-150,-150]]
             # main_polygon_array = [[-150,150,10],[150,150],[150,-150],[-150,-150]]
-            polygons_local = self.areaAllocation(main_polygon_array)
+            polygons_local = self.areaAllocation(main_polygon_array, angle)
 
 
         self.writeJSON(self.createJSONdata(polygons_local))
@@ -69,7 +70,7 @@ class SafedroneInverseNode(object):
 
         for id in self.ids:
 
-            if (self.use_multi_polython == True and id == 1) or self.use_multi_polython == False:
+            if (self.use_multi_polygon == True and id == 1) or self.use_multi_polygon == False:
 
                 ual_prefix = "/{0}{1}".format(self.ns_prefix,id)
                 rospy.Subscriber('{}/mavros/mission/waypoints'.format(ual_prefix), WaypointList, self.current_mission_list_callback,id)
@@ -90,12 +91,18 @@ class SafedroneInverseNode(object):
     Commanders
     '''
 
-    def areaAllocation(self,main_polygon_array):
+    def areaAllocation(self,unrotated_polygon_array, angle):
+
+        limits = self.getLimits(unrotated_polygon_array)
+
+        center = [limits[0][0] + (limits[0][1] - limits[0][0]), limits[1][0] + (limits[1][1] - limits[1][0]), 0.0]
+        self.main_polygon_center = center
+
+        main_polygon_array = self.RotatePolygon(center, angle, unrotated_polygon_array)
 
         perim_segments = []
         vertex_points_list = []
         main_polygon_vertex_num = len(main_polygon_array)
-        limits = [[100000000,-100000000],[100000000,-100000000]]
         polygons_dict = {}
 
         for i in range(main_polygon_vertex_num):
@@ -107,16 +114,9 @@ class SafedroneInverseNode(object):
 
             vertex_points_list.append(Point(point1[0],point1[1]))
 
-            if point1[0] < limits[0][0]:
-                limits[0][0] = point1[0]
-            if point1[0] > limits[0][1]:
-                limits[0][1] = point1[0]
-            if point1[1] < limits[1][0]:
-                limits[1][0] = point1[1]
-            if point1[1] > limits[1][1]:
-                limits[1][1] = point1[1]
-
-            self.main_polygon_width = limits[1][1] - limits[1][0]
+        
+        limits = self.getLimits(main_polygon_array)
+        self.main_polygon_width = limits[1][1] - limits[1][0]
 
         print("limits", limits)
 
@@ -275,13 +275,30 @@ class SafedroneInverseNode(object):
             polygon_array = []
             for vertex in polygon.vertices:
                 polygon_array.append([float(vertex.x),float(vertex.y),float(main_polygon_array[0][2])])
-            polygons_dict[str(self.ids[i])] = polygon_array
+            polygons_dict[str(self.ids[i])] = self.RotatePolygon(center, -angle, polygon_array)
             prior_cross_segment = cross_segment
 
         print("polygons_dict", polygons_dict)
 
         return polygons_dict
-        
+
+
+    def RotatePolygon(self, center, angle, polygon):
+
+        rotated_polygon = []
+
+        for point in polygon:
+
+            rotated_polygon.append(self.RotatePoint(center, angle, point))
+
+        return rotated_polygon
+
+
+    def RotatePoint(self, center, angle, point): #rotate x,y around xo,yo by theta (rad)
+        xr=math.cos(angle)*(point[0]-center[0])-math.sin(angle)*(point[1]-center[1])  + center[0]
+        yr=math.sin(angle)*(point[0]-center[0])+math.cos(angle)*(point[1]-center[1])  + center[1]
+        return [xr,yr, point[2]]
+
 
     def Global2Local(self, polygons_geo):
 
@@ -301,6 +318,28 @@ class SafedroneInverseNode(object):
             polygons_local[key] = vertex_local_list
 
         return polygons_local
+
+
+    def getLimits(self,polygon):
+
+        limits = [[100000000,-100000000],[100000000,-100000000]]
+        polygon_vertex_num = len(polygon)
+
+        for i in range(polygon_vertex_num):
+
+            point1 = polygon[i]
+            point2 = polygon[(i+1) % polygon_vertex_num]
+
+            if point1[0] < limits[0][0]:
+                limits[0][0] = point1[0]
+            if point1[0] > limits[0][1]:
+                limits[0][1] = point1[0]
+            if point1[1] < limits[1][0]:
+                limits[1][0] = point1[1]
+            if point1[1] > limits[1][1]:
+                limits[1][1] = point1[1]
+
+        return limits
 
     def createJSONdata(self,polygons_local):
 
@@ -329,9 +368,10 @@ class SafedroneInverseNode(object):
             poseset_data["use"] = "poses"
             poseset_data["orientation"] = [0,0,0]
             poseset_data["height"] = 2.5
-            spacing = self.main_polygon_width / ( len(self.ids) * 4 )
+            # spacing = self.main_polygon_width / ( len(self.ids) * 4 )
+            spacing = 8
             poseset_data["spacing"] = [spacing,spacing]
-            poseset_data["sweep_angle"] =-1.5708
+            poseset_data["sweep_angle"] = 0.0
             poseset_data["initial_sense"] = "left"
             poseset_data["margins"] = [1.0,1.0]
 
@@ -355,7 +395,7 @@ class SafedroneInverseNode(object):
 
     def MavrosPullMission(self):
 
-        for uav_id in self.ids:
+        for uav_id in [1]:
             rospy.wait_for_service('/uav_{}/mavros/mission/pull'.format(uav_id))
             try:
                 # print "path for agent {} command".format(ID)
@@ -368,7 +408,7 @@ class SafedroneInverseNode(object):
 
         return
 
-SafedroneInverseNode()
+SafedroneInverseNode([1,2] ,"uav_", [37.199941, -5.881098,0.0], 4.641597)
 
 # make posix gazebo_plane
 # roslaunch mavros px4.launch fcu_url:=udp://:14550@localhost:14556

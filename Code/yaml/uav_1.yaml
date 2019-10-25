@@ -113,11 +113,11 @@ magna_hyperparameters:
 #  translation: [-1.3333333333333335, 0.0, 0.05]
 uav_1:
   ual:
-    home_pose: [-2.666666666666667, 0.0, 0.05]
+    home_pose: [5.096252708375687, -10.488604245241731, 0.05]
     pose_frame_id: map
 uav_1_home:
-  gz_initial_yaw: 1.4999999999999993
+  gz_initial_yaw: 0.0
   model: iris
-  translation: [-2.666666666666667, 0.0, 0.05]
+  translation: [100.0, 0.0, 0.05]
 use_sim_time: true
 

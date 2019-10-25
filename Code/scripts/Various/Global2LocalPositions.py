@@ -48,21 +48,26 @@ from geographic_msgs.msg import GeoPoint
 from geometry_msgs.msg import *
 
 polygons_geo = {}
-
 polygons_geo["Origin"] = [
-    [37.200245, -5.881155,0.0]
+    [37.199941, -5.881098,0.0]
 ]
 
 polygons_geo["Flying_Zone"] = [
-    [37.200944, -5.881470,0.0],
-    [37.200827, -5.881158,0.0],
-    [37.200635, -5.881145,0.0],
-    [37.200308, -5.880955,0.0],
-    [37.200233, -5.880402,0.0],
-    [37.199896, -5.880064,0.0],
-    [37.199810, -5.880389,0.0],
-    [37.199870, -5.881065,0.0],
-    [37.199981, -5.881296,0.0]
+    [37.200925, -5.881467,0.0],
+    [37.200812, -5.881150,0.0],
+    [37.200692, -5.881115,0.0],
+    [37.200634, -5.881145,0.0],
+    [37.200591, -5.881094,0.0],
+    [37.200373, -5.880995,0.0],
+    [37.200311, -5.880928,0.0],
+    [37.200290, -5.880822,0.0],
+    [37.200251, -5.880501,0.0],
+    [37.200251, -5.880501,0.0],
+    [37.199892, -5.880068,0.0],
+    [37.199834, -5.880246,0.0],
+    [37.199885, -5.880941,0.0],
+    [37.197510, -5.880538,0.0],
+    [37.197488, -5.880775,0.0]
 ]
 
 polygons_geo["Furgo"] = [
@@ -70,10 +75,12 @@ polygons_geo["Furgo"] = [
 ]
 
 polygons_geo["Take_offs"] = [
-    [37.20015, -5.881175, 0.0],
-    [37.200403, -5.881306,0.0],
-    [37.200646, -5.881282,0.0]
+    [37.199603, -5.881056, 0.0],
+    [37.199941, -5.881098,0.0],
+    [37.200247, -5.881208,0.0]
 ]
+
+# polygons_geo["Trial"] = [[37.410372, -6.000350, 0.0],[37.415372, -6.002350, 0.0]]
 
 # polygons_geo["Largo"] = [
 #     [,0.0],
@@ -102,7 +109,9 @@ for key in polygons_geo.keys():
     for new_geo in polygons_geo[key]:
         new_geo = GeoPoint(*new_geo)
         geo_local_pose = GeoLocalPose(new_geo)
-        local_pose = geo_local_pose.geoToUtmToCartesian(new_coordinate_geo)
+        local_pose_prior = geo_local_pose.geoToUtmToCartesian(new_coordinate_geo)
+        local_pose = Point32(-local_pose_prior.x,-local_pose_prior.y,local_pose_prior.z)
+        # local_pose = [-local_pose_prior[0],-local_pose_prior[1],local_pose_prior[2]]
         vertex_local_list.append([local_pose.x,local_pose.y,local_pose.z])
 
         if local_pose.x < limits[0][0]:
@@ -118,8 +127,9 @@ for key in polygons_geo.keys():
     polygons_local[key] = vertex_local_list
 
 scale_center = [(limits[0][1]+limits[0][0])/2,(limits[1][1]+limits[1][0])/2]
-scale_factor = 0.08
+scale_factor = 1.0
 
+print polygons_local
 polygons_scaled_local = {}
 
 vertex_local_scaled_list = []
@@ -163,7 +173,6 @@ for key in polygons_local_aux.keys():
 
 
 # print(polygons_local)
-print("limits",limits)
+# print("limits",limits)
 # print("scale_center",scale_center)
-print("scaled",polygons_local)
-print("scaled",list(reversed(polygons_local["Flying_Zone"])))
+# print("unscaled",polygons_local)

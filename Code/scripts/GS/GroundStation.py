@@ -419,9 +419,9 @@ class GroundStation(object):
         return "completed" 
 
     
-    def executeScript(self,path):
+    def executeScript(self, path):
 
-        os.system(path)
+        os.system("python {1}".format(" ",path))
 
         return "completed"
 

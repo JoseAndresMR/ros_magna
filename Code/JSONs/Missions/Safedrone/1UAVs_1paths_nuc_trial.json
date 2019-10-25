@@ -52,7 +52,7 @@
             "state_type":"spawn_agents",
             "name": "spawn_Agents",
             "parameters": {
-                "initial_poses": [["Ground_Station","Agents_take_off","matrix",[1,0,0]]]
+                "initial_poses": [["Flights","Take_off_1","matrix",[0,0,0]]]
             },
             "outcomes": {
                 "completed": "initial_wait"
@@ -132,7 +132,7 @@
                             "ids": 1,
                             "ids_var": "agent",
                             "parameters": {
-                                "height": 7
+                                "height": 3
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -209,11 +209,11 @@
                             "parameters": {
                                 "path": [
                                     {
-                                        "definition":["Field","ManualPolygon1","path","Zigzag"]
+                                        "definition":["Flights","ManualPolygon1","path","Zigzag"]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
-                                "dynamic" : "position"
+                                "dynamic" : "velocity"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -299,7 +299,7 @@
             "name": "safety_wait",
             "parameters": {
                 "exit_type": "time",
-                "duration": 2
+                "duration": 10
             },
             "outcomes": {
                 "completed": "1_save_csv"

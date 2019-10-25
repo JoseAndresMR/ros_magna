@@ -7,9 +7,14 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1
-        - /TF1/Frames1
         - /PolygonArray1
         - /PolygonArray2
+        - /PolygonArray3
+        - /PolygonArray4
+        - /PolygonArray5
+        - /PolygonArray6
+        - /PolygonArray7
+        - /PolygonArray8
       Splitter Ratio: 0.5
     Tree Height: 531
   - Class: rviz/Selection
@@ -175,8 +180,6 @@ Visualization Manager:
         Flg_Take_off_1: true
         Flg_Take_off_2: true
         Flg_Take_off_3: true
-        GS_Agents_take_off: true
-        GS_Limits: true
         GS_Tent: true
         agent_1: true
         agent_2: true
@@ -324,7 +327,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 0; 255; 0
       Enabled: true
@@ -337,7 +340,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -350,7 +353,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 0; 255; 255
       Enabled: true
@@ -363,7 +366,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -376,7 +379,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -389,7 +392,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -402,7 +405,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -415,7 +418,7 @@ Visualization Manager:
       normal length: 1
       only border: false
       show normal: false
-    - Alpha: 0.100000001
+    - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
       Color: 255; 170; 0
       Enabled: true
@@ -430,7 +433,7 @@ Visualization Manager:
       show normal: false
   Enabled: true
   Global Options:
-    Background Color: 34; 34; 34
+    Background Color: 132; 132; 132
     Default Light: true
     Fixed Frame: map
     Frame Rate: 30
@@ -453,7 +456,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 109.335976
+      Distance: 92.4426651
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -468,10 +471,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.03479707
+      Pitch: 0.189797521
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.84015071
+      Yaw: 4.30832863
     Saved: ~
 Window Geometry:
   Displays:

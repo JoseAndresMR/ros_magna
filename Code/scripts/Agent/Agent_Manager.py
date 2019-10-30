@@ -443,6 +443,9 @@ class Agent_Manager(object):
 
         self.nai.smooth_path_mode = self.smooth_path_mode
         self.agents_data_list[self.ID-1].smooth_path_mode = self.smooth_path_mode
+
+        self.CreateMission( self.goal_path_poses_list, True, True)
+
         if self.smooth_path_mode != 0:
             self.goal_path_smooth = self.SmoothPath(self.goal_path)
             self.path_pub_smooth.publish(self.goal_path_smooth)
@@ -489,6 +492,8 @@ class Agent_Manager(object):
                     self.Evaluator()          # Evaluate the situation
                         
                     time.sleep(0.2)
+
+            time.sleep(1)
 
             if self.agent_models[self.ID-1] != "plane":
                 self.SetVelocityCommand(True)       # If far, ask nai to give the correct velocity

@@ -67,13 +67,14 @@ class Master(object):
         'submission'         :                   "3UAVs_3paths_unifly",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
-        'N_iter'             :                      200,                      # Bunch of simulations developed in the defined dataset
+        'N_iter'             :                       1,                      # Bunch of simulations developed in the defined dataset
         'algorithms_list'    :                    ["orca3"],
         'communications'     :                    "direct",                   # Kind of communications between Agents
         'heading_use'        :                     False,                     # Flag to decide if heading is controlled
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
         'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         'rviz_gui'           :                     True,
+        'rqt_use'            :                     True,
         }
         # 00.00022
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization

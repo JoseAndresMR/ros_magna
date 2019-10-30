@@ -45,7 +45,7 @@ class SafedroneInverseNode(object):
             auxiliar_polygons = self.Global2Local(self.polygons_geo)
         
             main_polygon_array = auxiliar_polygons["1"]
-            print("main_polygon_array",main_polygon_array)
+            # print("main_polygon_array",main_polygon_array)
 
             # main_polygon_array = [[-150.01255746543757, 149.85376389184967, -12.5], [-125.65221288704197, -159.8376554097049, -50.0], [105.37052664515795, -236.5466791386716, -50.0], [1026.092006954481, -168.59934886405244, -50.0], [1155.3705004769145, 90.11888963589445, -50.0], [995.6826912371034, 315.442073025275, -50.0], [582.8812200819957, 104.96125665307045, -50.0]]
             # main_polygon_array = [[-150,150,10],[3,70],[150,150],[150,-150],[3,-190],[-150,-150]]
@@ -118,13 +118,13 @@ class SafedroneInverseNode(object):
         limits = self.getLimits(main_polygon_array)
         self.main_polygon_width = limits[1][1] - limits[1][0]
 
-        print("limits", limits)
+        # print("limits", limits)
 
         main_polygon = Polygon(*vertex_points_list)
 
         main_polygon_area = abs(round(main_polygon.area,2))
 
-        print("main_polygon_area", main_polygon_area)
+        # print("main_polygon_area", main_polygon_area)
 
         x_init = copy.deepcopy(limits[0][0])
         y_init = copy.deepcopy(limits[1][0])
@@ -134,8 +134,8 @@ class SafedroneInverseNode(object):
 
         for i in range(len(self.ids)):
 
-            print("NEW ID!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            print("id", i)
+            # print("NEW ID!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            # print("id", i)
 
             area_error_threshold = main_polygon_area*0.015
             area_error = 10000000
@@ -148,7 +148,7 @@ class SafedroneInverseNode(object):
 
             while area_error_threshold < abs(area_error) and not rospy.is_shutdown():
 
-                print("cross_section_distance", cross_section_distance)
+                # print("cross_section_distance", cross_section_distance)
 
                 polygon_vertex_list = []
                 
@@ -169,7 +169,7 @@ class SafedroneInverseNode(object):
 
                 for j in range(len(perim_segments)):
 
-                    print("segment", j)
+                    # print("segment", j)
 
                     p0_side = "center"
                     
@@ -198,11 +198,11 @@ class SafedroneInverseNode(object):
                     if detected_last_intersections != []:
                         which_intersected[1] = True
 
-                    print("which_intersected", which_intersected)
+                    # print("which_intersected", which_intersected)
 
                     if which_intersected.count(True) == 0:
 
-                        print("not intersected")
+                        # print("not intersected")
 
                         if p0_side == "center":
 
@@ -212,7 +212,7 @@ class SafedroneInverseNode(object):
 
                     elif which_intersected.count(True) == 1:
 
-                        print("intersected once")
+                        # print("intersected once")
 
                         if p0_side == "center":
 
@@ -232,8 +232,8 @@ class SafedroneInverseNode(object):
 
                     elif which_intersected.count(True) == 2:                        
 
-                        print("intersected twice")
-                        print("intersections", detected_intersections)
+                        # print("intersected twice")
+                        # print("intersections", detected_intersections)
                         intersection_point_0 = detected_intersections[0][0]
                         p0 = perim_segments[j].points[0]
                         distances = [p0.distance(intersection_point_0)]
@@ -241,44 +241,45 @@ class SafedroneInverseNode(object):
                         intersection_point_1 = detected_intersections[1][0]
                         p0 = perim_segments[j].points[0]
                         distances.append(p0.distance(intersection_point_1))
-                        print(distances.index(min(distances)),(distances.index(min(distances))+1)%2)
+                        # print(distances.index(min(distances)),(distances.index(min(distances))+1)%2)
                         polygon_vertex_list.append(detected_intersections[distances.index(min(distances))][0])
                         polygon_vertex_list.append(detected_intersections[(distances.index(min(distances))+1)%2][0])
-                        print("intersections", detected_intersections)
-                        print("nearers",polygon_vertex_list[-2:])
+                        # print("intersections", detected_intersections)
+                        # print("nearers",polygon_vertex_list[-2:])
 
-                        print(polygon_vertex_list)
+                        # print(polygon_vertex_list)
 
                 polygon = Polygon(*polygon_vertex_list)
 
                 area = abs(polygon.area)
-                print("polygon",polygon)
-                print("area", area)
-                print("ITERATION COMPLETED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                # print("polygon",polygon)
+                # print("area", area)
+                # print("ITERATION COMPLETED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
                 # area check
 
                 area_error = area - (main_polygon_area / len(self.ids))
 
-                print("area error", area_error)
+                # print("area error", area_error)
 
                 if area_error_threshold < abs(area_error):
 
                     x_increment = x_increment / 2
-                    print("x_increment",x_increment)
+                    # print("x_increment",x_increment)
                     cross_section_distance += x_increment* np.sign(-area_error)
 
                 if i == len(self.ids)-1:
                     area_error = 0
 
-
+            print("boundary found")
+            
             polygon_array = []
             for vertex in polygon.vertices:
                 polygon_array.append([float(vertex.x),float(vertex.y),float(main_polygon_array[0][2])])
             polygons_dict[str(self.ids[i])] = self.RotatePolygon(center, -angle, polygon_array)
             prior_cross_segment = cross_segment
 
-        print("polygons_dict", polygons_dict)
+        # print("polygons_dict", polygons_dict)
 
         return polygons_dict
 
@@ -381,7 +382,7 @@ class SafedroneInverseNode(object):
 
         data = { "scenario" : { "volumes" : [volume_data]} }
 
-        print(data)
+        # print(data)
 
         return data
 
@@ -408,7 +409,7 @@ class SafedroneInverseNode(object):
 
         return
 
-SafedroneInverseNode([1,2] ,"uav_", [37.199941, -5.881098,0.0], 4.641597)
+SafedroneInverseNode([1,2,3] ,"uav_", [37.199941, -5.881098,0.0], 4.641597)
 
 # make posix gazebo_plane
 # roslaunch mavros px4.launch fcu_url:=udp://:14550@localhost:14556

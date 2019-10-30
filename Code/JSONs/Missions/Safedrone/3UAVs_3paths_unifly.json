@@ -2,11 +2,15 @@
     "Agents_Config": [
         {
             "ID":1,
-            "model":"iris",
-            "mode": "sitl",
+            "model":"Safedrone",
+            "mode": "real",
             "marker_color": [255,0,0,0.5],
-            "ual_use": true,
-            "agent_manager_on_gs": true
+            "ual_use": false,
+            "agent_manager_on_gs": false,
+            "ssh_params": {
+                "hostname":"safedrone2",
+                "username":"safedrone2"
+            }
         },
         {
             "ID":2,
@@ -14,15 +18,22 @@
             "mode": "sitl",
             "marker_color": [0,255,0,0.5],
             "ual_use": true,
-            "agent_manager_on_gs": true
-        },
-        {
+            "agent_manager_on_gs": true,
+            "ssh_params": {
+                "hostname":"safedrone4",
+                "username":"safedrone4"
+            }
+        },        {
             "ID":3,
             "model":"iris",
             "mode": "sitl",
             "marker_color": [0,0,255,0.5],
             "ual_use": true,
-            "agent_manager_on_gs": true
+            "agent_manager_on_gs": true,
+            "ssh_params": {
+                "hostname":"safedrone3",
+                "username":"safedrone3"
+            }
         }
     ],
     "State_Machine": [
@@ -108,6 +119,111 @@
                 "world_part_def" : [{ "name" : "JSON", "world" : "Safedrone", "subworld" : "volumes_from_unifly"}]
             },
             
+            "outcomes": {
+                "completed": "1_set_mission"
+            }
+        },
+        {
+            "type": "Concurrence",
+            "name": "set_mission",
+            "ids": 1,
+            "occurrencies": [
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "set_mission",
+                    "name": "set_mission",
+                    "ids": 1,
+                    "ids_var": "agent",
+                    "parameters": {
+                        "path": [
+                            {
+                                "definition":["Flights","Take_off_1","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            },
+                            {
+                                "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
+                            },
+                            {
+                                "definition":["Flights","Take_off_1","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            }
+                        ]
+                    },
+                    "outcomes":{
+                        "succeeded": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "utm_new_flightplan" : "completed",
+                        "low_battery": "completed",
+                        "preempted": "collision",
+                        "aborted": "collision"
+                    }
+                },
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "set_mission",
+                    "name": "set_mission",
+                    "ids": 2,
+                    "ids_var": "agent",
+                    "parameters": {
+                        "path": [
+                            {
+                                "definition":["Flights","Take_off_2","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            },
+                            {
+                                "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
+                            },
+                            {
+                                "definition":["Flights","Take_off_2","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            }
+                        ]
+                    },
+                    "outcomes":{
+                        "succeeded": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "utm_new_flightplan" : "completed",
+                        "low_battery": "completed",
+                        "preempted": "collision",
+                        "aborted": "collision"
+                    }
+                },
+                {
+                    "type": "SimpleActionState",
+                    "state_type": "set_mission",
+                    "name": "set_mission",
+                    "ids": 3,
+                    "ids_var": "agent",
+                    "parameters": {
+                        "path": [
+                            {
+                                "definition":["Flights","Take_off_3","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            },
+                            {
+                                "definition":["PolygonsFromUnifly","Polygon_3","path","Zigzag"]
+                            },
+                            {
+                                "definition":["Flights","Take_off_3","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                            }
+                        ]
+                    },
+                    "outcomes":{
+                        "succeeded": "completed",
+                        "collision": "collision",
+                        "GS_critical_event": "GS_critical_event",
+                        "utm_new_flightplan" : "completed",
+                        "low_battery": "completed",
+                        "preempted": "collision",
+                        "aborted": "collision"
+                    }
+                }
+            ],
+            "occurrencies_outcome_map": {
+                "completed": {
+                    "all": "completed"
+                },
+                "aborted": {
+                    "all": "collision"
+                }
+            },
             "outcomes": {
                 "completed": "algorithm_control_global"
             }
@@ -341,7 +457,13 @@
                             "parameters": {
                                 "path": [
                                     {
+                                        "definition":["Flights","Take_off_1","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
                                         "definition":["PolygonsFromUnifly","Polygon_1","path","Zigzag"]
+                                    },
+                                    {
+                                        "definition":["Flights","Take_off_1","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -392,7 +514,13 @@
                             "parameters": {
                                 "path": [
                                     {
+                                        "definition":["Flights","Take_off_2","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
                                         "definition":["PolygonsFromUnifly","Polygon_2","path","Zigzag"]
+                                    },
+                                    {
+                                        "definition":["Flights","Take_off_2","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -443,7 +571,13 @@
                             "parameters": {
                                 "path": [
                                     {
+                                        "definition":["Flights","Take_off_3","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
+                                    },
+                                    {
                                         "definition":["PolygonsFromUnifly","Polygon_3","path","Zigzag"]
+                                    },
+                                    {
+                                        "definition":["Flights","Take_off_3","coordinates",[[0.0,0.0,7.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,

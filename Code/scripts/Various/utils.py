@@ -34,6 +34,7 @@ Created on Jul 22 2019
 # import pyModeS as pms
 import numpy as np
 import rospy, time, tf, tf2_ros, math
+import paramiko
 from copy import deepcopy
 from geometry_msgs.msg import *
 from sensor_msgs.msg import Image, BatteryState
@@ -78,3 +79,38 @@ def xmlSetAttribValueByTagAndAttribValue(root,tag,get_att_nam,get_att_val,set_at
 def xmlSetTextValueByTagAndAttribValue(root,tag,get_att_nam,get_att_val,set_text_val):
     root[xmlGetIndexByTagAndAttribName(root,tag,get_att_nam,get_att_val)[0]].text = set_text_val
     return root
+
+class SSHConnection(object):
+    def __init__(self, hostname, username='', password='', port=22):
+
+        # try:
+        self.client = paramiko.SSHClient()
+        self.client.load_system_host_keys()
+        self.client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        
+        self.client.connect(hostname, port=port, username=username, password=password)
+
+        # except:
+        #     self.client.close()
+
+
+    def executeCommand(self, cmd):
+
+        stdin, stdout, stderr = self.client.exec_command(cmd)
+        print "out", stdout.read()
+        print "err", stderr.read()
+
+
+    def transferFile(self, local_path, remote_path):
+
+        sftp = self.client.open_sftp()
+        sftp.put(local_path, remote_path)
+
+
+    def closeConnection(self):
+
+        self.client.close()
+
+    def __del__(self):
+
+        self.closeConnection()

@@ -55,6 +55,7 @@ from tf2_msgs.msg import *
 from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
 from actionlib import SimpleActionClient
+from dict_recursive_update import recursive_update
 
 from magna.srv import *
 from magna.msg import *
@@ -111,6 +112,9 @@ class GroundStation(object):
         rospy.set_param('magna_hyperparameters', self.hyperparameters)
 
         self.Listener()     # Start subscribers
+
+        if self.rqt_use == True:
+            self.rqtSapwner()
 
         self.gs_sm = GroundStation_SM(self)        # Create Ground Station State Machine
         outcome = self.gs_sm.gs_sm.execute()        # Execute State Machine
@@ -207,7 +211,9 @@ class GroundStation(object):
         with open(config_def_path) as f:
             config_def = json.load(f)
 
-        config_def.update(copy.deepcopy(self.mission_def["Agents_Config"][ID]))
+        # config_def.update(copy.deepcopy(self.mission_def["Agents_Config"][ID]))
+
+        config_def = recursive_update(config_def, self.mission_def["Agents_Config"][ID])
 
         # sitl
         # root[2].attrib["default"] = config_def["mode"]
@@ -281,12 +287,41 @@ class GroundStation(object):
         # root[12][0].attrib["name"] = 'agent_{}'.format(ID+1)
         # root[12][0].attrib["args"] = '-ID={}'.format(ID+1)
 
+        if config_def["mode"] == "ssh":
+
+            for key in config_def["ssh_params"].keys():
+                xmlSetAttribValueByTagAndAttribValue(root,"arg","name",key,"default",config_def["ssh_params"][key])
+
+
         et.write(launch_path)
 
         agent_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
         agent_spawner_launch.start()
 
         self.agent_spawner_launchs_list.append(agent_spawner_launch)
+
+    
+    def rqtSapwner(self):
+
+        uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(uuid)
+
+        launch_path = "{0}/Code/launch/rqt_spawner.launch".format(self.home_path)
+
+        # et = xml.etree.ElementTree.parse(launch_path)
+        # root = et.getroot()
+        # if self.rviz_gui == True:
+        #     # root[1].attrib["if"] = "true"
+        #     xmlSetAttribValueByTagAndAttribValue(root,"arg","name","rviz_use","default",'true')
+        #     # root[1][0].attrib["args"] = "-d $(find magna)/rviz/{0}.rviz".format(self.hyperparameters["world"])
+        #     xmlSetAttribValueByTagAndAttribValue(root,"arg","name","world","default",self.hyperparameters["world"])
+        # else:
+        #     # root[1].attrib["if"] = "false"
+        #     xmlSetAttribValueByTagAndAttribValue(root,"arg","name","rviz_use","default",'false')
+        # et.write(launch_path)
+
+        self.world_spawner_launch = roslaunch.parent.ROSLaunchParent(uuid,[launch_path])
+        self.world_spawner_launch.start()
 
 
     def worldConfig(self, parameters):
@@ -395,13 +430,7 @@ class GroundStation(object):
             self.bag = rosbag.Bag(bag_folder_path, 'w')
 
 
-    def MakePath(self,path_def,agent_id):
-
-        latency_pub = rospy.Publisher('/magna/latency/{}'.format(agent_id), PoseStamped, queue_size=1)
-        latency_msg = PoseStamped()
-        latency_msg.pose.position.x = 1
-        response = latency_pub.publish(latency_msg)
-        time.sleep(1)
+    def MakePath(self,path_def):
 
         # return [self.world.getFSPoseGlobal(path_def)]
         return [self.worldGetFSPset(path_def)]
@@ -432,6 +461,7 @@ class GroundStation(object):
         response = status_pub.publish(status)
 
         return
+        
 
     #### Finisher functions ####
 
@@ -682,6 +712,7 @@ class GroundStation(object):
         self.depth_camera_use = self.hyperparameters['depth_camera_use']
         self.rosbag_flag = self.hyperparameters['rosbag_flag']
         self.rviz_gui = self.hyperparameters['rviz_gui']
+        self.rqt_use = self.hyperparameters['rqt_use']
 
 def main():
     GroundStation()

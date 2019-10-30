@@ -1,0 +1,12 @@
+{
+    "autopilot" : "px4",
+    "ual_use": 1,
+    "safety_radius": 0.3,
+    "max_speed": 2,
+    "accepted_target_radius" : 0.9,
+    "ssh_params": {
+        "ssh_password":"nuc",
+        "fcu_url":"serial:///dev/ttyUSB0:921600",
+        "gcs_url":"udp://@localhost"
+    }
+}

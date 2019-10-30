@@ -1,0 +1,22 @@
+<launch>
+
+    <arg default="1" name="id" />
+
+    <arg name="hostname" default="safedrone2" />
+    <arg name="username" default="safedrone2" />
+    <arg name="password" default="nuc" />
+    <arg default="serial:///dev/ttyUSB0:921600" name="fcu_url" />
+    <arg default="udp://@localhost" name="gcs_url" />
+
+    <!-- <arg default="" name="" /> -->
+
+    <rosparam command="dump" file="$(find magna)/yaml/all_rosparams.yaml" />
+
+    <node args="-ID=$(arg id) -hostname=$(arg hostname) -username=$(arg username) -password=$(arg password) -fcu_url=$(arg fcu_url) -gcs_url=$(arg gcs_url)" name="agent_$(arg id)_ssh" output="screen" pkg="magna" type="AgentOnSSH.py" >
+        <!-- <param name="ID" value="$(arg id)"/>
+        <param name="hostname" value="$(arg hostname)"/>
+        <param name="username" value="$(arg username)"/>
+        <param name="password" value="$(arg password)"/>
+        <param name="" value=""/> -->
+    </node>
+</launch>

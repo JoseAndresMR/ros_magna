@@ -280,6 +280,7 @@ class GroundStation_SM(object):
 
         return outcome
 
+
     def DictionarizeCBStateCallbacks(self):
         self.CBStateCBDic = {}
         self.CBStateCBDic["world_config"] = self.world_config_stcb
@@ -288,6 +289,7 @@ class GroundStation_SM(object):
         self.CBStateCBDic["save_csv"] = self.save_csv_stcb
         self.CBStateCBDic["algorithm_control"] = self.algorithm_control_stcb
         self.CBStateCBDic["execute_script"] = self.execute_script_stcb
+
 
     #### ACTIONS CALLBACKS ####
 
@@ -321,8 +323,7 @@ class GroundStation_SM(object):
 
         goal.poses_list = np.array([])
         for path_part in params["path"]:
-            goal.poses_list = np.append(goal.poses_list,
-                                                np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
+            goal.poses_list = np.append(goal.poses_list, np.array(params["heritage"].MakePath(path_part["definition"])))
         goal.include_takeoff = False
         if "include_takeoff" in params.keys():
             goal.smooth_path_mode = params["include_takeoff"]
@@ -350,7 +351,7 @@ class GroundStation_SM(object):
         else:
             for path_part in params["path"]:
                 goal.goal_path_poses_list = np.append(goal.goal_path_poses_list,
-                                                        np.array(params["heritage"].MakePath(path_part["definition"],params["id"])))
+                                                        np.array(params["heritage"].MakePath(path_part["definition"])))
         
         goal.smooth_path_mode = 0
         if "smooth_path_mode" in params.keys():

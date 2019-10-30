@@ -1,12 +1,12 @@
 <launch>
 
-    <arg default="2" name="id" />
+    <arg default="1" name="id" />
     <arg default="true" name="multimaster_use" />
     <arg default="5.0" name="delay" />
     <arg default="sitl" name="mode" />
     <arg default="[37.558542, -5.931074, 7.89]" name="origin_geo" />
 
-    <rosparam command="load" file="$(find magna)/yaml/uav_$(arg id).yaml" />
+    <rosparam command="load" file="$(find magna)/yaml/all_rosparams.yaml" />
 
     <arg default="serial:///dev/ttyUSB0:921600" name="fcu_url" />
     <arg default="udp://@localhost" name="gcs_url" />

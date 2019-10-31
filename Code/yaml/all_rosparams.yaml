@@ -37,13 +37,13 @@ rosdistro: 'kinetic
 
   '
 roslaunch:
-  uris: {host_joseandresmr_grvc_pc__33979: 'http://joseandresmr-grvc-pc:33979/', host_joseandresmr_grvc_pc__38507: 'http://joseandresmr-grvc-pc:38507/',
-    host_joseandresmr_grvc_pc__42073: 'http://joseandresmr-grvc-pc:42073/', host_joseandresmr_grvc_pc__42683: 'http://joseandresmr-grvc-pc:42683/',
-    host_joseandresmr_grvc_pc__43691: 'http://joseandresmr-grvc-pc:43691/', host_joseandresmr_grvc_pc__45441: 'http://joseandresmr-grvc-pc:45441/'}
+  uris: {host_joseandresmr_grvc_pc__33381: 'http://joseandresmr-grvc-pc:33381/', host_joseandresmr_grvc_pc__33521: 'http://joseandresmr-grvc-pc:33521/',
+    host_joseandresmr_grvc_pc__34583: 'http://joseandresmr-grvc-pc:34583/', host_joseandresmr_grvc_pc__41417: 'http://joseandresmr-grvc-pc:41417/',
+    host_joseandresmr_grvc_pc__42051: 'http://joseandresmr-grvc-pc:42051/', host_joseandresmr_grvc_pc__45975: 'http://joseandresmr-grvc-pc:45975/'}
 rosversion: '1.12.14
 
   '
-run_id: c140b048-fb0f-11e9-a01d-3ca067ae9317
+run_id: 250bc55c-fb12-11e9-a01d-3ca067ae9317
 uav_1:
   ual:
     home_pose: [2.5871501063811593, -37.6230100071989, 0.05]

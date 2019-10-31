@@ -74,7 +74,7 @@ class Master(object):
         'depth_camera_use'   :                     False,                     # Flag to decide if the info from depth camera is used
         'smach_view'         :                     True,                      # Flag to decide if smach introspector is actived
         'rviz_gui'           :                     True,
-        'rqt_use'            :                     True,
+        'rqt_use'            :                     False,
         }
         # 00.00022
         rospy.set_param('gazebo_gui',False)   # Gazebo visulization

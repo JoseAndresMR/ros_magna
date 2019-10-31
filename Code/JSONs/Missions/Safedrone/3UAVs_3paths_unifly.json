@@ -2,11 +2,11 @@
     "Agents_Config": [
         {
             "ID":1,
-            "model":"Safedrone",
-            "mode": "real",
+            "model":"iris",
+            "mode": "sitl",
             "marker_color": [255,0,0,0.5],
-            "ual_use": false,
-            "agent_manager_on_gs": false,
+            "ual_use": true,
+            "agent_manager_on_gs": true,
             "ssh_params": {
                 "hostname":"safedrone2",
                 "username":"safedrone2"

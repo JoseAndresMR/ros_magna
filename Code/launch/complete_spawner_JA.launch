@@ -2,16 +2,16 @@
 
     <arg default="false" name="multi" />
     <arg default="uav_" name="ns_prefix" />
-    <arg default="ssh" name="mode" />
+    <arg default="sitl" name="mode" />
     <arg default="map" name="pose_frame_id" />
     <arg default="on" name="ual_server" />
     <arg default="30.0" name="ual_pub_rate" />
     <arg default="10.0" name="mavros_offboard_rate" />
 
-    <arg default="false" name="ual_use" />
+    <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
-    <arg default="false" name="uav_manager_use" />
-    <arg default="1" name="id" />
+    <arg default="true" name="uav_manager_use" />
+    <arg default="2" name="id" />
     <arg default="[37.199941, -5.881098, 0.0]" name="origin_geo" />
 
     <arg default="serial:///dev/ttyUSB0:921600" name="fcu_url" />
@@ -38,6 +38,7 @@
                     <arg name="robot_model" value="$(arg robot_model)" />
                     <arg name="fcu_url" value="$(arg fcu_url)" />
                     <arg name="gcs_url" value="$(arg gcs_url)" />
+                    <arg name="rtcm_topic" value="/rtcm_stream" />
                 </include>
             </group>
 

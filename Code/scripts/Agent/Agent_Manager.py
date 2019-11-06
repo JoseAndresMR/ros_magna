@@ -273,11 +273,6 @@ class Agent_Manager(object):
         # print self.finish - self.start
         # self.start = time.time()      # Restart time elapsed since last calculation of the velocity. In the future should enter into the evaluatiors
 
-        latency_pub = rospy.Publisher('/magna/latency/{}'.format(self.ID), PoseStamped, queue_size=1)
-        latency_msg = PoseStamped()
-        latency_msg.pose.position.x = 3
-        latency_pub.publish(latency_msg)
-
         self.velocity_pub.publish(TwistStamped(h,self.new_velocity_twist))
 
         # time.sleep(1)
@@ -287,7 +282,7 @@ class Agent_Manager(object):
     # Function to deal with UAL server Take Off
     def TakeOffCommand(self,height, blocking):
 
-        time.sleep(3)
+        time.sleep(2)
 
         request = TakeOffRequest()
 
@@ -424,11 +419,6 @@ class Agent_Manager(object):
 
     # Function to model the target of role follow static waypoint path
     def PathFollower(self,dynamic,action_time = 0.0,on_mission = True,):
-
-        latency_pub = rospy.Publisher('/magna/latency/{}'.format(self.ID), PoseStamped, queue_size=1)
-        latency_msg = PoseStamped()
-        latency_msg.pose.position.x = 2
-        latency_pub.publish(latency_msg)
 
         self.preemption_launched = False
         if self.critical_event == "utm_new_flightplan":

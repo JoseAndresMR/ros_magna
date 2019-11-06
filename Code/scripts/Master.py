@@ -57,14 +57,14 @@ from Various import *
 sys.dont_write_bytecode = True
 
 class Master(object):
-    def __init__(self):#43.1076deg, 1.36136 rad
+    def __init__(self):#-8.731703992903931, 34.255497781559825
         # self.processess_killer(2)
         # World paramenters initialization     follow_paths_sbys, queue_of_followers_ap, queue_of_followers_ad long_wait
         self.hyperparameters = {
         'world'              :                   "Safedrone",                    # Type of the world or sceneario created
         'subworld'           :                   "Oran",
         'mission'            :                   "Safedrone",                    # Global mission that characterizes every Agent's role
-        'submission'         :                   "3UAVs_3paths_unifly",
+        'submission'         :                   "2UAVs_2paths_orca",
         'n_dataset'          :                       1,                       # Number of the dataset to create
         'n_simulation'       :                       1,                       # Number of simulation where to start instide the dataset
         'N_iter'             :                       1,                      # Bunch of simulations developed in the defined dataset

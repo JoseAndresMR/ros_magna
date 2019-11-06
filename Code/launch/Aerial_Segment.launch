@@ -26,7 +26,7 @@
         <arg value="10.0" name="mavros_offboard_rate" />
 
         <arg value="true" name="ual_use" />
-        <arg value="px4" name="autopilot" />
+        <arg value="dji" name="autopilot" />
         <arg value="true" name="uav_manager_use" />
         <arg value="$(arg id)" name="id" />
         <arg value="$(arg origin_geo)" name="origin_geo" />

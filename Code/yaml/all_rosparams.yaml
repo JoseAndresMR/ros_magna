@@ -9,7 +9,7 @@ magna_hyperparameters:
   N_agents: 3
   N_iter: 1
   N_obs: 0
-  agent_models: [Safedrone, iris, iris]
+  agent_models: [iris, iris, iris]
   algorithms_list: [orca3]
   communications: direct
   depth_camera_use: false
@@ -21,7 +21,7 @@ magna_hyperparameters:
   obs_pose_list: []
   obs_shape: []
   rosbag_flag: false
-  rqt_use: true
+  rqt_use: false
   rviz_gui: true
   save_flag: true
   smach_view: true
@@ -32,24 +32,23 @@ magna_hyperparameters:
   - [-500, 500]
   - [-500, 500]
   - [-500, 500]
-mastername: joseandresmr-grvc-pc
 rosdistro: 'kinetic
 
   '
 roslaunch:
-  uris: {host_joseandresmr_grvc_pc__33381: 'http://joseandresmr-grvc-pc:33381/', host_joseandresmr_grvc_pc__33521: 'http://joseandresmr-grvc-pc:33521/',
-    host_joseandresmr_grvc_pc__34583: 'http://joseandresmr-grvc-pc:34583/', host_joseandresmr_grvc_pc__41417: 'http://joseandresmr-grvc-pc:41417/',
-    host_joseandresmr_grvc_pc__42051: 'http://joseandresmr-grvc-pc:42051/', host_joseandresmr_grvc_pc__45975: 'http://joseandresmr-grvc-pc:45975/'}
+  uris: {host_joseandresmr_grvc_pc__40203: 'http://joseandresmr-grvc-pc:40203/', host_joseandresmr_grvc_pc__41389: 'http://joseandresmr-grvc-pc:41389/',
+    host_joseandresmr_grvc_pc__41591: 'http://joseandresmr-grvc-pc:41591/', host_joseandresmr_grvc_pc__44377: 'http://joseandresmr-grvc-pc:44377/',
+    host_joseandresmr_grvc_pc__44569: 'http://joseandresmr-grvc-pc:44569/'}
 rosversion: '1.12.14
 
   '
-run_id: 250bc55c-fb12-11e9-a01d-3ca067ae9317
+run_id: c0054cc2-fbf3-11e9-b9e5-3ca067ae9317
 uav_1:
   ual:
     home_pose: [2.5871501063811593, -37.6230100071989, 0.05]
     pose_frame_id: map
 uav_1_home:
   gz_initial_yaw: 0.0
-  model: Safedrone
+  model: iris
   translation: [2.5871501063811593, -37.6230100071989, 0.05]
 use_sim_time: true

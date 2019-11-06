@@ -43,7 +43,10 @@
             </group>
 
             <group if="$(eval autopilot == 'dji')">
-                <include file="$(find dji_sdk)/launch/sdk.launch" />
+                <include file="$(find magna)/launch/DJI_spawn_robot_JA.launch">
+                    <arg name="id" value="$(arg id)" />
+                    <arg name="mode" value="$(arg mode)" />
+                </include>
             </group>
 
             <group if="$(eval autopilot == 'bitcraze')">
@@ -71,7 +74,7 @@
                     <param name="backend" value="dji" />
                     <param name="laser_altimeter" value="false" />
                     <param name="self_arming" value="true" />
-                    <rosparam param="map_origin_geo">"$(arg origin_geo)"</rosparam>
+                    <rosparam param="map_origin_geo">[37.199941, -5.881098, 0.0]</rosparam>
                 </node>
             </group>   
             <group if="$(eval autopilot == 'crazyflie')">

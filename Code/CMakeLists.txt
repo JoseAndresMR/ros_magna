@@ -70,6 +70,8 @@ add_service_files(
    GyalCommand.srv
    WorldGetFSPset.srv
    UTMnotification.srv
+   OrcaAddAgent.srv
+   OrcaSetParams.srv
 #   Service1.srv
 #   Service2.srv
  )

@@ -17,7 +17,7 @@ class AgentOnSSH(object):
 
         home_path = rospkg.RosPack().get_path('magna')[:-5]
         yaml_local_file = home_path + "/Code/yaml/all_rosparams.yaml"
-        yaml_remote_file = 'ros/magna_ws/src/magna/Code/yaml/all_rosparms.py'
+        yaml_remote_file = 'ros/magna_ws/src/magna/Code/yaml/all_rosparams.yaml'
         ssh_connection.transferFile(yaml_local_file, yaml_remote_file)
 
         command1 = "cd ros; source /home/safedrone2/.bashrc; source /opt/ros/kinetic/setup.bash; source ~/ros/magna_ws/devel/setup.bash"

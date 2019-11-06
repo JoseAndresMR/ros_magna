@@ -48,6 +48,9 @@ from sensor_msgs.msg import *
 # import tensorflow as tflow
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
+from magna.srv import *
+from Various import serverClient
+
 class Agent_NAI(object):
     def __init__(self,ID):
         # Local parameters inizialization from arguments
@@ -79,8 +82,8 @@ class Agent_NAI(object):
         #     return self.ORCA()
 
         if "orca3" in self.algorithms_dicc.keys():
-            return self.ORCA3()
-            # return self.ORCA3_from_node()
+            # return self.ORCA3()
+            return self.ORCA3_from_node()
             
 
     # Function to set new velocity using a Neural Network
@@ -206,6 +209,7 @@ class Agent_NAI(object):
         params_dicc = self.algorithms_dicc["orca3"]
 
         # Give value to orca algorithm parameters
+        pub_rate = params_dict["pub_rate"]
         timeStep = params_dicc["timeStep"]          # 1/60.  float   The time step of the simulation. Must be positive.
         neighborDist = params_dicc["neighborDist"]     # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
         maxNeighbors = params_dicc["N_neighbors_aware"]  # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
@@ -275,21 +279,39 @@ class Agent_NAI(object):
 
         if "agent_created" not in self.algorithms_dicc["orca3"].keys():
 
-            # rospy.wait_for_service('orca/add_agents')
-            # try:
-            #     add_agent_prox = rospy.ServiceProxy('orca/add_agents', MESSAGEEEEEEEEEEEEEE )
-            #     # model_name = "{0}_{1}".format(self.agent_models[n_agent],n_agent+1)
-            #     add_agent_prox(model_name)
-            #     time.sleep(0.1)
-            # except rospy.ServiceException, e:
-            #     print "Service call failed: %s"%e
-            #     print "error in add orca agent"
+            self.algorithms_dicc["orca3"]["N_neighbors_aware"] = int(self.algorithms_dicc["orca3"]["N_neighbors_aware"])
+
+            params_dicc = self.algorithms_dicc["orca3"]
+
+            # Give value to orca algorithm parameters
+            timeStep = params_dicc["timeStep"]          # 1/60.  float   The time step of the simulation. Must be positive.
+            neighborDist = params_dicc["neighborDist"]     # 1.5    float   The maximal distance (center point to center point) to other agents the agent takes into account in the navigation
+            maxNeighbors = params_dicc["N_neighbors_aware"]  # 5      size_t  The maximal number of other agents the agent takes into account in the navigation
+            timeHorizon = params_dicc["timeHorizon"]  # 2.5    float   The minimal amount of time for which the agent's velocities that are computed by the simulation are safe with respect to other agents.
+            agent_radius = params_dicc["agent_radius"]        # 2      float   The radius of the agent. Must be non-negative
+            maxSpeed = params_dicc["maxSpeed"]          # 0.4    float   The maximum speed of the agent. Must be non-negative.
+            velocity = (1, 1, 1)
+
+            set_params_request = OrcaSetParamsRequest()
+            for key in params_dicc.keys():
+                set_params_request.params.append(key)
+                set_params_request.values.append(params_dicc[key])
+            set_params_response = serverClient(set_params_request, "/orca/set_params", OrcaSetParams)
+
+            add_agent_request = OrcaAddAgentRequest()
+            add_agent_request.agent_id = self.ID
+            add_agent_request.radius = 2.0
+            add_agent_request.current_pose_topic = '/uav_{}/ual/pose'.format(self.ID)
+            add_agent_request.current_velocity_topic = '/uav_{}/ual/velocity'.format(self.ID)
+            add_agent_request.preferred_velocity_topic = '/orca/agent_{}/pref_velocity'.format(self.ID)
+
+            add_agent_response = serverClient(add_agent_request, "/orca/add_agents", OrcaAddAgent)
 
             self.orca_optimal_velocity = Twist()
 
             self.algorithms_dicc["orca3"]["agent_created"] = True
 
-            self.algorithms_dicc["orca3"]["prefered_velocity_pub"] = rospy.Publisher('/orca/agent_{}/prefered_velocity'.format(self.ID), TwistStamped, queue_size = 1)
+            self.algorithms_dicc["orca3"]["prefered_velocity_pub"] = rospy.Publisher('/orca/agent_{}/pref_velocity'.format(self.ID), TwistStamped, queue_size = 1)
 
             def handle_orca_optimal_velocity(data):
 
@@ -455,8 +477,6 @@ class Agent_NAI(object):
                 self.algorithms_dicc[name].update(params_dicc)
             else:
                 self.algorithms_dicc[name] = params_dicc
-
-
 
 
     # Function to get Global ROS parameters

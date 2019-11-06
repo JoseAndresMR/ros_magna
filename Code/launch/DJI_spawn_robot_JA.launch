@@ -1,4 +1,7 @@
 <launch>
-
-    <include file="$(find dji_sdk)/launch/sdk.launch" ns="uav_1" />
+    <arg name="id" default="1"/>
+    <arg name="mode" default="sitl"/>
+    <group unless="$(eval mode == 'real')">
+        <include file="$(find dji_sdk)/launch/sdk.launch"/>
+    </group>
 </launch>

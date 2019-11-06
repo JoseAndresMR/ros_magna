@@ -1,0 +1,7 @@
+int8 agent_id
+float32 radius
+string current_pose_topic
+string current_velocity_topic
+string preferred_velocity_topic
+---
+bool result

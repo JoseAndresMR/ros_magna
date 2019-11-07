@@ -1,0 +1,82 @@
+<launch>
+
+    <arg default="false" name="multi" />
+    <arg default="uav_" name="ns_prefix" />
+    <arg default="sitl" name="mode" />
+    <arg default="map" name="pose_frame_id" />
+    <arg default="on" name="ual_server" />
+    <arg default="30.0" name="ual_pub_rate" />
+    <arg default="10.0" name="mavros_offboard_rate" />
+
+    <arg default="true" name="ual_use" />
+    <arg default="px4" name="autopilot" />
+    <arg default="true" name="uav_manager_use" />
+    <arg default="3" name="id" />
+    <arg default="[37.410371, -6.002348, 0.0]" name="origin_geo" />
+
+    <arg default="udp://:14550@localhost:14556" name="fcu_url" />
+    <arg default="udp://@localhost" name="gcs_url" />
+    <arg default="mbzirc" name="robot_model" />
+
+    <group ns="$(arg ns_prefix)$(arg id)">
+        <group>
+            <group if="$(eval autopilot == 'px4')">
+                <include file="$(find magna)/launch/PX4_spawn_robot_JA.launch">
+                    <arg name="id" value="$(arg id)" />
+                    <arg name="material" value="Orange" />
+                    <arg name="mode" value="$(arg mode)" />
+                    <arg name="x" value="0" />
+                    <arg name="y" value="0" />
+                    <arg name="z" value="0" />
+                    <arg name="yaw" value="0" />
+                    <arg name="ual_use" value="$(arg ual_use)" />
+                    
+                    <arg name="robot_model" value="$(arg robot_model)" />
+                </include>
+            </group>
+
+            <group if="$(eval autopilot == 'dji')">
+                <include file="$(find dji_sdk)/launch/sdk.launch" />
+            </group>
+
+            <group if="$(eval autopilot == 'bitcraze')">
+                <include file="$(find crazyswarm)/launch/hover_swarm.launch" />
+            </group>
+        </group>
+    
+
+        <group if="$(arg ual_use)">
+            <group if="$(eval autopilot == 'px4')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="uav_id" value="$(arg id)" />
+                    <param name="pose_frame_id" value="$(arg pose_frame_id)" />
+                    <param name="ual_server" value="$(arg ual_server)" />
+                    <param name="ual_pub_rate" value="$(arg ual_pub_rate)" />
+                    <param name="mavros_offboard_rate" value="$(arg mavros_offboard_rate)" />
+                    <param name="home_pose_parent_frame" value="map" />
+                    <param name="backend" value="mavros" />
+                    <rosparam param="map_origin_geo">[37.410371, -6.002348, 0.0]</rosparam>
+		    <param name="position_th" value="1.0" />
+                </node>
+            </group>
+            <group if="$(eval autopilot == 'dji')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="backend" value="dji" />
+                    <param name="laser_altimeter" value="false" />
+                    <param name="self_arming" value="true" />
+                    <rosparam param="map_origin_geo">"$(arg origin_geo)"</rosparam>
+                </node>
+            </group>   
+            <group if="$(eval autopilot == 'crazyflie')">
+                <node name="ual" output="screen" pkg="uav_abstraction_layer" type="server">
+                    <param name="backend" value="crazyflie" />
+                </node>
+            </group>
+        </group>
+    </group>
+
+    <group if="$(arg uav_manager_use)">
+        <node args="-ID=$(arg id)" name="agent_$(arg id)" output="screen" pkg="magna" type="Agent_Manager.py" />
+    </group>
+
+</launch>

@@ -29,7 +29,7 @@
         <arg value="$(arg robot_model)" name="robot_model" />
 
         <arg value="true" name="ual_use" />
-        <arg value="$(arg mode)" name="autopilot" />
+        <arg value="$(arg autopilot)" name="autopilot" />
         <arg value="true" name="uav_manager_use" />
         <arg value="$(arg id)" name="id" />
         <arg value="$(arg origin_geo)" name="origin_geo" />

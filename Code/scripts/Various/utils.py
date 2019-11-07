@@ -114,3 +114,40 @@ class SSHConnection(object):
     def __del__(self):
 
         self.closeConnection()
+
+def PoseFromArray(Array):
+    quat = tf.transformations.quaternion_from_euler(Array[1][0],Array[1][1],Array[1][2])
+
+    return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
+
+def ArrayFromPose(pose):
+    euler = [0,0,0]
+    # euler = tf.transformations.euler_from_quaternion(pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orienation.w)
+
+    return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
+
+def TwistFromArray(Array):
+
+    return Twist(Vector3(Array[0][0],Array[0][1],Array[0][2]),Vector3(Array[1][0],Array[1][1],Array[1][2]))
+
+def ArrayFromTwist(twist):
+
+    return [[twist.linear.x,twist.linear.y,twist.linear.z],[twist.angular.x,twist.angular.y,twist.angular.z]]
+
+def OperatePoses(pose1,pose2,op = '+'):
+
+    if op == '+':
+        aux = 1
+    elif op == '-':
+        aux = -1
+
+    result_pose = Pose()
+    result_pose.position.x = pose1.position.x+aux*pose2.position.x
+    result_pose.position.y = pose1.position.y+aux*pose2.position.y
+    result_pose.position.z = pose1.position.z+aux*pose2.position.z
+    result_pose.orientation.x = pose1.orientation.x+aux*pose2.orientation.x
+    result_pose.orientation.y = pose1.orientation.y+aux*pose2.orientation.y
+    result_pose.orientation.z = pose1.orientation.z+aux*pose2.orientation.z
+    result_pose.orientation.w = pose1.orientation.w+aux*pose2.orientation.w
+
+    return result_pose

@@ -31,12 +31,21 @@ import xml.etree.ElementTree
 from GS import GroundStation
 from Various import *
 
-home_path = rospkg.RosPack().get_path('magna')[:-5]
-launch_path = "{0}/Code/launch/complete_spawner_JA.launch".format(home_path)
-        
-et = xml.etree.ElementTree.parse(launch_path)
-root = et.getroot()
+class clase1(object):
 
-print(xmlGetIndexByTagAndAttribName(root,"arg","default","true"))
-xmlSetAttribValueByTagAndAttribValue(root,"arg","name","ual_use","default","jamon")
-print(xmlGetIndexByTagAndAttribName(root,"arg","default","jamon"))
+    def __init__(self):
+
+        self.data = 1
+
+
+
+
+class clase2(clase1):
+
+    def __init__(self):
+
+        print(super(clase1).data)
+
+
+# objeto1 = clase1()
+objeto2 = clase2()

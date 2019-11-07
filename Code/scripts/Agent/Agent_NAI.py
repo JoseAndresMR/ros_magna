@@ -49,7 +49,7 @@ from sensor_msgs.msg import *
 # from tensorflow.python.tools import inspesct_checkpoint as chkp
 
 from magna.srv import *
-from Various import serverClient
+from Various import serverClient, utils
 
 class Agent_NAI(object):
     def __init__(self,ID):
@@ -58,10 +58,18 @@ class Agent_NAI(object):
 
         self.smooth_path_mode = 0
 
+        self.algorithm_classes_dict = {"simple" : SimpleGuidance}
+
+
         self.algorithms_dicc = {}
 
         self.GettingWorldDefinition()    # Global ROS parameters inizialization
         # self.timer_start = time.time()
+
+    def startAlgorithm(self, name):
+
+        self.algorithms_dicc[name]["object"] = self.algorithm_classes_dict[name]()
+        self.algorithms_dicc[name]["active"] = True
 
     # Function to decide which algorithm is used for new velocity depending on parameters
     def Guidance(self,desired_speed):
@@ -73,7 +81,8 @@ class Agent_NAI(object):
         # self.timer_start = time.time()
 
         if "simple" in self.algorithms_dicc.keys():
-            return self.SimpleGuidance()
+            self.algorithms_dicc["simple"]["object"].update(self.goal, self.desired_speed, self.agents_data_list)
+            return self.algorithms_dicc["simple"]["object"].getVelocity()
 
         if "neural_network" in self.algorithms_dicc.keys():
             return self.NeuralNetwork()
@@ -277,6 +286,9 @@ class Agent_NAI(object):
 
     def ORCA3_from_node(self):
 
+        if "simple" not in algorithms_dicc.keys():
+            self.startAlgorithm("simple")
+
         if "agent_created" not in self.algorithms_dicc["orca3"].keys():
 
             self.algorithms_dicc["orca3"]["N_neighbors_aware"] = int(self.algorithms_dicc["orca3"]["N_neighbors_aware"])
@@ -319,7 +331,8 @@ class Agent_NAI(object):
 
             rospy.Subscriber('/orca/agent_{}/optimal_velocity'.format(self.ID), TwistStamped, handle_orca_optimal_velocity)
 
-        prefered_velocity = self.SimpleGuidance()
+        self.algorithms_dicc["simple"]["object"].update(self.goal, self.desired_speed, self.agents_data_list)
+        prefered_velocity = self.algorithms_dicc["simple"]["object"].getVelocity()
 
         prefered_velocity_stamped = TwistStamped()
         prefered_velocity_stamped.twist = prefered_velocity
@@ -330,57 +343,54 @@ class Agent_NAI(object):
 
         return self.orca_optimal_velocity
 
-    # Function to set velocity directly to goal
-    def SimpleGuidance(self):
+    # # Function to set velocity directly to goal
+    # def SimpleGuidance(self):
         
-        if self.smooth_path_mode != 0:
-            return self.agents_data_list[self.ID-1].smooth_velocity
-        
-        # Set algorithm params
-        desired_speed_at_goal = 0
-        aprox_distance = 3
+    #     # Set algorithm params
+    #     desired_speed_at_goal = 0
+    #     aprox_distance = 3
 
-        # Create a vector from actual position to goal position
-        relative_distance = np.asarray([self.goal["pose"].position.x-self.agents_data_list[self.ID-1].position.pose.position.x,\
-                                self.goal["pose"].position.y-self.agents_data_list[self.ID-1].position.pose.position.y,\
-                                self.goal["pose"].position.z-self.agents_data_list[self.ID-1].position.pose.position.z])
+    #     # Create a vector from actual position to goal position
+    #     relative_distance = np.asarray([self.goal["pose"].position.x-self.agents_data_list[self.ID-1].position.pose.position.x,\
+    #                             self.goal["pose"].position.y-self.agents_data_list[self.ID-1].position.pose.position.y,\
+    #                             self.goal["pose"].position.z-self.agents_data_list[self.ID-1].position.pose.position.z])
 
-        distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
+    #     distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
 
-        # If at the distance shorter than aproximation distance, reduce the velocity module
-        if distance_norm < aprox_distance:
-            self.desired_speed = desired_speed_at_goal - (self.desired_speed - desired_speed_at_goal)\
-                                    + ((self.desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
+    #     # If at the distance shorter than aproximation distance, reduce the velocity module
+    #     if distance_norm < aprox_distance:
+    #         self.desired_speed = desired_speed_at_goal - (self.desired_speed - desired_speed_at_goal)\
+    #                                 + ((self.desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
 
-        # Multiply each axis by the velocity module
-        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*self.desired_speed,\
-                                relative_distance[1]/distance_norm*self.desired_speed,\
-                                relative_distance[2]/distance_norm*self.desired_speed)
+    #     # Multiply each axis by the velocity module
+    #     relative_WP_linear=Vector3(relative_distance[0]/distance_norm*self.desired_speed,\
+    #                             relative_distance[1]/distance_norm*self.desired_speed,\
+    #                             relative_distance[2]/distance_norm*self.desired_speed)
 
-        # Transform it in a pose position and calculate its orientation in Euler angles
-        relative_WP_pose_degrees=Pose(relative_WP_linear,\
-                                Vector3(np.arctan2(relative_WP_linear.z,relative_WP_linear.y),\
-                                np.arctan2(relative_WP_linear.x,relative_WP_linear.z),\
-                                np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
+    #     # Transform it in a pose position and calculate its orientation in Euler angles
+    #     relative_WP_pose_degrees=Pose(relative_WP_linear,\
+    #                             Vector3(np.arctan2(relative_WP_linear.z,relative_WP_linear.y),\
+    #                             np.arctan2(relative_WP_linear.x,relative_WP_linear.z),\
+    #                             np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
 
-        # Transform the orientation from Eurler angles to quaternions
-        orientation_list = [self.agents_data_list[self.ID-1].position.pose.orientation.x, self.agents_data_list[self.ID-1].position.pose.orientation.y, self.agents_data_list[self.ID-1].position.pose.orientation.z, self.agents_data_list[self.ID-1].position.pose.orientation.w]
-        euler = tf.transformations.euler_from_quaternion(orientation_list)
+    #     # Transform the orientation from Eurler angles to quaternions
+    #     orientation_list = [self.agents_data_list[self.ID-1].position.pose.orientation.x, self.agents_data_list[self.ID-1].position.pose.orientation.y, self.agents_data_list[self.ID-1].position.pose.orientation.z, self.agents_data_list[self.ID-1].position.pose.orientation.w]
+    #     euler = tf.transformations.euler_from_quaternion(orientation_list)
 
-        # Create the velocity twist with calculated data
-        new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
-                                   Vector3(0, 0, 0))
+    #     # Create the velocity twist with calculated data
+    #     new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
+    #                                Vector3(0, 0, 0))
 
-        # If head use selected, decide it by direct by simple algorithm. In future, put lower threshold.
-        if self.heading_use == True:
-            new_velocity_twist.angular.z = relative_WP_pose_degrees.orientation.z-euler[2]
+    #     # If head use selected, decide it by direct by simple algorithm. In future, put lower threshold.
+    #     if self.heading_use == True:
+    #         new_velocity_twist.angular.z = relative_WP_pose_degrees.orientation.z-euler[2]
 
-        # Thresholds imposition
-        # new_velocity_twist.linear.x = self.UpperLowerSaturation(new_velocity_twist.linear.x,1.5)
-        # new_velocity_twist.linear.y = self.UpperLowerSaturation(new_velocity_twist.linear.y,1.5)
-        # new_velocity_twist.angular.z = self.UpperLowerSaturation(new_velocity_twist.angular.z,0.5)
+    #     # Thresholds imposition
+    #     # new_velocity_twist.linear.x = self.UpperLowerSaturation(new_velocity_twist.linear.x,1.5)
+    #     # new_velocity_twist.linear.y = self.UpperLowerSaturation(new_velocity_twist.linear.y,1.5)
+    #     # new_velocity_twist.angular.z = self.UpperLowerSaturation(new_velocity_twist.angular.z,0.5)
 
-        return new_velocity_twist
+    #     return new_velocity_twist
 
 
     # Function to set hovering velocity equal to zeros
@@ -430,44 +440,12 @@ class Agent_NAI(object):
 
         return self.near_neighbors_sorted
 
-    def PoseFromArray(self,Array):
-        quat = tf.transformations.quaternion_from_euler(Array[1][0],Array[1][1],Array[1][2])
-
-        return Pose(Point(Array[0][0],Array[0][1],Array[0][2]),Quaternion(quat[0],quat[1],quat[2],quat[3]))
-
-    def ArrayFromPose(self,pose):
-        euler = [0,0,0]
-        # euler = tf.transformations.euler_from_quaternion(pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orienation.w)
-
-        return [[pose.position.x,pose.position.y,pose.position.z],[euler[0],euler[1],euler[2]]]
-
-    def TwistFromArray(self,Array):
-
-        return Twist(Vector3(Array[0][0],Array[0][1],Array[0][2]),Vector3(Array[1][0],Array[1][1],Array[1][2]))
-
-    def ArrayFromTwist(self,twist):
-
-        return [[twist.linear.x,twist.linear.y,twist.linear.z],[twist.angular.x,twist.angular.y,twist.angular.z]]
-
-    def OperatePoses(self,pose1,pose2,op = '+'):
-
-        if op == '+':
-            aux = 1
-        elif op == '-':
-            aux = -1
-
-        result_pose = Pose()
-        result_pose.position.x = pose1.position.x+aux*pose2.position.x
-        result_pose.position.y = pose1.position.y+aux*pose2.position.y
-        result_pose.position.z = pose1.position.z+aux*pose2.position.z
-        result_pose.orientation.x = pose1.orientation.x+aux*pose2.orientation.x
-        result_pose.orientation.y = pose1.orientation.y+aux*pose2.orientation.y
-        result_pose.orientation.z = pose1.orientation.z+aux*pose2.orientation.z
-        result_pose.orientation.w = pose1.orientation.w+aux*pose2.orientation.w
-
-        return result_pose
 
     def algorithm_control(self, name, action, params_dicc):
+
+        if (action != "delete") and (name not in self.algorithms_dicc.keys()) and (name != "global"):
+
+            self.startAlgorithm(name)
 
         if action == "delete":
             self.algorithms_dicc.pop(name)
@@ -492,3 +470,65 @@ class Agent_NAI(object):
         self.n_dataset = self.hyperparameters['n_dataset']
         self.obs_pose_list = self.hyperparameters['obs_pose_list']
         self.heading_use = self.hyperparameters['heading_use']
+
+
+class SimpleGuidance(object):
+
+    def __init__(self):
+
+        pass
+
+    def update(self, goal, desired_speed, agents_data_list):
+
+        self.goal = goal
+        self.desired_speed = desired_speed
+        self.agents_data_list = agents_data_list
+
+
+    def getVelocity(self):
+
+        # Set algorithm params
+        desired_speed_at_goal = 0
+        aprox_distance = 3
+
+        # Create a vector from actual position to goal position
+        relative_distance = np.asarray([self.goal["pose"].position.x-self.agents_data_list[self.ID-1].position.pose.position.x,\
+                                self.goal["pose"].position.y-self.agents_data_list[self.ID-1].position.pose.position.y,\
+                                self.goal["pose"].position.z-self.agents_data_list[self.ID-1].position.pose.position.z])
+
+        distance_norm = np.linalg.norm(relative_distance)       # Calculate its norm
+
+        # If at the distance shorter than aproximation distance, reduce the velocity module
+        if distance_norm < aprox_distance:
+            self.desired_speed = desired_speed_at_goal - (self.desired_speed - desired_speed_at_goal)\
+                                    + ((self.desired_speed - desired_speed_at_goal) *2) / (1 + math.exp(-5*distance_norm/aprox_distance))
+
+        # Multiply each axis by the velocity module
+        relative_WP_linear=Vector3(relative_distance[0]/distance_norm*self.desired_speed,\
+                                relative_distance[1]/distance_norm*self.desired_speed,\
+                                relative_distance[2]/distance_norm*self.desired_speed)
+
+        # Transform it in a pose position and calculate its orientation in Euler angles
+        relative_WP_pose_degrees=Pose(relative_WP_linear,\
+                                Vector3(np.arctan2(relative_WP_linear.z,relative_WP_linear.y),\
+                                np.arctan2(relative_WP_linear.x,relative_WP_linear.z),\
+                                np.arctan2(relative_WP_linear.y,relative_WP_linear.x)))  #### COMPROBAR ANGULOS
+
+        # Transform the orientation from Eurler angles to quaternions
+        orientation_list = [self.agents_data_list[self.ID-1].position.pose.orientation.x, self.agents_data_list[self.ID-1].position.pose.orientation.y, self.agents_data_list[self.ID-1].position.pose.orientation.z, self.agents_data_list[self.ID-1].position.pose.orientation.w]
+        euler = tf.transformations.euler_from_quaternion(orientation_list)
+
+        # Create the velocity twist with calculated data
+        new_velocity_twist = Twist(relative_WP_pose_degrees.position,\
+                                   Vector3(0, 0, 0))
+
+        # If head use selected, decide it by direct by simple algorithm. In future, put lower threshold.
+        if self.heading_use == True:
+            new_velocity_twist.angular.z = relative_WP_pose_degrees.orientation.z-euler[2]
+
+        # Thresholds imposition
+        # new_velocity_twist.linear.x = self.UpperLowerSaturation(new_velocity_twist.linear.x,1.5)
+        # new_velocity_twist.linear.y = self.UpperLowerSaturation(new_velocity_twist.linear.y,1.5)
+        # new_velocity_twist.angular.z = self.UpperLowerSaturation(new_velocity_twist.angular.z,0.5)
+
+        return new_velocity_twist

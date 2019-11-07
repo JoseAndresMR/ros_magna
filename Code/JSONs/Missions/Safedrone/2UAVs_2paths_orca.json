@@ -241,9 +241,6 @@
                                     },
                                     {
                                         "definition":["Flights","Take_off_2","coordinates",[[-1.5,0.0,4.0],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["Flights","Take_off_2","coordinates",[[-1.5,0.0,4.0],[0,0,0,1]]]
                                     }
                                 ],
                                 "smooth_path_mode": 0,
@@ -295,9 +292,6 @@
                                 "path": [
                                     {
                                         "definition":["Flights","Take_off_2","coordinates",[[0.0,0.0,4.0],[0,0,0,1]]]
-                                    },
-                                    {
-                                        "definition":["Flights","Take_off_2","coordinates",[[1.5,0.0,4.0],[0,0,0,1]]]
                                     },
                                     {
                                         "definition":["Flights","Take_off_1","coordinates",[[1.5,0.0,4.0],[0,0,0,1]]]

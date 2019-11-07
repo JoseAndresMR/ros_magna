@@ -11,7 +11,7 @@
     <arg default="true" name="ual_use" />
     <arg default="px4" name="autopilot" />
     <arg default="true" name="uav_manager_use" />
-    <arg default="2" name="id" />
+    <arg default="3" name="id" />
     <arg default="[37.199941, -5.881098, 0.0]" name="origin_geo" />
 
     <arg default="serial:///dev/ttyUSB0:921600" name="fcu_url" />

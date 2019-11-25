@@ -474,7 +474,7 @@ class Agent_Manager(object):
 
                 else:
                     if dynamic == "position" and gtwp_cmd_sent == False:
-                        self.GoToWPCommand(True,self.goal["pose"])
+                        self.GoToWPCommand(False,self.goal["pose"])
                         gtwp_cmd_sent = True
 
                     elif dynamic == "velocity":

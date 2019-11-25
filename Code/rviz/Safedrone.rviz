@@ -6,17 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
+        - /TF1/Frames1
+        - /Path3
         - /PolygonArray1
-        - /PolygonArray2
-        - /PolygonArray3
-        - /PolygonArray4
-        - /PolygonArray5
-        - /PolygonArray6
         - /PolygonArray7
-        - /PolygonArray8
-        - /PolygonArray9
-        - /PolygonArray10
       Splitter Ratio: 0.5
     Tree Height: 531
   - Class: rviz/Selection
@@ -98,20 +91,10 @@ Visualization Manager:
       Topic: /magna/agent_1/path
       Unreliable: false
       Value: true
-    - Class: jsk_rviz_plugin/TwistStamped
-      Enabled: true
-      Name: TwistStamped
-      Topic: /pydag/uav_1/velocity_on_uav
-      Unreliable: false
-      Value: true
-      angular color: 255; 0; 0
-      angular scale: 1
-      linear color: 255; 0; 0
-      linear scale: 1
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 255; 255; 0
+      Color: 255; 255; 255
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -134,7 +117,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 255; 85; 0
+      Color: 255; 255; 255
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -155,11 +138,21 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Class: jsk_rviz_plugin/TwistStamped
-      Enabled: true
+      Enabled: false
+      Name: TwistStamped
+      Topic: /pydag/uav_1/velocity_on_uav
+      Unreliable: false
+      Value: false
+      angular color: 255; 0; 0
+      angular scale: 1
+      linear color: 255; 0; 0
+      linear scale: 1
+    - Class: jsk_rviz_plugin/TwistStamped
+      Enabled: false
       Name: TwistStamped
       Topic: /pydag/uav_2/velocity_on_uav
       Unreliable: false
-      Value: true
+      Value: false
       angular color: 255; 255; 0
       angular scale: 1
       linear color: 255; 255; 0
@@ -182,7 +175,10 @@ Visualization Manager:
         Flg_Take_off_1: true
         Flg_Take_off_2: true
         Flg_Take_off_3: true
-        GS_Tent: true
+        GS_Build1: true
+        GS_Build2: true
+        GS_Build3: true
+        GS_Tower: true
         agent_1: true
         agent_2: true
         agent_3: true
@@ -191,7 +187,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 0; 255; 255
+      Color: 255; 0; 0
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -214,7 +210,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 0; 0; 255
+      Color: 0; 255; 0
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -237,7 +233,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 255; 0; 0
+      Color: 0; 0; 255
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -257,94 +253,9 @@ Visualization Manager:
       Topic: /magna/agent_3/goal_path
       Unreliable: false
       Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz/Path
-      Color: 0; 0; 255
-      Enabled: true
-      Head Diameter: 0.300000012
-      Head Length: 0.200000003
-      Length: 0.300000012
-      Line Style: Lines
-      Line Width: 0.300000012
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.0299999993
-      Shaft Diameter: 0.100000001
-      Shaft Length: 0.100000001
-      Topic: /magna/agent_1/goal_path_smooth
-      Unreliable: false
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz/Path
-      Color: 85; 0; 127
-      Enabled: true
-      Head Diameter: 0.300000012
-      Head Length: 0.200000003
-      Length: 0.300000012
-      Line Style: Lines
-      Line Width: 0.300000012
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.0299999993
-      Shaft Diameter: 0.100000001
-      Shaft Length: 0.100000001
-      Topic: /magna/agent_2/goal_path_smooth
-      Unreliable: false
-      Value: true
-    - Alpha: 0.100000001
-      Class: jsk_rviz_plugin/PolygonArray
-      Color: 255; 85; 0
-      Enabled: false
-      Name: PolygonArray
-      Topic: /visualization_polygon_array/MP_ManualPolygon1
-      Unreliable: false
-      Value: false
-      coloring: Flat color
-      enable lighting: false
-      normal length: 1
-      only border: false
-      show normal: false
-    - Alpha: 0.100000001
-      Class: jsk_rviz_plugin/PolygonArray
-      Color: 255; 85; 0
-      Enabled: false
-      Name: PolygonArray
-      Topic: /visualization_polygon_array/MP_ManualPolygon2
-      Unreliable: false
-      Value: false
-      coloring: Flat color
-      enable lighting: false
-      normal length: 1
-      only border: false
-      show normal: false
     - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
-      Color: 0; 255; 0
-      Enabled: true
-      Name: PolygonArray
-      Topic: /visualization_polygon_array/PFU_Polygon_1
-      Unreliable: false
-      Value: true
-      coloring: Flat color
-      enable lighting: false
-      normal length: 1
-      only border: false
-      show normal: false
-    - Alpha: 0.5
-      Class: jsk_rviz_plugin/PolygonArray
-      Color: 255; 170; 0
+      Color: 0; 250; 0
       Enabled: true
       Name: PolygonArray
       Topic: /visualization_polygon_array/PFU_Polygon_2
@@ -357,7 +268,7 @@ Visualization Manager:
       show normal: false
     - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
-      Color: 0; 255; 255
+      Color: 0; 0; 255
       Enabled: true
       Name: PolygonArray
       Topic: /visualization_polygon_array/PFU_Polygon_3
@@ -370,10 +281,10 @@ Visualization Manager:
       show normal: false
     - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
-      Color: 255; 170; 0
+      Color: 255; 0; 0
       Enabled: true
       Name: PolygonArray
-      Topic: /visualization_polygon_array/PFU_Polygon_4
+      Topic: /visualization_polygon_array/PFU_Polygon_1
       Unreliable: false
       Value: true
       coloring: Flat color
@@ -422,10 +333,23 @@ Visualization Manager:
       show normal: false
     - Alpha: 0.5
       Class: jsk_rviz_plugin/PolygonArray
-      Color: 0; 199; 0
+      Color: 255; 85; 0
       Enabled: true
       Name: PolygonArray
       Topic: /visualization_polygon_array/BP_Flying_Zone
+      Unreliable: false
+      Value: true
+      coloring: Flat color
+      enable lighting: false
+      normal length: 1
+      only border: false
+      show normal: false
+    - Alpha: 0.5
+      Class: jsk_rviz_plugin/PolygonArray
+      Color: 0; 127; 170
+      Enabled: true
+      Name: PolygonArray
+      Topic: /visualization_polygon_array/GS_Safety_Perimeter
       Unreliable: false
       Value: true
       coloring: Flat color
@@ -458,7 +382,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 162.828049
+      Distance: 111.409142
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -473,10 +397,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.324798048
+      Pitch: 0.719798148
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.51331472
+      Yaw: 2.82519937
     Saved: ~
 Window Geometry:
   Displays:

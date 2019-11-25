@@ -4,7 +4,7 @@ gazebo: {auto_disable_bodies: false, cfm: 0.0, contact_max_correcting_vel: 100.0
   sor_pgs_rms_error_tol: 0.0, sor_pgs_w: 1.3, time_step: 0.002}
 gazebo_gui: false
 gazebo_world:
-  sim_origin: [37.199941, -5.881098, 0.0]
+  sim_origin: [38.139037, -3.173351, 0.0]
 magna_hyperparameters:
   N_agents: 3
   N_iter: 1
@@ -21,12 +21,12 @@ magna_hyperparameters:
   obs_pose_list: []
   obs_shape: []
   rosbag_flag: false
-  rqt_use: false
+  rqt_use: true
   rviz_gui: true
   save_flag: true
   smach_view: true
-  submission: 3UAVs_3paths_unifly
-  subworld: Oran
+  submission: 3UAVs_3paths
+  subworld: Atlas
   world: Safedrone
   world_boundaries:
   - [-500, 500]
@@ -36,19 +36,214 @@ rosdistro: 'kinetic
 
   '
 roslaunch:
-  uris: {host_joseandresmr_grvc_pc__40203: 'http://joseandresmr-grvc-pc:40203/', host_joseandresmr_grvc_pc__41389: 'http://joseandresmr-grvc-pc:41389/',
-    host_joseandresmr_grvc_pc__41591: 'http://joseandresmr-grvc-pc:41591/', host_joseandresmr_grvc_pc__44377: 'http://joseandresmr-grvc-pc:44377/',
-    host_joseandresmr_grvc_pc__44569: 'http://joseandresmr-grvc-pc:44569/'}
+  uris: {host_joseandresmr_grvc_pc__33987: 'http://joseandresmr-grvc-pc:33987/', host_joseandresmr_grvc_pc__36509: 'http://joseandresmr-grvc-pc:36509/',
+    host_joseandresmr_grvc_pc__36895: 'http://joseandresmr-grvc-pc:36895/', host_joseandresmr_grvc_pc__38431: 'http://joseandresmr-grvc-pc:38431/',
+    host_joseandresmr_grvc_pc__40319: 'http://joseandresmr-grvc-pc:40319/', host_joseandresmr_grvc_pc__42857: 'http://joseandresmr-grvc-pc:42857/',
+    host_joseandresmr_grvc_pc__43019: 'http://joseandresmr-grvc-pc:43019/', host_joseandresmr_grvc_pc__45307: 'http://joseandresmr-grvc-pc:45307/'}
 rosversion: '1.12.14
 
   '
-run_id: c0054cc2-fbf3-11e9-b9e5-3ca067ae9317
+run_id: 7e193ab6-0d38-11ea-8858-0242fa6c7b48
+ual_ids: [1, 2, 3]
 uav_1:
+  mavros:
+    cmd: {use_comp_id_system_control: false}
+    conn: {heartbeat_rate: 1.0, system_time_rate: 1.0, timeout: 10.0, timesync_rate: 10.0}
+    distance_sensor:
+      laser_1_sub: {id: 3, orientation: ROLL_180, subscriber: true}
+      lidarlite_pub:
+        field_of_view: 0.0
+        frame_id: lidarlite_laser
+        id: 0
+        orientation: ROLL_180
+        send_tf: true
+        sensor_position: {x: -0.1, y: 0.0, z: -0.3}
+      sonar_1_sub: {id: 2, orientation: ROLL_180, subscriber: true}
+    fcu_url: udp://:14557@127.0.0.1:14554
+    gcs_url: udp://:14551@127.0.0.1:14550
+    global_position:
+      frame_id: fcu
+      rot_covariance: 99999.0
+      tf: {child_frame_id: fcu_utm, frame_id: local_origin, send: false}
+    image: {frame_id: px4flow}
+    imu: {angular_velocity_stdev: 0.00034906585039886593, frame_id: fcu, linear_acceleration_stdev: 0.0003,
+      magnetic_stdev: 0.0, orientation_stdev: 1.0}
+    local_position:
+      frame_id: fcu
+      tf: {child_frame_id: fcu, frame_id: local_origin, send: false, send_fcu: false}
+    mission: {pull_after_gcs: true}
+    mocap: {use_pose: true, use_tf: false}
+    plugin_blacklist: [safety_area, image_pub, vibration]
+    plugin_whitelist: [distance_sensor]
+    px4flow: {frame_id: px4flow, ranger_fov: 0.0, ranger_max_range: 5.0, ranger_min_range: 0.3}
+    safety_area:
+      p1: {x: 1.0, y: 1.0, z: 1.0}
+      p2: {x: -1.0, y: -1.0, z: -1.0}
+    setpoint_accel: {send_force: false}
+    setpoint_attitude:
+      reverse_throttle: false
+      tf: {child_frame_id: attitude, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    setpoint_position:
+      tf: {child_frame_id: setpoint, frame_id: local_origin, listen: false, rate_limit: 50.0}
+    startup_px4_usb_quirk: true
+    sys: {disable_diag: false, min_voltage: 10.0}
+    target_system_id: 1
+    tdr_radio: {low_rssi: 40}
+    time: {time_ref_source: fcu, timesync_avg_alpha: 0.6}
+    vibration: {frame_id: vibration}
+    vision_pose:
+      tf: {child_frame_id: vision, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    vision_speed: {listen_twist: false}
+  run_mavros: {mode: sitl}
   ual:
-    home_pose: [2.5871501063811593, -37.6230100071989, 0.05]
+    backend: mavros
+    hold_pose_time: 3.0
+    home_pose: [-59.12934395350749, 11.76099656522274, 0.05]
+    home_pose_parent_frame: map
+    map_origin_geo: [38.139037, -3.173351, 0.0]
+    mavros_offboard_rate: 10.0
+    orientation_th: 0.65
     pose_frame_id: map
+    position_th: 1.0
+    ual_pub_rate: 30.0
+    ual_server: 'on'
+    uav_id: 1
 uav_1_home:
   gz_initial_yaw: 0.0
   model: iris
-  translation: [2.5871501063811593, -37.6230100071989, 0.05]
+  translation: [-59.12934395350749, 11.76099656522274, 0.05]
+uav_2:
+  mavros:
+    cmd: {use_comp_id_system_control: false}
+    conn: {heartbeat_rate: 1.0, system_time_rate: 1.0, timeout: 10.0, timesync_rate: 10.0}
+    distance_sensor:
+      laser_1_sub: {id: 3, orientation: ROLL_180, subscriber: true}
+      lidarlite_pub:
+        field_of_view: 0.0
+        frame_id: lidarlite_laser
+        id: 0
+        orientation: ROLL_180
+        send_tf: true
+        sensor_position: {x: -0.1, y: 0.0, z: -0.3}
+      sonar_1_sub: {id: 2, orientation: ROLL_180, subscriber: true}
+    fcu_url: udp://:14567@127.0.0.1:14564
+    gcs_url: udp://:14561@127.0.0.1:14560
+    global_position:
+      frame_id: fcu
+      rot_covariance: 99999.0
+      tf: {child_frame_id: fcu_utm, frame_id: local_origin, send: false}
+    image: {frame_id: px4flow}
+    imu: {angular_velocity_stdev: 0.00034906585039886593, frame_id: fcu, linear_acceleration_stdev: 0.0003,
+      magnetic_stdev: 0.0, orientation_stdev: 1.0}
+    local_position:
+      frame_id: fcu
+      tf: {child_frame_id: fcu, frame_id: local_origin, send: false, send_fcu: false}
+    mission: {pull_after_gcs: true}
+    mocap: {use_pose: true, use_tf: false}
+    plugin_blacklist: [safety_area, image_pub, vibration]
+    plugin_whitelist: [distance_sensor]
+    px4flow: {frame_id: px4flow, ranger_fov: 0.0, ranger_max_range: 5.0, ranger_min_range: 0.3}
+    safety_area:
+      p1: {x: 1.0, y: 1.0, z: 1.0}
+      p2: {x: -1.0, y: -1.0, z: -1.0}
+    setpoint_accel: {send_force: false}
+    setpoint_attitude:
+      reverse_throttle: false
+      tf: {child_frame_id: attitude, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    setpoint_position:
+      tf: {child_frame_id: setpoint, frame_id: local_origin, listen: false, rate_limit: 50.0}
+    startup_px4_usb_quirk: true
+    sys: {disable_diag: false, min_voltage: 10.0}
+    target_system_id: 2
+    tdr_radio: {low_rssi: 40}
+    time: {time_ref_source: fcu, timesync_avg_alpha: 0.6}
+    vibration: {frame_id: vibration}
+    vision_pose:
+      tf: {child_frame_id: vision, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    vision_speed: {listen_twist: false}
+  run_mavros: {mode: sitl}
+  ual:
+    backend: mavros
+    hold_pose_time: 3.0
+    home_pose: [-26.774503031745553, 21.797295788303018, 0.05]
+    home_pose_parent_frame: map
+    map_origin_geo: [38.139037, -3.173351, 0.0]
+    mavros_offboard_rate: 10.0
+    orientation_th: 0.65
+    pose_frame_id: map
+    position_th: 1.0
+    ual_pub_rate: 30.0
+    ual_server: 'on'
+    uav_id: 2
+uav_2_home:
+  gz_initial_yaw: 0.0
+  model: iris
+  translation: [-26.774503031745553, 21.797295788303018, 0.05]
+uav_3:
+  mavros:
+    cmd: {use_comp_id_system_control: false}
+    conn: {heartbeat_rate: 1.0, system_time_rate: 1.0, timeout: 10.0, timesync_rate: 10.0}
+    distance_sensor:
+      laser_1_sub: {id: 3, orientation: ROLL_180, subscriber: true}
+      lidarlite_pub:
+        field_of_view: 0.0
+        frame_id: lidarlite_laser
+        id: 0
+        orientation: ROLL_180
+        send_tf: true
+        sensor_position: {x: -0.1, y: 0.0, z: -0.3}
+      sonar_1_sub: {id: 2, orientation: ROLL_180, subscriber: true}
+    fcu_url: udp://:14577@127.0.0.1:14574
+    gcs_url: udp://:14571@127.0.0.1:14570
+    global_position:
+      frame_id: fcu
+      rot_covariance: 99999.0
+      tf: {child_frame_id: fcu_utm, frame_id: local_origin, send: false}
+    image: {frame_id: px4flow}
+    imu: {angular_velocity_stdev: 0.00034906585039886593, frame_id: fcu, linear_acceleration_stdev: 0.0003,
+      magnetic_stdev: 0.0, orientation_stdev: 1.0}
+    local_position:
+      frame_id: fcu
+      tf: {child_frame_id: fcu, frame_id: local_origin, send: false, send_fcu: false}
+    mission: {pull_after_gcs: true}
+    mocap: {use_pose: true, use_tf: false}
+    plugin_blacklist: [safety_area, image_pub, vibration]
+    plugin_whitelist: [distance_sensor]
+    px4flow: {frame_id: px4flow, ranger_fov: 0.0, ranger_max_range: 5.0, ranger_min_range: 0.3}
+    safety_area:
+      p1: {x: 1.0, y: 1.0, z: 1.0}
+      p2: {x: -1.0, y: -1.0, z: -1.0}
+    setpoint_accel: {send_force: false}
+    setpoint_attitude:
+      reverse_throttle: false
+      tf: {child_frame_id: attitude, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    setpoint_position:
+      tf: {child_frame_id: setpoint, frame_id: local_origin, listen: false, rate_limit: 50.0}
+    startup_px4_usb_quirk: true
+    sys: {disable_diag: false, min_voltage: 10.0}
+    target_system_id: 3
+    tdr_radio: {low_rssi: 40}
+    time: {time_ref_source: fcu, timesync_avg_alpha: 0.6}
+    vibration: {frame_id: vibration}
+    vision_pose:
+      tf: {child_frame_id: vision, frame_id: local_origin, listen: false, rate_limit: 10.0}
+    vision_speed: {listen_twist: false}
+  run_mavros: {mode: sitl}
+  ual:
+    backend: mavros
+    hold_pose_time: 3.0
+    home_pose: [11.98250374669442, 34.59564848896116, 0.05]
+    home_pose_parent_frame: map
+    map_origin_geo: [38.139037, -3.173351, 0.0]
+    mavros_offboard_rate: 10.0
+    orientation_th: 0.65
+    pose_frame_id: map
+    position_th: 1.0
+    ual_pub_rate: 30.0
+    ual_server: 'on'
+    uav_id: 3
+uav_3_home:
+  gz_initial_yaw: 0.0
+  model: iris
+  translation: [11.98250374669442, 34.59564848896116, 0.05]
 use_sim_time: true

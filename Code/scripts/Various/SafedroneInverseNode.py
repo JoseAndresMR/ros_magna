@@ -372,7 +372,7 @@ class SafedroneInverseNode(object):
             # spacing = self.main_polygon_width / ( len(self.ids) * 4 )
             spacing = 8
             poseset_data["spacing"] = [spacing,spacing]
-            poseset_data["sweep_angle"] = 0.0
+            poseset_data["sweep_angle"] = 5.06145
             poseset_data["initial_sense"] = "left"
             poseset_data["margins"] = [1.0,1.0]
 
@@ -409,7 +409,7 @@ class SafedroneInverseNode(object):
 
         return
 
-SafedroneInverseNode([1,2,3] ,"uav_", [37.199941, -5.881098,0.0], 4.641597)
+SafedroneInverseNode([1,2,3] ,"uav_", [38.139037, -3.173351, 0.0], 5.9341226542092)
 
 # make posix gazebo_plane
 # roslaunch mavros px4.launch fcu_url:=udp://:14550@localhost:14556

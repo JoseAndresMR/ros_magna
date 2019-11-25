@@ -233,7 +233,9 @@ class Agent_Manager(object):
     def GoToWPCommand(self,blocking,goal_WP_pose):
 
         request = GoToWaypointRequest()
-        request.waypoint = PoseStamped(std_msgs.msg.Header(),goal_WP_pose)
+        header = std_msgs.msg.Header()
+        header.frame_id = "map"
+        request.waypoint = PoseStamped(header,goal_WP_pose)
         request.blocking = blocking
 
         response = serverClient(request, '/uav_{}/ual/go_to_waypoint'.format(self.ID), GoToWaypoint)

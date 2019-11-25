@@ -1,0 +1,222 @@
+{
+    "scenario": {
+        "world_boundaries": [[-500,500],[-500,500],[-500,500]],
+        "origin_geo" : [38.139037, -3.173351, 0.0],
+        "volumes": [
+            {
+                "name": "Ground_Station",
+                "prefix": "GS",
+                "origin": [[0.0, 0.0,0.0],[0.0,0.0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Build1",
+                        "prefix": "B1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-34.454779924068134, -55.08029086794704,5.0],[0,0,0.314159265]],
+                        "dimensions": [26,17,10],
+                        "color": [0,127,170],
+                        "alpha": 0.5
+                    },
+                    {
+                        "name": "Tower",
+                        "prefix": "T",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-24.70645063090577, -51.91286667910328, 15.0],[0,0,0.314159265]],
+                        "dimensions": [5.5,17,10],
+                        "color": [0,127,170],
+                        "alpha": 0.5
+                    },
+                    {
+                        "name": "Build2",
+                        "prefix": "B2",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[10.879551856254693, -39.853243205696344,5.0],[0,0,0.314159265]],
+                        "dimensions": [48,17,10],
+                        "color": [0,127,170],
+                        "alpha": 0.5
+                    },
+                    {
+                        "name": "Build3",
+                        "prefix": "B3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[41.96954748296412, -29.92572424467653,2.5],[0,0,0.314159265]],
+                        "dimensions": [5,17,5],
+                        "color": [0,127,170],
+                        "alpha": 0.5
+                    },
+                    {
+                        "name": "Safety_Perimeter",
+                        "prefix": "SP",
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-63.15331694605993, -31.17112503014505, 0.0], [-49.042664298263844, -76.91113554500043, 0.0], [53.021166325430386, -44.92480245232582, 0.0], [36.54291538032703, 0.26466742251068354, 0.0]]],
+                        "color": [255,0,255],
+                        "alpha": 0.3
+                    }
+                ]
+            },
+            {
+                "name": "Flights",
+                "prefix": "Flg",
+                "origin": [[0.0,0.0,0.0],[0,0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    {
+                        "name": "Take_off_1",
+                        "prefix": "TO1",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-59.12934395350749, 11.76099656522274,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon1",
+                        "prefix": "Pol1",
+                        "origin": [[-59.12934395350749, 11.76099656522274,10.0],[0,0,0.314159265]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [4.0,4.0],
+                                "sweep_angle":5.06145,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Take_off_2",
+                        "prefix": "TO2",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[-26.774503031745553, 21.797295788303018,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon2",
+                        "prefix": "Pol2",
+                        "origin": [[-26.774503031745553, 21.797295788303018,13.0],[0,0,0.314159265]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [4.0,4.0],
+                                "sweep_angle":5.06145,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Take_off_3",
+                        "prefix": "TO3",
+                        "shape": "cube",
+                        "id": 0,
+                        "origin": [[11.98250374669442, 34.59564848896116,0.05],[0,0,0]],
+                        "dimensions": [0.1,0.1,0.1],
+                        "color": [0,0,0],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "matrix",
+                                "matrix_type":"dimension",
+                                "use" : "poses",
+                                "dimensions": [1,1,1],
+                                "density": 1,
+                                "poses_orientation": [0.0,0.0,0.0],
+                                "set_orientation": [0,0,0]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ManualPolygon3",
+                        "prefix": "Pol3",
+                        "origin": [[11.98250374669442, 34.59564848896116,7.0],[0,0,0.314159265]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-5.1,-5.1,0],[5,-5,0],[5.1,5.1,0],[-5,5,0]]],
+                        "color": [255,255,255],
+                        "alpha": 0.3,
+                        "poses_sets": [
+                            {
+                                "type" : "zigzag",
+                                "use" : "poses",
+                                "orientation": [0,0,0],
+                                "height": 0.0,
+                                "spacing": [4.0,4.0],
+                                "sweep_angle":5.06145,
+                                "initial_sense": "left",
+                                "margins": [1.0,1.0]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Field",
+                "prefix": "BP",
+                "origin": [[0.0,0.0,0.0],[0,0,0]],
+                "permits": "geofence",
+                "geometries": [
+                    
+                    {
+                        "name": "Flying_Zone",
+                        "prefix": "FZ",
+                        "origin": [[0.0,0.0,0.0],[0,0,0]],
+                        "id": 0,
+                        "shape": "prism",
+                        "dimensions": [1.0,[[-299.8065882769297, -55.68858794122934, 0.0], [-294.23026155965636, -72.56440543103963, 0.0], [-17.407930738350842, 16.453918079845607, 0.0], [-8.128977445419878, 11.110715069808066, 0.0], [-3.1613660843577236, -3.544659378938377, 0.0], [-9.666007941530552, -14.184201274998486, 0.0], [16.726829241146334, -5.800908128730953, 0.0], [5.080548872647341, -1.1190435895696282, 0.0], [0.4624126521521248, 12.98089672345668, 0.0], [5.214189511665609, 23.512765710242093, 0.0], [280.9779579222668, 112.3212970579043, 0.0], [275.8389221878024, 129.30687253922224, 0.0]]],
+                        "color": [255,0,255],
+                        "alpha": 0.3
+                    }
+                ]
+            }
+        ]
+    }
+}

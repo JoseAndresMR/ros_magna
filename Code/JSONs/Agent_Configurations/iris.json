@@ -2,6 +2,6 @@
     "autopilot" : "px4",
     "ual_use": 1,
     "safety_radius": 0.3,
-    "max_speed": 2,
-    "accepted_target_radius" : 0.9
+    "max_speed": 1,
+    "accepted_target_radius" : 1.5
 }

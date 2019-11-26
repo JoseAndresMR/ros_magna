@@ -25,7 +25,6 @@ magna_hyperparameters:
   - [-500, 500]
   - [-500, 500]
   - [-500, 500]
-ual_ids: [1, 2, 3]
 uav_1:
   ual:
     backend: mavros

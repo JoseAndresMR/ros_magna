@@ -66,7 +66,7 @@
                     <param name="home_pose_parent_frame" value="map" />
                     <param name="backend" value="mavros" />
                     <rosparam param="map_origin_geo">[38.139037, -3.173351, 0.0]</rosparam>
-                    <param name="position_th" value="1.0" />
+                    <param name="position_th" value="0.33" />
                     <param name="orientation_th" value="0.65" />
                     <param name="hold_pose_time" value="3.0" />
                 </node>

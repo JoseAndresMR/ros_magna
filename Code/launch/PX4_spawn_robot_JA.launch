@@ -15,8 +15,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <arg name="mode" default="sitl"/>
     <arg name="description_package" default="robots_description"/>
     <arg name="material" default="Orange"/>
-    <arg name="target_ip" default="localhost"/>
-    <arg name="own_ip" default="localhost"/>
+    <!-- <arg name="target_ip" default="localhost"/>
+    <arg name="own_ip" default="localhost"/> -->
     <arg name="fcu_url" default="udp://:14550@localhost:14556"/>
     <arg name="gcs_url" default="udp://@localhost"/>
     <arg name="x" default="0"/>
@@ -50,7 +50,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <group if="$(arg ual_use)">
         <!-- Run mavros node -->
         <node pkg="px4_bringup" type="run_mavros_JA.py" name="run_mavros_$(arg id)" output="screen" if="$(arg use_mavros)"
-        args="-id=$(arg id) -mode=$(arg mode) -target_ip=$(arg target_ip) -own_ip=$(arg own_ip) -fcu_url=$(arg fcu_url) -gcs_url=$(arg gcs_url) -rtcm_topic=$(arg rtcm_topic)" />
+        args="-id=$(arg id) -mode=$(arg mode) -fcu_url=$(arg fcu_url) -gcs_url=$(arg gcs_url) -rtcm_topic=$(arg rtcm_topic)" />
 
     </group>
 

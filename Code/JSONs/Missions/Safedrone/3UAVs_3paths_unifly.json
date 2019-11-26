@@ -467,7 +467,7 @@
                                     }
                                 ],
                                 "smooth_path_mode": 0,
-                                "dynamic" : "velocity"
+                                "dynamic" : "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -524,7 +524,7 @@
                                     }
                                 ],
                                 "smooth_path_mode": 0,
-                                "dynamic": "velocity"
+                                "dynamic": "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",
@@ -581,7 +581,7 @@
                                     }
                                 ],
                                 "smooth_path_mode": 0,
-                                "dynamic": "velocity"
+                                "dynamic": "position"
                             },
                             "outcomes":{
                                 "succeeded": "completed",

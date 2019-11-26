@@ -246,4 +246,4 @@ uav_3_home:
   gz_initial_yaw: 0.0
   model: iris
   translation: [11.98250374669442, 34.59564848896116, 0.05]
-use_sim_time: true
+use_sim_time: false
